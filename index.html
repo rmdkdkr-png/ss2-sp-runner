@@ -1,0 +1,2223 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0708">
+<meta name="description" content="네오지오 포켓 컬러 『사무라이 스피리츠! 2』 한글판을 브라우저에서 바로 실행하는 모바일 조작 실행기. 필살기 커맨드를 버튼 하나로, 방향은 자동 미러링.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SP 실행기">
+<meta name="format-detection" content="telephone=no">
+<meta name="referrer" content="no-referrer">
+<meta property="og:type" content="website">
+<meta property="og:title" content="사무라이 스피리츠! 2 한글판 · SP 실행기">
+<meta property="og:description" content="필살기 커맨드를 버튼 하나로. 방향은 게임 메모리를 읽어 자동으로 뒤집습니다. HTML 한 장.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
+<title>사무라이 스피리츠! 2 한글판 · SP 실행기 v1.0</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --ink:#f2ede1; --muted:#9d9a8d;
+    --panel:rgba(24,18,16,.94); --line:rgba(220,196,140,.2);
+    --gold:#d9b968; --red:#cf4638; --violet:#8e6bd9; --green:#8fb573;
+    --btn:#201915;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;min-height:100%;background:#0a0708;color:var(--ink);}
+  body{
+    min-height:100vh;min-height:100dvh;
+    font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif;
+    background:
+      radial-gradient(circle at 15% 8%, rgba(150,40,30,.30), transparent 30rem),
+      radial-gradient(circle at 88% 90%, rgba(84,60,140,.20), transparent 30rem),
+      linear-gradient(150deg,#151011 0%,#080607 60%,#120d09 100%);
+    overscroll-behavior:none;
+  }
+  button{font:inherit;color:inherit;}
+  [hidden]{display:none!important;}
+
+  /* ---------- landing ---------- */
+  .page{width:min(880px,calc(100% - 28px));min-height:100vh;min-height:100dvh;margin:0 auto;display:grid;align-items:center;padding:28px 0;}
+  .panel{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:0 26px 80px rgba(0,0,0,.5);}
+  .panel::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),var(--gold),var(--violet));}
+  .hero{padding:clamp(26px,6vw,56px);}
+  .eyebrow{margin:0 0 10px;color:var(--gold);font:700 12px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.2em;}
+  h1{margin:0;font-size:clamp(30px,6.4vw,60px);line-height:1.02;letter-spacing:-.05em;}
+  h1 span{display:block;margin-top:10px;color:var(--muted);font-size:.44em;letter-spacing:-.01em;}
+  .lead{max-width:640px;margin:20px 0 0;color:#d2cfc6;font-size:15px;line-height:1.75;}
+  .drop{margin-top:26px;min-height:150px;display:grid;place-items:center;gap:10px;padding:22px;text-align:center;border:1px dashed rgba(217,185,104,.45);border-radius:16px;background:rgba(9,7,7,.6);}
+  .drop.drag{border-color:var(--gold);background:rgba(217,185,104,.08);}
+  .pick{border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:13px 26px;background:linear-gradient(180deg,#e4c877,#b5924a);color:#191408;font-weight:800;cursor:pointer;box-shadow:0 10px 26px rgba(181,146,74,.25);}
+  .pick:active{transform:translateY(1px);}
+  .pick.alt{background:linear-gradient(180deg,#3a2f28,#241c17);color:var(--ink);box-shadow:none;}
+  .drop small,.note{color:var(--muted);}
+  .status{min-height:24px;margin:14px 2px 0;color:var(--green);font-size:14px;line-height:1.6;}
+  .status.error{color:#ff8b7e;}
+  .cachedRow{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;align-items:center;}
+  .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px;}
+  .info{padding:13px 14px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.025);}
+  .info b{display:block;margin-bottom:4px;font-size:13px;}
+  .info small{color:var(--muted);line-height:1.5;display:block;}
+  @media(max-width:640px){.info-grid{grid-template-columns:1fr;}}
+
+  /* ---------- stage ---------- */
+  #stage{position:fixed;inset:0;display:flex;flex-direction:column;}
+  #topbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;background:rgba(10,8,7,.85);border-bottom:1px solid rgba(255,255,255,.06);z-index:30;}
+  .tbtn{border:1px solid rgba(255,255,255,.12);background:var(--btn);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .tbtn:active{background:#2c231d;}
+  .tbtn.gold{border-color:rgba(217,185,104,.5);color:var(--gold);}
+  #charBtn{margin-left:auto;overflow:hidden;text-overflow:ellipsis;max-width:34vw;}
+  #gamewrap{flex:1 1 auto;position:relative;min-height:0;background:#000;}
+  #game{position:absolute;inset:0;}
+
+  /* ---------- controls: 절대배치 (참조 레이아웃 + MOBA식 스킬 아크) ---------- */
+  #controls{flex:0 0 auto;position:relative;height:clamp(300px,44vh,430px);
+    padding-bottom:env(safe-area-inset-bottom);
+    background:linear-gradient(180deg,rgba(12,9,8,.55),rgba(10,8,7,.96));
+    touch-action:none;user-select:none;-webkit-user-select:none;z-index:25;overflow:visible;}
+  .ctl{position:absolute;}
+
+  /* 원형 대형 패드 */
+  #dpad{border-radius:16%;background:#191413;border:1px solid rgba(255,255,255,.08);aspect-ratio:1;touch-action:none;}
+  #dpad .arm{position:absolute;background:rgba(255,255,255,.045);border-radius:10px;}
+  #dpad .h{left:8%;right:8%;top:40%;bottom:40%;}
+  #dpad .v{top:8%;bottom:8%;left:40%;right:40%;}
+  #dpad .dot{position:absolute;left:44%;top:44%;width:12%;height:12%;border-radius:50%;background:rgba(217,185,104,.22);}
+  #dpad .cap{position:absolute;font-size:13px;color:rgba(255,255,255,.32);font-weight:800;pointer-events:none;}
+  #dpad .cap.u{top:9%;left:50%;transform:translateX(-50%);}
+  #dpad .cap.d{bottom:9%;left:50%;transform:translateX(-50%);}
+  #dpad .cap.l{left:10%;top:50%;transform:translateY(-50%);}
+  #dpad .cap.r{right:10%;top:50%;transform:translateY(-50%);}
+  #dpad .cap.on{color:var(--gold);}
+
+  /* 상단 유틸 (▶▶ · 기술 · OPTION) */
+  .pill{border-radius:999px;border:1px solid rgba(255,255,255,.14);background:#1c1613;color:var(--muted);font-size:11px;font-weight:800;padding:8px 14px;letter-spacing:.06em;cursor:pointer;touch-action:none;}
+  #palBtn{color:var(--gold);border-color:rgba(217,185,104,.35);}
+  #ffBtn.on{color:var(--gold);border-color:rgba(217,185,104,.6);background:rgba(217,185,104,.1);}
+
+  /* 라운드 버튼 공통 */
+  .rbtn{border-radius:50%;border:2px solid rgba(255,255,255,.24);display:grid;place-items:center;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;aspect-ratio:1;}
+  /* ═══ 버튼은 전부 단색 평면이다 ═══
+     그라디언트·그림자·transition은 버튼을 다시 그릴 때마다 넓은 영역을 재합성시켜
+     프레임을 먹는다(실측 그림자 +3.3fps, 차지 링 +3.6fps, busy 아웃라인은
+     CPU 4배 스로틀 연타에서 끊김 48→36회·p95 78→41ms).
+     눌림/실행 표시는 **배경색과 테두리색 교체만** 쓴다 — 합성만 하면 되므로 사실상 공짜다.
+     0.5에서는 버튼 스킨과 transition도 전부 제거했다. */
+  .btnA{background:#a83a2c;font-weight:900;font-size:20px;color:#fff;}
+  .btnB{background:#3a4b96;font-weight:900;font-size:17px;color:#fff;}
+  .btnSP{background:#947a33;color:#fff8e6;padding:2px;}
+  .btnAB{background:#4d525d;border-color:rgba(200,210,235,.45);font-weight:900;font-size:12px;color:#e8ecf5;}
+  .btnCombo{background:#3d7a46;border-color:rgba(150,230,160,.5);color:#eaffe9;padding:2px;}
+  .btnSP b{display:block;font-size:10px;line-height:1.12;text-align:center;word-break:keep-all;}
+  #spBig b{font-size:19px;letter-spacing:.04em;}
+  .btnCombo b{display:block;font-size:13.5px;text-align:center;}
+  /* 눌림 = 색만 밝게 */
+  .btnA:active,.btnA.pressed,.btnA.busy{background:#d8543f;}
+  .btnB:active,.btnB.pressed,.btnB.busy{background:#5a72d4;}
+  .btnSP:active,.btnSP.pressed,.btnSP.busy{background:#d3ac48;}
+  .btnAB:active,.btnAB.pressed,.btnAB.busy{background:#767d8c;}
+  .btnCombo:active,.btnCombo.pressed,.btnCombo.busy{background:#5aab66;}
+  /* 매크로 실행 중 = 테두리 흰색 (아웃라인/필터 대신) */
+  .btnA.busy,.btnB.busy,.btnSP.busy,.btnAB.busy,.btnCombo.busy{border-color:#fff;}
+  /* 강(强) 확정: 홀드 8프레임을 넘기면 색이 바뀐다.
+     0.6에서 box-shadow를 걷어냈다 — 유일하게 남아 있던 그림자였고, 하필
+     '누르고 있는 동안' 켜져서 모바일 GPU에 계속 합성을 시켰다. */
+  .btnA.armed,.btnSP.armed{background:#ff9f2e;border-color:#fff;color:#2a1a00;}
+  /* 컨텍스트 컨트롤: 메뉴 화면에선 전투 전용 버튼 숨김 — 디패드+A(확인)+B(취소)만 */
+  #controls[data-ctx="menu"] .combatOnly{display:none!important;}
+
+  #controls .ctl{opacity:var(--ctlA,1);}
+
+  /* 배치 편집 모드 */
+  .editTarget{outline:2px dashed var(--gold);outline-offset:3px;cursor:grab;}
+  #editBanner{position:fixed;top:calc(52px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:80;display:flex;gap:10px;align-items:center;background:rgba(20,15,12,.95);border:1px solid var(--gold);border-radius:999px;padding:8px 10px 8px 16px;font-size:13px;font-weight:700;white-space:nowrap;}
+  #editBanner button{border:none;border-radius:999px;background:linear-gradient(180deg,#e4c877,#b5924a);color:#191408;font-weight:800;padding:7px 14px;cursor:pointer;}
+
+  /* ---------- modals ---------- */
+  .modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(0,0,0,.66);backdrop-filter:blur(3px);padding:14px;}
+  .sheetBox{width:min(560px,100%);max-height:calc(100dvh - 40px);overflow:auto;border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:18px;}
+  .sheetBox h2{margin:2px 0 12px;font-size:18px;letter-spacing:-.02em;}
+  .charGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+  @media(max-width:430px){.charGrid{gap:5px;}}
+  .charGrid button{border:1px solid rgba(255,255,255,.1);background:#1b1512;border-radius:10px;padding:9px 2px;font-size:11.5px;font-weight:700;cursor:pointer;}
+  .charGrid button.sel{border-color:var(--gold);color:var(--gold);background:rgba(217,185,104,.1);}
+  .styleRow{display:flex;gap:8px;margin:14px 0 8px;}
+  .styleRow button{flex:1;border:1px solid rgba(255,255,255,.12);background:#1b1512;border-radius:10px;padding:10px;font-weight:800;cursor:pointer;}
+  .styleRow button.sel{border-color:var(--red);color:#ff9d8d;background:rgba(207,70,56,.12);}
+  .mvList{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+  .mv{display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.08);border-radius:11px;background:rgba(255,255,255,.02);padding:9px 11px;cursor:pointer;}
+  .mv .badge{flex:0 0 auto;min-width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:11px;font-weight:900;background:#241c16;border:1px solid rgba(255,255,255,.1);color:var(--muted);padding:0 4px;}
+  .mv .nm{font-size:13.5px;font-weight:700;}
+  .mv .cmd{margin-left:auto;font-size:12.5px;color:var(--gold);white-space:nowrap;font-family:ui-monospace,Menlo,monospace;}
+  .mv .tag{flex:0 0 auto;font-size:9.5px;color:var(--muted);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:1px 4px;margin-left:4px;}
+  /* 시트 탭 편집기 (SP 배치 / 슬롯 / 콤보) */
+  .tabRow{display:flex;gap:6px;margin:10px 0 8px;}
+  .tabRow button{flex:1;border:1px solid rgba(255,255,255,.12);background:#1b1512;border-radius:10px;padding:9px 4px;font-size:12.5px;font-weight:800;cursor:pointer;}
+  .tabRow button.sel{border-color:var(--gold);color:var(--gold);background:rgba(217,185,104,.12);}
+  .slotChips{display:flex;gap:5px;margin:2px 0 8px;}
+  .slotChips button{flex:1;border:1px solid rgba(255,255,255,.12);background:#17120f;border-radius:9px;padding:7px 2px;cursor:pointer;font-size:11px;font-weight:800;color:var(--muted);line-height:1.35;}
+  .slotChips button.sel{border-color:var(--gold);color:var(--gold);background:rgba(217,185,104,.13);box-shadow:0 0 0 1px rgba(217,185,104,.25) inset;}
+  .slotChips button i{display:block;font-style:normal;font-size:9px;opacity:.75;font-weight:600;}
+  .comboOpt{display:flex;align-items:center;gap:9px;margin:2px 0 9px;font-size:12.5px;}
+  .comboOpt>span{flex:0 0 auto;color:var(--muted);}
+  .mv.slotted .badge{background:linear-gradient(180deg,#7fb0e8,#2f5f96);color:#06121e;border-color:transparent;}
+  .mv.ender .badge{background:linear-gradient(180deg,#7ce0a8,#2b7d52);color:#04180d;border-color:transparent;}
+  .mv .tag.card{color:#a8d1ff;border-color:rgba(120,170,255,.35);}
+  .mv .tag.unv{color:#e8b8a0;border-color:rgba(230,150,110,.35);}
+  .sheetFoot{display:flex;gap:8px;margin-top:16px;}
+  .sheetFoot button{flex:1 1 0;min-width:0;white-space:nowrap;border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:12px 4px;font-size:13px;font-weight:800;cursor:pointer;background:#1b1512;}
+  @media(max-width:400px){.sheetFoot button{font-size:12px;padding:11px 2px;}}
+  .sheetFoot button.on{border-color:var(--green);color:var(--green);background:rgba(120,220,160,.1);} /* 자동 감지 켜짐 */
+  .sheetFoot .ok{background:linear-gradient(180deg,#e4c877,#b5924a);color:#191408;border-color:transparent;}
+  .slotRow{display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:10px 12px;margin-bottom:8px;background:rgba(255,255,255,.02);}
+  .slotRow b{font-size:14px;}
+  .slotRow small{color:var(--muted);margin-left:2px;flex:1;}
+  .slotRow button{border:1px solid rgba(255,255,255,.12);border-radius:9px;background:#1b1512;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .slotRow button.gold{color:var(--gold);border-color:rgba(217,185,104,.4);}
+
+  /* 진단 오버레이 — 스크린샷으로 보내기 좋게 고대비·등폭 */
+  #hud{position:absolute;left:4px;right:4px;top:2px;z-index:60;margin:0;padding:5px 7px;
+       font:10.5px/1.42 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;
+       color:#b6ffb6;background:rgba(0,0,0,.82);border:1px solid rgba(120,255,120,.35);
+       border-radius:8px;pointer-events:none;letter-spacing:-.02em;}
+  #hud b{color:#ffd76a;font-weight:700;}
+  #controls[data-hud="1"] #toast{top:88px;}
+  #hud i{color:#ff8b8b;font-style:normal;font-weight:700;}
+  .setNote{margin:0 0 11px;padding:10px 12px;border-radius:10px;background:rgba(217,185,104,.07);border:1px solid rgba(217,185,104,.18);font-size:12px;line-height:1.6;color:var(--muted);}
+  .setNote b{color:var(--gold);font-size:12px;}
+  .setRow{display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:12px;margin-bottom:9px;background:rgba(255,255,255,.02);}
+  .setRow b{font-size:13.5px;flex:0 0 96px;line-height:1.25;}
+  .setRow b small{font-size:10.5px;font-weight:600;}
+  /* touch-action:pan-y — 설정 스크롤 중 손가락이 스치면 값이 튀던 것 방지 (세로 스와이프=스크롤, 가로 드래그만 조절) */
+  .setRow input[type=range]{flex:1;accent-color:var(--gold);touch-action:pan-y;}
+  .setRow .seg{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;}
+  .setRow .seg::-webkit-scrollbar{display:none;}
+  .setRow .seg button{flex:1 1 auto;min-width:0;white-space:nowrap;border:1px solid rgba(255,255,255,.12);background:#1b1512;border-radius:9px;padding:8px 6px;font-size:12.5px;font-weight:800;cursor:pointer;}
+  .setRow .seg button.sel{border-color:var(--gold);color:var(--gold);background:rgba(217,185,104,.1);}
+  .setRow output{width:44px;text-align:right;color:var(--muted);font-size:12px;}
+
+  #palette .sheetBox{padding:14px;}
+  .palGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .palGrid button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;border:1px solid rgba(255,255,255,.1);background:#1d1613;border-radius:11px;padding:10px 11px;cursor:pointer;text-align:left;}
+  .palGrid button:active{background:#2c231d;}
+  .palGrid b{font-size:13px;}
+  .palGrid small{font-size:11px;color:var(--gold);font-family:ui-monospace,Menlo,monospace;}
+
+  #toast{position:absolute;left:50%;top:2px;transform:translateX(-50%);z-index:90;max-width:96%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    background:rgba(20,15,12,.92);border:1px solid var(--line);color:var(--ink);padding:6px 14px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;} /* 게임 화면을 가리지 않도록 컨트롤 영역 상단에 표시 */
+  #toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 랜딩 ═══════════ -->
+<div class="page" id="landing">
+  <div class="panel"><div class="hero">
+    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v1.0</p>
+    <h1>사무라이 스피리츠! 2 <span>한글판 · SP 버튼 실행기</span></h1>
+    <p class="lead">브라우저에서 바로 실행됩니다. 모바일 격투게임처럼 <b>SP 버튼</b> 한 번으로 필살기가 나가고,
+      캐릭터가 바라보는 방향을 <b>자동으로 감지</b>해 커맨드를 뒤집어 줍니다. 스킬 아크 배치 · 전 요소 드래그 커스텀 · 빨리감기 지원.</p>
+
+    <div id="cachedRow" class="cachedRow" hidden>
+      <button class="pick" id="resumeBtn">▶ 바로 시작</button>
+      <button class="pick alt" id="changeRomBtn">다른 롬 파일 선택</button>
+      <button class="pick alt" id="clearRomBtn">저장된 롬 삭제</button>
+    </div>
+
+    <div class="drop" id="drop">
+      <strong>사무라이 스피리츠! 2 롬(.ngc)을 여기에 끌어다 놓으세요</strong>
+      <small>또는</small>
+      <button class="pick" id="pickBtn">롬 파일 선택</button>
+      <small>선택한 롬은 이 브라우저에만 저장되어, 다음부터는 파일 선택 없이 바로 실행됩니다.</small>
+      <input type="file" id="fileInput" accept=".ngc,.ngp,.bin" hidden>
+    </div>
+    <p class="status" id="status"></p>
+
+    <div class="info-grid">
+      <div class="info"><b>SP 버튼 · 자동 방향</b><small>게임 메모리에서 캐릭터 방향을 읽어 커맨드를 자동 미러링. 실기 검증된 입력 타이밍으로 발동합니다.</small></div>
+      <div class="info"><b>스킬 아크 배치</b><small>모바일 게임처럼 공격 버튼 주위로 SP 버튼이 부채꼴로 배치. 모든 버튼을 개별 드래그로 옮기고 크기 조절할 수 있습니다.</small></div>
+      <div class="info"><b>세이브 · 빨리감기</b><small>상태저장 퀵+3슬롯, 게임 내 카드 저장 자동 보관, ▶▶ 3배속 빨리감기.</small></div>
+    </div>
+
+    <footer style="margin-top:26px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px;line-height:1.7;color:var(--muted);">
+      비공식 팬 제작 도구입니다. 게임 롬을 포함하지 않으며, 본인이 소유한 롬 파일을 사용하세요.<br>
+      에뮬레이션: <a href="https://emulatorjs.org" style="color:var(--gold);text-decoration:none;">EmulatorJS</a> (GPL-3.0) · 코어: Beetle NeoPop/Mednafen (GPL)<br>
+      SAMURAI SPIRITS™ / SAMURAI SHODOWN™ 및 게임 저작권은 SNK CORPORATION에 있습니다. 본 도구는 SNK와 무관합니다.
+    </footer>
+  </div></div>
+</div>
+
+<!-- ═══════════ 플레이 화면 ═══════════ -->
+<div id="stage" hidden>
+  <div id="topbar">
+    <button class="tbtn gold" id="qSaveBtn">세이브</button>
+    <button class="tbtn" id="qLoadBtn">로드</button>
+    <button class="tbtn" id="slotsBtn">슬롯</button>
+    <button class="tbtn" id="charBtn">캐릭터</button>
+    <button class="tbtn" id="cfgBtn">⚙</button>
+    <button class="tbtn" id="fsBtn">⛶</button>
+  </div>
+  <div id="gamewrap"><div id="game"></div></div>
+  <div id="controls">
+    <button class="ctl pill" id="ffBtn">▶▶</button>
+    <button class="ctl pill" id="palBtn">기술</button>
+    <button class="ctl pill" id="optBtn">Option</button>
+    <div class="ctl" id="dpad">
+      <div class="arm h"></div><div class="arm v"></div><div class="dot"></div>
+      <span class="cap u">▲</span><span class="cap d">▼</span><span class="cap l">◀</span><span class="cap r">▶</span>
+    </div>
+    <button class="ctl rbtn btnA" id="btnA">A</button>
+    <button class="ctl rbtn btnB" id="btnB">B</button>
+    <button class="ctl rbtn btnAB combatOnly" id="btnAB">A+B</button>
+    <button class="ctl rbtn btnCombo combatOnly" id="btnCombo"><b>콤보</b></button>
+    <button class="ctl rbtn btnSP combatOnly" id="spBig" hidden><b>SP</b></button>
+    <div id="toast"></div>
+    <pre id="hud" hidden></pre>
+  </div>
+  <div id="editBanner" hidden><span>버튼을 드래그해서 배치하세요</span><button id="editDone">완료</button></div>
+</div>
+
+<!-- 캐릭터 시트 -->
+<div class="modal" id="sheet" hidden>
+  <div class="sheetBox">
+    <h2>캐릭터 · 기술표</h2>
+    <div class="charGrid" id="charGrid"></div>
+    <div class="styleRow">
+      <button id="styleS">수라 (베기)</button>
+      <button id="styleB">나찰 (힘)</button>
+    </div>
+    <div class="tabRow" id="sheetTabs">
+      <button data-t="sp" class="sel">SP 배치</button>
+      <button data-t="combo">콤보</button>
+    </div>
+    <div id="tabHint" class="note"></div>
+    <div id="spSlotRow" class="slotChips" hidden></div>
+    <div id="comboOpt" class="comboOpt" hidden>
+      <span>시작타</span>
+      <div class="seg" id="openerSeg"><button data-o="weak">약베기</button><button data-o="strong">강베기</button></div>
+    </div>
+    <div class="mvList" id="mvList"></div>
+    <div class="sheetFoot">
+      <button id="resetAssign">기본 배치</button>
+      <button id="autoCharBtn">👤 자동</button>
+      <button id="selfTestBtn">🔎 점검</button>
+      <button class="ok" id="sheetOk">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 점검 결과 -->
+<div class="modal" id="testModal" hidden>
+  <div class="sheetBox">
+    <h2 id="testTitle">점검 결과</h2>
+    <p class="note" style="font-size:12.5px;">각 자리를 그 방향을 누른 채로 실제 발동시켜 확인한 결과입니다. ⚠는 의도와 다른 기술이 나온 경우.</p>
+    <div class="mvList" id="testBody"></div>
+    <div class="sheetFoot"><button class="ok" id="testClose">닫기</button></div>
+  </div>
+</div>
+
+<!-- 기술 팔레트 -->
+<div class="modal" id="palette" hidden>
+  <div class="sheetBox">
+    <h2 id="palTitle">기술</h2>
+    <div class="palGrid" id="palGrid"></div>
+    <div class="sheetFoot"><button class="ok" id="palClose">닫기</button></div>
+  </div>
+</div>
+
+<!-- 설정 -->
+<div class="modal" id="settings" hidden>
+  <div class="sheetBox">
+    <h2>설정</h2>
+    <p class="setNote">기본값 그대로 써도 됩니다. 화면이 무겁게 느껴지면 <b>화면 필터 = 없음</b>,
+       기술이 잘 안 나가면 <b>입력 속도 = 표준</b>부터 확인해 보세요.</p>
+    <div class="setRow"><b>입력 속도<br><small style="color:var(--muted)">발동까지 걸리는 시간</small></b>
+      <div class="seg" id="speedSeg"><button data-s="std">표준</button><button data-s="fast">빠름</button><button data-s="max">최속</button></div>
+    </div>
+    <div class="setRow"><b>게임 언어<br><small style="color:var(--muted)">본체 설정</small></b>
+      <div class="seg" id="langSeg"><button data-l="auto">자동</button><button data-l="japanese">일본어</button><button data-l="english">영어</button></div>
+    </div>
+    <div class="setRow"><b>캐릭터 자동<br><small style="color:var(--muted)">전투 중 감지</small></b>
+      <div class="seg" id="autoCharSeg"><button data-a="1">켬</button><button data-a="0">끔</button></div>
+    </div>
+    <div class="setRow"><b>메뉴 간소화<br><small style="color:var(--muted)">메뉴에선 숨김</small></b>
+      <div class="seg" id="ctxSeg"><button data-c="1">켬</button><button data-c="0">끔</button></div>
+    </div>
+    <div class="setRow"><b>패드 크기</b><input type="range" id="padScale" min="70" max="130" step="5"><output id="padScaleOut"></output></div>
+    <div class="setRow"><b>버튼 크기</b><input type="range" id="btnScale" min="70" max="150" step="5"><output id="btnScaleOut"></output></div>
+    <div class="setRow"><b>발동 결과 표시<br><small style="color:var(--muted)">기술명 확인 (RAM 읽기)</small></b>
+      <div class="seg" id="watchSeg">
+        <button data-w="1">켬</button><button data-w="0">끔</button>
+      </div>
+    </div>
+    <div class="setRow"><b>진단 표시<br><small style="color:var(--muted)">화면에 상태 표시</small></b>
+      <div class="seg" id="hudSeg">
+        <button data-h="0">끔</button><button data-h="1">켬</button>
+      </div>
+    </div>
+    <div class="setRow"><b>화면 필터<br><small style="color:var(--muted)">게임 화면 질감</small></b>
+      <div class="seg" id="shaderSeg">
+        <button data-shader="off">없음</button><button data-shader="crt-zfast">스캔라인</button><button data-shader="2xScaleHQ.glslp">부드럽게</button><button data-shader="4xScaleHQ.glslp">강하게</button>
+      </div>
+    </div>
+    <div class="setRow"><b>투명도</b><input type="range" id="alphaRange" min="45" max="100" step="5"><output id="alphaOut"></output></div>
+    <div class="setRow"><b>버튼 배치</b>
+      <div class="seg">
+        <button id="editStart">드래그로 배치 편집</button>
+        <button id="layoutReset">배치·크기 초기화</button>
+      </div>
+    </div>
+    <div class="setRow"><b>게임</b>
+      <div class="seg">
+        <button id="gameReset" style="color:#ff9d8d;border-color:rgba(207,70,56,.4);">게임 리셋 (타이틀로)</button>
+      </div>
+    </div>
+    <div class="sheetFoot"><button class="ok" id="cfgClose">닫기</button></div>
+  </div>
+</div>
+
+<!-- 세이브 슬롯 -->
+<div class="modal" id="slots" hidden>
+  <div class="sheetBox">
+    <h2>세이브 슬롯</h2>
+    <div id="slotList"></div>
+    <div class="sheetFoot"><button class="ok" id="slotsClose">닫기</button></div>
+  </div>
+</div>
+
+
+<script>
+(() => {
+"use strict";
+
+/* ═══════════════ 설정 ═══════════════ */
+const Q = new URLSearchParams(location.search);
+/* 코어 버전 고정 (인계문서 §3-5): stable 대신 검증된 4.2.3 사용 */
+const DATA_PATH = Q.get("data") || "https://cdn.emulatorjs.org/4.2.3/data/";
+const EXPECTED_SIZE = 0x200000;
+const ID = {A:0, B:8, OPT:3, U:4, D:5, L:6, R:7};
+const FACING_OFF = 0xE54;
+const ACT_OFF = 0xE3E;   /* P1 액션ID (u16LE) — 실기 리버싱 */
+const P1X_OFF = 0xE38, P2X_OFF = 0xE78; /* 근접 판정용 거리 계산 */
+/* 장착 카드 (실기 리버싱): 슬롯 로컬 idx(0~3, 0xFF=빈칸), 블록으로 전역 번호 계산 */
+const CARD_S1 = 0x1B56, CARD_S2 = 0x1B57, CARD_BLK = 0x1B51;
+const P2HP_OFF = 0x1C46;  /* P2 체력 (max 128) — 히트컨펌은 HP 감소로 판정 (가드=노데미지) */
+/* 체공 판정 = Y좌표 (0xE3A, 지상=128 전 스테이지 불변, 공중=66~99 — 실기 검증).
+   구 AIR_IDS 방식은 폐기: 0x14=앉기, 0x5C=앉아약공격이라 앉기가 공중으로 오판되는 버그 있었음 */
+const P1Y_OFF = 0xE3A, GROUND_Y = 128;
+/* P1 히트스톱 타이머 (실기 리버싱): 타격 성립(히트/피격) 시 5에서 2프레임당 1씩 감소, 평시 0.
+   히트스톱 동안 게임이 방향 입력을 안 받음 — 베기캔슬 중 히트 시 커맨드 증발의 원인 */
+const HITSTOP_OFF = 0x1DC7;
+/* TLCS-900/H reverse: P1 input-history struct=0x1DC9, reset flag=+4.
+   Writing 1 makes game routine 0x202E1F reset the 128-byte ring cursor and
+   place an FF sentinel before recording the next sample. */
+const APP_VER = "1.0";
+/* 버전 표기: 0.5가 첫 공개 배포판, 0.6~0.7은 검수 반영판, 1.0이 정식 배포판이다. 아래 주석에 남아 있는 v1.0~v1.4는
+   공개 전 내부 개발 리비전 번호이며, 왜 그렇게 만들었는지의 근거로 남겨 둔다. */
+const CMD_RESET_OFF = 0x1DCD;
+const RAM_TAG = [0x43,0x50,0x55,0x45,0x78,0x52,0x41,0x4D];
+/* 입력 속도(스텝/버튼/연계 프레임) — 실기 검증: 2~6f 전부 발동 */
+/* 스텝당 프레임 [방향, 버튼, 간격]. 실측 성공률(긴 커맨드 5토큰, 각 20회, 지상·비피격 게이트):
+   표준 20/20·20/20 / 빠름 19/20·18/20 / 최속 20/20·20/20 → 셋 다 실용상 동등.
+   발동까지: 표준 433ms / 빠름 350ms / 최속 267ms */
+const SPEEDS = {std:[4,6,8], fast:[3,4,6], max:[2,3,5]};
+function tf(){ return SPEEDS[cfg.speed]||SPEEDS.std; }
+
+/* ═══════════════ 기술표 (실기 검증 + GameFAQs 3종 교차) ═══════════════ */
+/* 실기 감사로 수집한 액션ID→기술명 (그 기술만의 고유 ID만 수록) — 실제 발동 기술 표시용 */
+const ACTNAME={"genjuro_s":{"0x1a4":"광양인","0x1a8":"앵화참","0x1b0":"삼련살","0x1b4":"삼련살","0x1b8":"삼련살","0x1c4":"시즈쿠진","0x1d0":"시즈쿠진","0x1d4":"시즈쿠진","0x1c8":"키카즈키와리","0x1ac":"앵화참"},"genjuro_b":{"0x1e4":"백귀살","0x210":"백귀살"},"shiki_s":{"0x1b8":"천봉린","0x1bc":"츠유바라이","0x234":"츠유바라이","0x1c4":"쿠비카타나","0x1c8":"요미오토시","0x1cc":"요미오토시","0x1dc":"렌게마이","0x1c0":"츠유바라이"},"shiki_b":{"0x1f0":"세츠나","0x1f4":"세츠나","0x1ec":"텐보린","0x1c4":"무묘","0x1e4":"무쇼","0x1f8":"무슈카","0x1fc":"무슈카","0x210":"타쿠메츠","0x21c":"지비"},"asura_s":{"0x1b0":"셰드 무사","0x1b8":"로페 레프","0x1b4":"나바이베루","0x1c0":"노 아무","0x1bc":"에레스 (#68)","0x1c4":"베엘제붑 (#67)","0x1c8":"베엘제붑 (#67)"},"asura_b":{"0x1d0":"르 이유 바케","0x1d8":"레 말스","0x1dc":"레 시마","0x1e0":"르 태그 라구","0x1e4":"르 태그 라구","0x1fc":"노바 라템"},"morozumi_s":{"0x1a8":"낙뢰","0x1ac":"낙뢰","0x1b0":"참격","0x1b4":"파괴","0x1dc":"파괴"},"morozumi_b":{"0x1a4":"화염","0x1b8":"분화","0x1c8":"봉인"},"haohmaru_s":{"0x1b4":"호월참","0x1b8":"호월참","0x1bc":"선풍열참","0x1c0":"선풍열참","0x1d0":"술병 치기","0x1c8":"열진참","0x1cc":"열진참","0x188":"오월인","0x1d4":"오월인","0x1d8":"천파성왕참","0x1c4":"선풍열참"},"haohmaru_b":{"0x1b4":"호월참","0x1b8":"호월참","0x1bc":"선풍열참","0x1c0":"선풍열참","0x1e0":"강파","0x1c8":"열진참","0x1cc":"열진참","0x1d4":"도도단","0x1c4":"선풍열참"},"galford_s":{"0x1d8":"오버헤드 크래시","0x1cc":"그림자분신","0x1dc":"머신건 독 (#59)"},"nakoruru_s":{"0x1a8":"레라 무츠베","0x1a4":"안누 무츠베","0x1a0":"카무이 릿세","0x1ac":"시치카프 아무","0x1c8":"마마하하 타기","0x1b0":"레라 오 치키리","0x1b4":"레라 오 치키리","0x1bc":"레라 오 치키리"},"nakoruru_b":{"0x1ac":"카무이 시키테","0x1d8":"싯소 루텐쿄게키하","0x1a4":"안누 무츠베","0x1a8":"레라 무츠베","0x21c":"시크루 타기","0x1b0":"엔부 코캬쿠","0x1ec":"엔부 코캬쿠","0x1f0":"엔부 코캬쿠"},"kuroko_s":{"0x1b0":"커맨드 시험 1","0x1c8":"커맨드 시험 1","0x1a0":"커맨드 시험 3","0x1a4":"커맨드 시험 3"},"rimururu_s":{"0x1a0":"루푸스 콰레","0x1a4":"콘루 논노","0x1b0":"콘루 시라루"},"rimururu_b":{"0x1e0":"루푸 테쿠 누무","0x1e4":"콘루 멤","0x1e8":"카무이 시토우키","0x1b0":"콘루 시라루","0x1cc":"아르카 아르카","0x1d4":"아르카 아르카","0x1d0":"피리카노 온얀"},"hanzo_s":{"0x188":"열풍수리검","0x194":"폭염진","0x19c":"우츠세미 천무","0x1a0":"우츠세미 지참"},"hanzo_b":{"0x1b0":"모즈 떨구기","0x1d0":"거미달리기","0x1f0":"바츠 (잡기)","0x1f4":"바츠 (잡기)","0x208":"라이 (잡기)"},"jubei_s":{"0x1a0":"간헐돌","0x1a4":"간헐돌","0x1a8":"츠나미 사브르","0x1b4":"사브르 스러스트","0x1c4":"비전 잡기","0x1c8":"비전 잡기","0x1cc":"비전 잡기","0x1ac":"츠나미 사브르","0x1b0":"츠나미 사브르","0x1b8":"사브르 스러스트","0x1bc":"사브르 스러스트","0x1c0":"사브르 스러스트"},"jubei_b":{"0x1a0":"간헐돌","0x1a4":"간헐돌","0x1dc":"필멸 베기","0x1e4":"천멸 베기","0x1e0":"간헐 필살돌","0x1e8":"아아아","0x1d0":"롤리팝","0x1d8":"필멸 베기"},"sogetsu_s":{"0x21c":"월륜파","0x1a8":"소환","0x1ac":"소환","0x224":"츠키가쿠레","0x228":"츠키가쿠레","0x20c":"시게츠"},"sogetsu_b":{"0x234":"쇼게츠","0x238":"쇼게츠","0x21c":"스이게츠"},"charlotte_s":{"0x1a0":"파워 그라데이션","0x1a4":"파워 그라데이션","0x1a8":"트라이어드 슬래시","0x1ac":"트라이어드 슬래시","0x1b4":"스플래시 페인트","0x1b8":"스플래시 페인트"},"charlotte_b":{"0x1a0":"파워 그라데이션","0x1a4":"파워 그라데이션","0x1b0":"바이오 넷 러시","0x1c8":"바이오 넷 러시","0x1c0":"오퍼드 로즈"},"kazuki_s":{"0x214":"대폭살","0x218":"사이엔","0x220":"치류엔","0x180":"추다엔진조"},"kazuki_b":{"0x240":"화염격","0x244":"화염격","0x248":"엔네츠고쿠"},"ukyo_s":{"0x1a4":"츠바메 가에시","0x1bc":"천상의 자세","0x1c0":"나다레"},"ukyo_b":{"0x1a4":"츠바메 가에시","0x1ac":"무소 카스미(상)","0x1b4":"무소 카스미(하)","0x1d0":"오보로가타나"},"galford_b":{}};
+const GRAB_RANGE = 40; /* 커맨드 잡기 성립 거리 (실측 32 확실 / 48+ 실패) */
+const SUPER_M = "462";
+const CHARS = [
+/* (부팅 시 카드 기술에 ci(장착 슬롯 2/3)가 순서대로 자동 부여됨 — 명시된 ci 우선) */
+ {id:"genjuro", n:"겐주로", spB:{n:0,f:1,b:2},
+  s:[{n:"광양인",m:"623",b:"A"},{n:"앵화참",m:"214",b:"A"},{n:"삼련살",m:"236",b:"A",chain:["A","A"]},{n:"시즈쿠진",m:"623",b:"B",near:1},{n:"키카즈키와리",m:"236",b:"B",card:1,ci:2}],
+  bst:[{n:"백귀살",m:"236",b:"A"},{n:"가신토츠",m:"63214",b:"A",chain:["A"]},{n:"시구레",m:"421",b:"A"},{n:"히키즈리마와시",m:"623",b:"B",near:1,card:1,ci:2}]},
+ {id:"shiki", n:"시키",
+  s:[{n:"천봉린",m:"623",b:"A"},{n:"츠유바라이",m:"236",b:"A"},{n:"쿠비카타나",m:"421",b:"B"},{n:"쿠게[아]",m:"236",b:"B",unv:1},{n:"쿠게[운]",m:"214",b:"B",unv:1},{n:"요미오토시",m:"623",b:"B",near:1},{n:"렌게마이",m:"246",b:"B",card:1,unv:1}],
+  bst:[{n:"세츠나",m:"214",b:"A"},{n:"텐보린",m:"236",b:"A"},{n:"무묘",m:"246",b:"B"},{n:"무쇼",m:"421",b:"A"},{n:"무슈카",m:"421",b:"B"},{n:"타쿠메츠",m:"412",b:"B"},{n:"지비",m:"641236",b:"B",card:1,unv:1},{n:"소쿠진",m:"623",b:"B",card:1,unv:1}]},
+ {id:"asura", n:"아수라",
+  s:[{n:"셰드 무사",m:"236",b:"A"},{n:"로페 레프",m:"623",b:"A"},{n:"나바이베루",m:"421",b:"A"},{n:"노 아무",m:"421",b:"B"},{n:"레피 슐",m:"63214",b:"A",chain:["A"],unv:1},{n:"에레스 (#68)",m:"236",b:"B",card:1,ci:3},{n:"베엘제붑 (#67)",m:"623",b:"B",near:1,card:1,ci:2}],
+  bst:[{n:"르 이유 바케",m:"236",b:"A"},{n:"레 말스",m:"623",b:"A"},{n:"레 시마",m:"63214",b:"A"},{n:"르 태그 라구",m:"236",b:"B"},{n:"노바 라템",m:"421",b:"B",card:1,unv:1},{n:"르 커스",m:"623",b:"B",card:1,unv:1}]},
+ {id:"morozumi", n:"모로즈미",
+  s:[{n:"화염",m:"236",b:"A"},{n:"바람",m:"63214",b:"A"},{n:"낙뢰",m:"623",b:"A"},{n:"참격",m:"421",b:"A"},{n:"파괴",m:"623",b:"B",card:1,unv:1}],
+  bst:[{n:"화염",m:"236",b:"A"},{n:"분화",m:"63214",b:"A"},{n:"봉인",m:"236",b:"B"},{n:"재앙",m:"623",b:"B",card:1,unv:1},{n:"응보",m:"421",b:"B",card:1,unv:1}]},
+ {id:"haohmaru", n:"하오마루", spS:{n:1,f:0,d:4,b:3}, spB:{n:1,f:0,b:3},
+  s:[{n:"호월참",m:"623",b:"A"},{n:"선풍열참",m:"236",b:"A"},{n:"술병 치기",m:"214",b:"B"},{n:"열진참",m:"421",b:"A"},{n:"오월인",m:"623",b:"B",near:1},{n:"천파성왕참",m:"63214",b:"A",card:1,unv:1}],
+  bst:[{n:"호월참",m:"623",b:"A"},{n:"선풍열참",m:"236",b:"A"},{n:"강파",m:"623",b:"B"},{n:"열진참",m:"421",b:"A"},{n:"도도단",m:"41236",b:"B",card:1,unv:1}]},
+ {id:"galford", n:"갈포드",
+  s:[{n:"러시 독",m:"236",b:"A"},{n:"스트라이크 독",m:"214",b:"A"},{n:"오버헤드 크래시",m:"236",b:"B"},{n:"그림자분신",m:"641236",b:"A"},{n:"레플리카 어택",m:"463214",b:"A"},{n:"머신건 독 (#59)",m:"214",b:"B",card:1,ci:2}],
+  bst:[{n:"플라즈마 블레이드",m:"236",b:"A",chain:["A"]},{n:"플라즈마 브레이크",m:"623",b:"A"},{n:"스트라이크 헤즈",m:"623",b:"B",near:1},{n:"라이트닝 슬래시",m:"214",b:"B"},{n:"그림자분신",m:"641236",b:"A"},{n:"레플리카 어택",m:"463214",b:"A"}]},
+ {id:"nakoruru", n:"나코루루",
+  s:[{n:"레라 무츠베",m:"623",b:"A"},{n:"안누 무츠베",m:"412",b:"A"},{n:"카무이 릿세",m:"421",b:"A"},{n:"시치카프 아무",m:"236",b:"A"},{n:"마마하하 타기",m:"214",b:"B"},{n:"레라 오 치키리",m:"623",b:"B",near:1}],
+  bst:[{n:"카무이 시키테",m:"236",b:"A"},{n:"싯소 루텐쿄게키하",m:"236",b:"B"},{n:"안누 무츠베",m:"412",b:"A"},{n:"레라 무츠베",m:"623",b:"A"},{n:"시크루 타기",m:"214",b:"B"},{n:"엔부 코캬쿠",m:"623",b:"B",near:1,card:1,unv:1}]},
+ {id:"kuroko", n:"쿠로코",
+  note:"숨김 캐릭터 — 공식 기술표 없음. 아래는 공용 커맨드 시험 버튼입니다.",
+  s:[{n:"커맨드 시험 1",m:"236",b:"A",unv:1},{n:"커맨드 시험 2",m:"214",b:"A",unv:1},{n:"커맨드 시험 3",m:"623",b:"A",unv:1},{n:"커맨드 시험 4",m:"421",b:"A",unv:1},{n:"커맨드 시험 5",m:"236",b:"B",unv:1},{n:"커맨드 시험 6",m:"214",b:"B",unv:1},{n:"커맨드 시험 7",m:"63214",b:"A",unv:1}],
+  bst:[{n:"커맨드 시험 1",m:"236",b:"A",unv:1},{n:"커맨드 시험 2",m:"214",b:"A",unv:1},{n:"커맨드 시험 3",m:"623",b:"A",unv:1},{n:"커맨드 시험 4",m:"421",b:"A",unv:1},{n:"커맨드 시험 5",m:"236",b:"B",unv:1},{n:"커맨드 시험 6",m:"214",b:"B",unv:1},{n:"커맨드 시험 7",m:"63214",b:"A",unv:1}]},
+ {id:"rimururu", n:"리무루루",
+  s:[{n:"루푸스 콰레",m:"236",b:"A"},{n:"콘루 논노",m:"623",b:"A"},{n:"우푼 오푸",m:"214",b:"A"},{n:"콘루 시라루",m:"2",b:"B",air:1,unv:1},{n:"에타이에 시노",m:"623",b:"B",near:1,unv:1},{n:"투케폰 온카미쿠루",m:"236",b:"B",near:1,card:1,unv:1}],
+  bst:[{n:"루푸 테쿠 누무",m:"63214",b:"B"},{n:"콘루 멤",m:"214",b:"A"},{n:"카무이 시토우키",m:"421",b:"A"},{n:"콘루 시라루",m:"2",b:"B",air:1},{n:"아르카 아르카",m:"623",b:"B",near:1},{n:"피리카노 온얀",m:"236",b:"B",near:1,card:1,unv:1},{n:"루푸스 토우무",m:"421",b:"B",card:1,unv:1}]},
+ {id:"hanzo", n:"한조",
+  s:[{n:"열풍수리검",m:"236",b:"A"},{n:"폭룡파",m:"214",b:"A"},{n:"폭염진",m:"214",b:"B"},{n:"폭염미진가쿠레",m:"623",b:"B"},{n:"그림자분신",m:"641236",b:"A"},{n:"우츠세미 천무",m:"463214",b:"A"},{n:"우츠세미 지참",m:"463214",b:"B"}],
+  bst:[{n:"키루마이",m:"421",b:"A"},{n:"그림자분신",m:"641236",b:"A"},{n:"모즈 떨구기",m:"623",b:"B"},{n:"카스미",m:"623",b:"A"},{n:"인 (은신·미검증)",m:"623",b:"A",unv:1},{n:"거미달리기",m:"236",b:"B"},{n:"바츠 (잡기)",m:"41236",b:"B",near:1,grab:1},{n:"라이 (잡기)",m:"63214",b:"B",near:1,grab:1}]},
+ {id:"jubei", n:"쥬베이", superChain:["A"],
+  s:[{n:"간헐돌",m:"236",b:"A"},{n:"츠나미 사브르",m:"623",b:"A"},{n:"사브르 스러스트",m:"214",b:"A",chain:["A"]},{n:"비전 잡기",m:"623",b:"B",near:1,grab:1,card:1,ci:2}],
+  bst:[{n:"간헐돌",m:"236",b:"A"},{n:"필멸 베기",m:"214",b:"A"},{n:"천멸 베기",m:"236",b:"B"},{n:"간헐 필살돌",m:"214",b:"B"},{n:"아아아",m:"623",b:"B",card:1,ci:2},{n:"롤리팝",m:"421",b:"B",card:1,ci:3}]},
+ {id:"sogetsu", n:"소게츠",
+  s:[{n:"월광",m:"623",b:"A"},{n:"월륜파",m:"236",b:"A"},{n:"소환",m:"214",b:"B"},{n:"츠키가쿠레",m:"214",b:"A"},{n:"시게츠",m:"214",b:"B",air:1,card:1,unv:1}],
+  bst:[{n:"쇼게츠",m:"623",b:"A"},{n:"스이게츠",m:"214",b:"A"},{n:"렌게스이부",m:"236",b:"A",chain:["A","A"]},{n:"스이오텐신",m:"421",b:"B",card:1,unv:1}]},
+ {id:"charlotte", n:"샤를로트",
+  s:[{n:"파워 그라데이션",m:"623",b:"A"},{n:"트라이어드 슬래시",m:"236",b:"A"},{n:"스플래시 페인트",m:"214",b:"B",card:1,unv:1},{n:"세르주 랜스",m:"623",b:"B",near:1,card:1,unv:1}],
+  bst:[{n:"파워 그라데이션",m:"623",b:"A"},{n:"바이오 넷 러시",m:"236",b:"A"},{n:"오퍼드 로즈",m:"421",b:"B",card:1,unv:1},{n:"리옹 랜스",m:"623",b:"B",near:1,card:1,unv:1}]},
+ {id:"kazuki", n:"카즈키",
+  s:[{n:"부동격",m:"236",b:"A"},{n:"대폭살",m:"623",b:"A"},{n:"사이엔",m:"214",b:"B"},{n:"엔메츠",m:"421",b:"B"},{n:"치류엔",m:"63214",b:"A",card:1,unv:1},{n:"추다엔진조",m:"623",b:"B",near:1,card:1,unv:1}],
+  bst:[{n:"화염격",m:"421",b:"A"},{n:"엔네츠고쿠",m:"623",b:"A"},{n:"리쿠도렛카",m:"236",b:"A",chain:["A","A"]},{n:"즈트쇼 (폭탄)",m:"421",b:"B"},{n:"폭호참",m:"63214",b:"B"}],
+  spB:{n:2,f:1,d:0,b:4}},
+ {id:"ukyo", n:"우쿄", spS:{n:1,f:2,d:3,air:0},
+  s:[{n:"츠바메 가에시",m:"236",b:"A",air:1},{n:"히켄 사사메유키",m:"214",b:"A"},{n:"천상의 자세",m:"63214",b:"B"},{n:"나다레",m:"623",b:"B",near:1},{n:"슌무니렌게",m:"63214",b:"A",card:1,unv:1}],
+  bst:[{n:"츠바메 가에시",m:"236",b:"A",air:1},{n:"아사나기",m:"421",b:"A"},{n:"유우나기",m:"421",b:"B"},{n:"무소 카스미(상)",m:"214",b:"A"},{n:"무소 카스미(하)",m:"214",b:"B"},{n:"오보로가타나",m:"236",b:"A",chain:["A","A"],card:1,unv:1}]},
+ {id:"yuga", n:"유가",
+  note:"숨김 보스 캐릭터.",
+  s:[{n:"웨다가",m:"236",b:"A"},{n:"루다",m:"623",b:"A"},{n:"쿠샤나",m:"214",b:"A"},{n:"다라니",m:"214",b:"B"},{n:"나라카",m:"623",b:"B",card:1,unv:1}],
+  bst:[{n:"부야우아하",m:"236",b:"A"},{n:"타부타쿤바",m:"623",b:"A"},{n:"마하아주아라",m:"214",b:"A"},{n:"아루가",m:"214",b:"B"},{n:"아시바토라우아나",m:"236",b:"A",air:1},{n:"산단샤",m:"623",b:"B"},{n:"카루나",m:"641236",b:"B",card:1,unv:1}]}
+];
+
+/* 카드 기술 ci 자동 부여: 각 캐릭터·유파의 카드 기술을 순서대로 슬롯 2, 3에 대응 */
+CHARS.forEach(c=>[c.s,c.bst].forEach(list=>{
+  let next=2;
+  list.forEach(mv=>{ if(mv.card){ if(mv.ci===undefined&&next<=3) mv.ci=next; next=Math.max(next,(mv.ci||1)+1); } });
+}));
+
+const ARROW = {1:"↙",2:"↓",3:"↘",4:"←",6:"→",7:"↖",8:"↑",9:"↗",5:"·"};
+const MIRROR = {1:"3",3:"1",4:"6",6:"4",7:"9",9:"7"};
+function cmdText(mv){
+  let t=[...mv.m].map(c=>ARROW[c]).join("");
+  if(mv.air) t="점프 "+t;
+  t+="+"+mv.b;
+  if(mv.x) t+="×"+mv.x;
+  if(mv.hold) t+="(꾹)";
+  if(mv.chain) t+=","+mv.chain.join(",");
+  return t;
+}
+
+/* ═══════════════ 저장 ═══════════════ */
+function idb(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open("ss2runner",1);
+    r.onupgradeneeded=()=>{ r.result.createObjectStore("files"); r.result.createObjectStore("states"); };
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+}
+async function idbPut(store,key,val){ const db=await idb(); return new Promise((res,rej)=>{ const t=db.transaction(store,"readwrite"); t.objectStore(store).put(val,key); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+async function idbGet(store,key){ const db=await idb(); return new Promise((res,rej)=>{ const q=db.transaction(store).objectStore(store).get(key); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+async function idbDel(store,key){ const db=await idb(); return new Promise((res,rej)=>{ const t=db.transaction(store,"readwrite"); t.objectStore(store).delete(key); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+
+let cfg;
+try{ cfg=JSON.parse(localStorage.getItem("ss2sp_cfg_v3"))||{}; }catch(e){ cfg={}; }
+cfg.char=cfg.char||"asura"; cfg.style=cfg.style||"s";
+delete cfg.slots; delete cfg.mode; delete cfg.spCount;  /* v1.1: 클래식 슬롯 체계 제거 */
+cfg.layout=cfg.layout||{};       /* {elId:{x,y}} */
+/* 기본값: 메뉴에서도 조작창 유지(컨텍스트 숨김 끔), 캐릭터 감지는 [지금 감지]를 누를 때만 */
+if(cfg.autoChar===undefined) cfg.autoChar=false;
+if(cfg.ctxButtons===undefined) cfg.ctxButtons=false;
+cfg.spSlots=cfg.spSlots||{};   /* 캐릭터·유파별 SP 방향 배치 사용자 지정 {n,f,d,b,df,db,air} */
+delete cfg.comboEnder;   /* 0.6: [콤보 마무리] 방향 규칙 제거 — 시트에서 직접 고른다 */
+cfg.comboMove=cfg.comboMove||{}; /* 캐릭터·유파별 콤보 마무리 기술 인덱스 */
+cfg.comboOpener=cfg.comboOpener||"weak";
+cfg.scale=cfg.scale||{pad:100,btn:100};
+if(cfg.scale.pad>130) cfg.scale.pad=130;  /* 오터치로 커진 값 자동 복구 */
+if(cfg.scale.btn>150) cfg.scale.btn=150;  /* 동상 (UI 최대치와 일치) */
+delete cfg.lite;   /* v1.1: 가벼운 화면 옵션 제거 */
+cfg.shader=cfg.shader||"off";  /* 화면 필터(쉐이더) */
+cfg.hud=cfg.hud||0;            /* 진단 오버레이 */
+cfg.watch=cfg.watch===undefined?1:cfg.watch;   /* 발동 결과 확인(RAM 폴링) */
+cfg.alpha=cfg.alpha||100;
+delete cfg.spChainMode;  /* 0.6: [SP 연속기] 제거 — 항상 자동 완주 */
+cfg.speed=cfg.speed||"std";           /* 입력 속도: std | fast | max */
+cfg.lang=cfg.lang||"auto";            /* 게임 언어: auto | japanese | english (NGP 본체 언어) */
+const KR_HASHES=new Set([
+  "fc1427882131", /* v0.70 allcards (기존 사용자 호환) */
+  "c423fd0cbd62", /* v0.89 일반판 */
+  "f698c5287995"  /* v0.89 allcards */
+]);
+const LANG_OFF=0x2F87;                /* CPU 0x6F87 − 0x4000: 0=일본어, 1=영어 */
+function effLang(){ return cfg.lang!=="auto"?cfg.lang:(KR_HASHES.has(romKey)?"english":"japanese"); }
+function saveCfg(){ try{ localStorage.setItem("ss2sp_cfg_v3",JSON.stringify(cfg)); }catch(e){} }
+
+function curChar(){ return CHARS.find(c=>c.id===cfg.char)||CHARS[0]; }
+/* 비오의를 일반 기술처럼 목록 끝에 편입 — SP 슬롯/콤보 마무리 어디에나 배치 가능 */
+function curMoves(){
+  const c=curChar();
+  const base=(cfg.style==="b"?c.bst:c.s)||[];
+  if(!curMoves._c||curMoves._c!==c.id+cfg.style){
+    curMoves._c=c.id+cfg.style;
+    curMoves._l=base.concat([{n:"비오의",m:SUPER_M,b:"A",chain:c.superChain||null,sup:1}]);
+  }
+  return curMoves._l;
+}
+function slotKey(){ return cfg.char+"_"+cfg.style; }
+
+const $=s=>document.querySelector(s);
+let toastT;
+function toast(msg){
+  const t=$("#toast");
+  if(t.textContent!==msg) t.textContent=msg;   /* 같은 문구면 리페인트 생략 */
+  t.classList.add("show"); clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove("show"),1600);
+}
+function setStatus(msg,err){ const s=$("#status"); s.textContent=msg; s.classList.toggle("error",!!err); }
+
+/* ═══════════════ 롬 처리 ═══════════════ */
+function looksLikeSS2(bytes){
+  if(bytes.length!==EXPECTED_SIZE) return false;
+  const name=String.fromCharCode(...bytes.slice(0x24,0x2C));
+  return name.startsWith("SAMURAI2");
+}
+async function romHash(bytes){
+  const h=await crypto.subtle.digest("SHA-256",bytes);
+  return [...new Uint8Array(h)].slice(0,6).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function acceptFile(file){
+  try{
+    setStatus("파일 확인 중…");
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    if(!looksLikeSS2(bytes)){
+      if(!confirm("사무라이 스피리츠! 2 롬 헤더가 확인되지 않았습니다.\n(크기 2MB + SAMURAI2 헤더 기대 — 한글판·일본판 공통)\n그래도 이 파일로 실행할까요?\n※ 다른 게임이면 SP 기능이 오작동할 수 있습니다.")){ setStatus("취소되었습니다.",true); return; }
+    }
+    await idbPut("files","rom",bytes);
+    setStatus("롬 저장 완료 — 실행합니다…");
+    startGame(bytes);
+  }catch(e){ console.error(e); setStatus("파일을 읽지 못했습니다: "+e.message,true); }
+}
+function idbAllKeys(store){
+  return idb().then(db=>new Promise((res,rej)=>{
+    const q=db.transaction(store).objectStore(store).getAllKeys();
+    q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);
+  }));
+}
+
+/* ═══════════════ EmulatorJS 부팅 ═══════════════ */
+let started=false, romKey="rom";
+function startGame(bytes){
+  if(started) return; started=true;
+  $("#landing").hidden=true; $("#stage").hidden=false;
+  refreshSpButtons();
+  /* 롬 해시(세이브 분리·언어 자동판정) 계산 후 부팅 */
+  romHash(bytes).then(h=>{ romKey=h; bootEJS(bytes); })
+    .catch(()=>{ bootEJS(bytes); });
+}
+/* ═══ EmulatorJS 가상 패드(nipplejs) 전역 터치 리스너 무력화 ═══
+   EJS는 `virtual-gamepad: disabled` 여도 가상 패드 DOM과 nipplejs를 만들고,
+   nipplejs가 **window에 pointerdown/pointerup/touchstart/touchend/touchcancel을
+   `passive:false, capture:true`로** 등록한다.
+   비패시브 캡처 리스너가 window에 있으면 브라우저는 **모든 터치를 메인 스레드 JS에 먼저 넘긴 뒤에야**
+   합성할 수 있다 → 화면 어디를 만져도(빈 공간 포함) 매번 한 프레임이 튄다.
+   사용자 제보: "디패드 아래 허공을 터치해도 매번 끊긴다".
+   우리는 자체 컨트롤만 쓰므로 그 리스너들을 **passive로 강등**한다.
+   (제거가 아니라 강등이라 EJS 내부 동작은 그대로 두고 합성만 막지 않게 된다.
+    nipple이 preventDefault를 불러도 무시될 뿐 오류는 아니다.) */
+/* ═══ ★ 캔버스를 불투명하게 (0.7) — 터치 중 끊김의 실제 원인 ═══
+   EmulatorJS는 WebGL 컨텍스트를 alpha:true · premultipliedAlpha:true로 만든다.
+   그러면 브라우저 합성기가 **매 합성마다 캔버스를 페이지 배경과 블렌딩**한다.
+   터치 중에는 합성기가 이미 바쁘므로, 이 블렌딩 한 겹이 에뮬 루프를 굶긴다.
+
+   실측 (412×915, 디패드 드래그 8초 × 2회):
+     기본(alpha:true)  51.8 / 51.9 fps,  끊김(>33ms) 65 / 64
+     alpha:false       59.6 / 59.6 fps,  끊김         3 /  2
+
+   게임 화면은 어차피 불투명하므로 잃는 것이 없다.
+   ※ 이 패치는 되돌리지 않는다 — 쉐이더 전환·전체화면에서 GL 컨텍스트가
+     다시 만들어질 수 있고, 그때도 불투명이어야 한다.
+     건드리는 속성은 alpha/premultipliedAlpha 둘뿐이고 대상은 webgl 컨텍스트뿐이다. */
+function opaqueCanvasPatch(){
+  const proto=HTMLCanvasElement.prototype, orig=proto.getContext;
+  proto.getContext=function(type,attrs){
+    if(type==="webgl"||type==="webgl2"||type==="experimental-webgl"){
+      attrs=Object.assign({},attrs||{},{alpha:false,premultipliedAlpha:false});
+    }
+    return orig.call(this,type,attrs);
+  };
+}
+opaqueCanvasPatch();
+
+function relaxGlobalTouchListeners(){
+  const TYPES=new Set(["pointerdown","pointerup","pointermove","pointercancel",
+                       "touchstart","touchend","touchmove","touchcancel"]);
+  /* window.addEventListener만 감싸면 안 된다 — nipplejs는 그 참조를 쓰지 않는다(실측).
+     EventTarget.prototype을 감싸되 **대상이 window/document일 때만** 강등한다.
+     우리 버튼 리스너는 preventDefault가 필요하므로 절대 건드리지 않는다. */
+  const proto=EventTarget.prototype, orig=proto.addEventListener;
+  proto.addEventListener=function(type,fn,opts){
+    if(TYPES.has(type)&&(this===window||this===document)){
+      const cap=(opts===true)||(opts&&opts.capture);
+      opts={capture:!!cap,passive:true};
+    }
+    return orig.call(this,type,fn,opts);
+  };
+  /* ★ 한시적으로만 건다. 이 패치를 영구히 두면 **나중에 document에 붙이는 리스너까지
+     조용히 passive가 되어** preventDefault가 먹지 않는다(외부 검수 지적).
+     노리는 대상(EJS 로더·nipplejs)은 초기화 때 등록을 끝내므로 부팅 후 되돌린다. */
+  return ()=>{ proto.addEventListener=orig; };
+}
+const restoreListenerPatch=relaxGlobalTouchListeners();   /* 로더보다 먼저 걸어야 nipplejs 등록을 잡는다 */
+function bootEJS(bytes){
+  const blob=new Blob([bytes],{type:"application/octet-stream"});
+  window.EJS_player="#game";
+  window.EJS_core="ngp";
+  window.EJS_gameName="SamuraiSpirits2_KO";
+  window.EJS_gameID=220254;
+  window.EJS_gameUrl=URL.createObjectURL(blob);
+  window.EJS_pathtodata=DATA_PATH;
+  window.EJS_language="ko-KR";
+  window.EJS_disableAutoLang=true;
+  window.EJS_startOnLoaded=true;
+  window.EJS_backgroundColor="#000000";
+  window.EJS_color="#d9b968";
+  window.EJS_defaultOptions={"virtual-gamepad":"disabled","save-state-location":"browser","ngp_language":effLang()};
+  window.EJS_onGameStart=()=>{ setTimeout(onGameStart,300);
+    /* 로더·nipplejs 등록이 끝난 뒤 전역 패치를 되돌린다 */
+    setTimeout(()=>{ try{ restoreListenerPatch(); }catch(e){} },2000); };
+  const s=document.createElement("script");
+  s.src=DATA_PATH+"loader.js";
+  /* 배포 후 가장 흔한 실패다. 원인이 셋뿐이라 그대로 알려 준다. */
+  s.onerror=()=>{ showLoadError(); };
+  setTimeout(()=>{ if(!window.EJS_emulator) showLoadError(true); },20000);
+  document.body.appendChild(s);
+}
+let loadErrShown=false;
+function showLoadError(slow){
+  if(loadErrShown) return; loadErrShown=true;
+  const st=$("#status");
+  $("#landing").hidden=false; $("#stage").hidden=true;
+  if(st){
+    st.innerHTML="<b style='color:#ff9d8d'>에뮬레이터를 불러오지 못했습니다"+(slow?" (응답 없음)":"")+"</b><br>"+
+      "① <b>인터넷 연결</b>을 확인해 주세요 — 첫 실행에는 연결이 필요합니다.<br>"+
+      "② 사내망·학교망이라면 <b>cdn.emulatorjs.org</b>가 막혀 있을 수 있습니다.<br>"+
+      "③ 그래도 안 되면 <b>새로고침</b> 한 번 해 보세요.";
+  }
+}
+
+function gm(){ try{ return window.EJS_emulator&&EJS_emulator.gameManager; }catch(e){ return null; } }
+
+function onGameStart(){
+  try{ if(window.EJS_emulator&&EJS_emulator.config.buttonOpts) EJS_emulator.config.buttonOpts.rightClick=false; }catch(e){}
+  applyShader(); setHud(!!cfg.hud);   /* 저장된 화면 설정 복원 */
+  try{ EJS_emulator.menu.close(); }catch(e){}
+  /* EJS 자체 키보드/게임패드 매핑 무력화 — 매크로 중 방향 끼어들기로 커맨드가 깨지는 것 방지
+     (물리 입력은 아래 물리 컨트롤러 레이어가 러너 기능으로 라우팅) */
+  setTimeout(disableEjsPhysical,500);
+  /* 입력 매크로 중에는 저장 동기화도 미룸 (미세 끊김 방지) */
+  setInterval(()=>{ if(MACRO.active||CHG.held) return; const g=gm(); if(g) try{ g.saveSaveFiles(); }catch(e){} },30000);
+  /* 힙 직접 읽기 준비: 찾을 때까지 4초 간격 재시도 (각 시도는 캐시검증→엔트로피 없으면 즉시 포기라 저비용) */
+  setTimeout(()=>{ ensureHeap(); console.log("[ss2] heapBase:",heapBase,PERF); },2500);
+  setInterval(()=>{ if(heapBase<0) ensureHeap(); },4000);
+  /* 본체 언어 강제: 부팅 시 언어 바이트가 설정과 다르면 코어 옵션 적용 후 1회 재시작 */
+  setTimeout(enforceLang,1200);
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden){ const g=gm(); if(g) try{ g.saveSaveFiles(); }catch(e){} } });
+  toast("게임 시작! 상단 [캐릭터]에서 내 캐릭터·기술을 고르세요");
+}
+
+/* ═══════════════ 게임 메모리 읽기 (방향·액션ID) ═══════════════
+   1순위: wasm HEAP 직접 읽기(무비용, 끊김 없음) — CPUExRAM의 힙 주소를 1회 스캔으로 특정
+   2순위: 세이브스테이트 직렬화 폴백 */
+let tagIdx=-1, heapBase=-1;
+const HEAPBASE_LS="ss2sp_heapbase_v1"; /* CPUExRAM은 wasm 정적 배열 — 동일 코어면 주소 불변이라 캐시 가능 */
+const PROF={rg:0,raf:0,watch:0,retry:0,steps:0};
+const PERF={getState:0,scans:0,verifyHits:0,lastScanMs:0}; /* 비용 계측 (?debug=1에서 __ss2.perf) */
+function stateRamStart(st){
+  const ok=i=>{ for(let k=0;k<8;k++) if(st[i+k]!==RAM_TAG[k]) return false; return true; };
+  if(tagIdx<0||tagIdx+8>st.length||!ok(tagIdx)){
+    tagIdx=-1;
+    const lim=st.length-8;
+    for(let i=0;i<lim;i++){ if(st[i]===0x43&&ok(i)){ tagIdx=i; break; } }
+  }
+  return tagIdx<0?-1:tagIdx+12;
+}
+function findHeapBase(){
+  try{
+    const g=gm(); if(!g||!g.Module||!g.Module.HEAPU8) return -1;
+    const H=g.Module.HEAPU8;
+    let paused=false;
+    try{ g.toggleMainLoop(0); paused=true; }catch(e){}
+    let base=-1;
+    const t0=performance.now();
+    try{
+      PERF.getState++;
+      const st=g.getState();
+      const rs=stateRamStart(st);
+      if(rs>=0){
+        /* 0) 캐시된 주소 우선 검증 — 스캔 없이 끝나는 경로 (프리징 비용 최소화) */
+        const blockEntropy=()=>{ const s=new Set(); for(let k=0;k<0x40;k++) s.add(st[rs+0xE30+k]); return s.size>=8; };
+        const cached=parseInt(localStorage.getItem(HEAPBASE_LS)||"-1",10);
+        if(cached>=0&&cached+0x4000<=H.length&&blockEntropy()){
+          let ok=true;
+          for(let k=0;k<0x40;k++) if(H[cached+0xE30+k]!==st[rs+0xE30+k]){ ok=false; break; }
+          if(ok){ base=cached; PERF.verifyHits++; }
+        }
+        if(base<0){
+          /* 엔트로피 있는 프로브 오프셋 선택 (0 덩어리 회피) — 없으면 스캔 자체를 포기(저비용 반환) */
+          let po=-1;
+          for(const cand of [0x400,0x800,0xE30,0x1200,0x1A00,0x2400,0x3000]){
+            const s=st.subarray(rs+cand,rs+cand+32);
+            if(new Set(s).size>=8){ po=cand; break; }
+          }
+          if(po>=0){
+            PERF.scans++;
+            const P1=st.subarray(rs+po,rs+po+32);
+            const n=H.length-0x4000;
+            /* 네이티브 indexOf(memchr)로 후보 위치만 순회 — JS 바이트 루프 대비 수십 배 빠름 */
+            let i=-1;
+            for(;;){
+              i=H.indexOf(P1[0],i+1);
+              if(i<0||i>=n) break;
+              let hit=true;
+              for(let k=1;k<32;k++) if(H[i+k]!==P1[k]){ hit=false; break; }
+              if(!hit) continue;
+              const b=i-po;
+              if(b<0) continue;
+              /* 정지 상태이므로 P1 구조체 전체가 일치해야 함 */
+              let ok=true;
+              for(let k=0;k<0x40;k++) if(H[b+0xE30+k]!==st[rs+0xE30+k]){ ok=false; break; }
+              if(ok){ base=b; break; }
+            }
+          }
+        }
+      }
+    }finally{
+      if(paused) try{ g.toggleMainLoop(1); }catch(e){}
+    }
+    PERF.lastScanMs=Math.round(performance.now()-t0);
+    if(base>=0) try{ localStorage.setItem(HEAPBASE_LS,String(base)); }catch(e){}
+    return base;
+  }catch(e){ return -1; }
+}
+let lastFacing=0; /* 힙 미확보 시 마지막으로 읽힌 방향 재사용 (0 고정보다 안전) */
+function readGame(allowSlow){ PROF.rg++;
+  const g=gm(); if(!g) return {facing:lastFacing,act:0,ok:false};
+  try{
+    if(heapBase>=0&&g.Module&&g.Module.HEAPU8){
+      /* CPUExRAM은 정적 배열 — 한 번 찾은 주소는 불변이므로 재검증하지 않는다
+         (전투 밖 잔존값으로 오탐→재스캔(프리즈) 반복하던 버그 수정) */
+      const H=g.Module.HEAPU8;
+      const fb=H[heapBase+FACING_OFF];
+      lastFacing=fb===1?1:0;
+      return {facing:lastFacing, act:H[heapBase+ACT_OFF]|(H[heapBase+ACT_OFF+1]<<8), hp2:H[heapBase+P2HP_OFF],
+              y:H[heapBase+P1Y_OFF], hs:H[heapBase+HITSTOP_OFF],
+              dist:Math.abs((H[heapBase+P1X_OFF]|(H[heapBase+P1X_OFF+1]<<8))-(H[heapBase+P2X_OFF]|(H[heapBase+P2X_OFF+1]<<8))),
+              c1:H[heapBase+CARD_S1], c2:H[heapBase+CARD_S2], blk:H[heapBase+CARD_BLK], ok:true};
+    }
+    /* getState 직렬화는 프레임 정지를 유발 — 전투 중 경로(SP·콤보·폴링)에서는 절대 사용하지 않고
+       명시적으로 허용된 호출(팔레트 열기 등 단발성)에서만 폴백 */
+    if(!allowSlow) return {facing:lastFacing,act:0,ok:false};
+    PERF.getState++;
+    const st=g.getState();
+    if(!st||!st.length) return {facing:lastFacing,act:0,ok:false};
+    const rs=stateRamStart(st);
+    if(rs<0) return {facing:lastFacing,act:0,ok:false};
+    lastFacing=st[rs+FACING_OFF]===1?1:0;
+    return {facing:lastFacing, act:st[rs+ACT_OFF]|(st[rs+ACT_OFF+1]<<8), hp2:st[rs+P2HP_OFF],
+            y:st[rs+P1Y_OFF], hs:st[rs+HITSTOP_OFF],
+            dist:Math.abs((st[rs+P1X_OFF]|(st[rs+P1X_OFF+1]<<8))-(st[rs+P2X_OFF]|(st[rs+P2X_OFF+1]<<8))),
+            c1:st[rs+CARD_S1], c2:st[rs+CARD_S2], blk:st[rs+CARD_BLK], ok:true};
+  }catch(e){ return {facing:lastFacing,act:0,ok:false}; }
+}
+function readFacing(){ return readGame().facing; }
+let lastHeapScan=0;
+function ensureHeap(){
+  if(heapBase>=0) return;
+  const now=Date.now();
+  if(now-lastHeapScan<3500) return;
+  lastHeapScan=now;
+  heapBase=findHeapBase();
+  if(heapBase>=0) console.log("[ss2] heapBase:",heapBase,JSON.stringify(PERF));
+}
+function readLangByte(){
+  try{
+    const g=gm(); if(!g) return -1;
+    if(heapBase>=0&&g.Module&&g.Module.HEAPU8) return g.Module.HEAPU8[heapBase+LANG_OFF];
+    const st=g.getState(); const rs=stateRamStart(st);
+    return rs<0?-1:st[rs+LANG_OFF];
+  }catch(e){ return -1; }
+}
+let langEnforced=false, lastStateLoad=0;
+function enforceLang(applyNow){
+  const g=gm(); if(!g) return;
+  try{ g.setVariable("ngp_language",effLang()); }catch(e){}
+  /* 코어가 변수 갱신을 처리(다음 retro_run)한 뒤에 리셋해야 언어 바이트가 갱신됨 */
+  setTimeout(()=>{
+    /* 방금 세이브스테이트를 불러왔다면(바이트가 스테이트 기준) 리셋하지 않음 */
+    if(!applyNow&&Date.now()-lastStateLoad<3000) return;
+    const want=effLang()==="japanese"?0:1;
+    const cur=readLangByte();
+    if(cur>=0&&cur!==want&&(!langEnforced||applyNow)){
+      langEnforced=true;
+      try{ gm().restart(); if(typeof noteRestart==="function") noteRestart(); toast(effLang()==="japanese"?"일본어로 재시작합니다":"영어로 재시작합니다"); }catch(e){}
+    }
+  },200);
+}
+function isAirborne(g){ return !!(g&&g.ok)&&g.y!==undefined&&g.y<GROUND_Y-4; }
+/* 장착 카드 상태: idxs=[슬롯1,슬롯2] (0~3 | null), nums=전역 카드번호 */
+function cardState(gme){
+  const g=gme||readGame();
+  if(!g.ok||g.c1===undefined) return {known:false,idxs:[],nums:[]};
+  const idxs=[g.c1,g.c2].map(v=>v<=3?v:null);
+  const base=4*(g.blk>>3);
+  const nums=idxs.map(i=>i===null?null:base+i+1);
+  return {known:true,idxs,nums};
+}
+/* 카드 필요 기술의 사용 가능 여부: ci(2|3) 지정 시 정확 판정, 미지정 시 필살기 카드(2/3) 장착 여부로 추정 */
+function cardMoveReady(mv,cs){
+  if(!mv.card) return {ok:true};
+  if(!cs.known) return {ok:true,warn:"카드 장착 여부 확인 불가"};
+  if(mv.ci!==undefined) return cs.idxs.includes(mv.ci)?{ok:true}:{ok:false};
+  return cs.idxs.some(i=>i===2||i===3)?{ok:true,warn:"장착 카드가 이 기술인지 확인 필요"}:{ok:false};
+}
+
+/* ═══════════════ 입력 · 매크로 엔진 ═══════════════ */
+function sim(id,v){ const g=gm(); if(g) try{ g.simulateInput(0,id,v); }catch(e){} }
+const DIRBITS={1:[0,1,1,0],2:[0,1,0,0],3:[0,1,0,1],4:[0,0,1,0],5:[0,0,0,0],6:[0,0,0,1],7:[1,0,1,0],8:[1,0,0,0],9:[1,0,0,1]};
+let userDir=[0,0,0,0];
+/* 입력 이력 추적: 순수 좌/우(↓ 없음)와 ↑의 최근 적용 시각 — 씹힘 보정용 (인계문서 §검수)
+   ·순수 뒤 입력 후 ~32프레임 안의 623은 게임 파서가 462(비오의)로 읽어 씹어버림 (전 캐릭터 실측)
+   ·대각(↓뒤)은 무해 — 앉아가드 후 대공은 정상 발동 */
+let lastLeftAt=-1e9, lastRightAt=-1e9, lastUpAt=-1e9, prevApplied=[0,0,0,0];
+function applyDir(bits){
+  sim(ID.U,bits[0]); sim(ID.D,bits[1]); sim(ID.L,bits[2]); sim(ID.R,bits[3]);
+  const now=performance.now();
+  if((bits[2]&&!bits[1])||(prevApplied[2]&&!prevApplied[1])) lastLeftAt=now;
+  if((bits[3]&&!bits[1])||(prevApplied[3]&&!prevApplied[1])) lastRightAt=now;
+  if(bits[0]||prevApplied[0]) lastUpAt=now;
+  prevApplied=bits;
+}
+function btnIds(s){ const out=[]; if(!s) return out; if(s.includes("A")) out.push(ID.A); if(s.includes("B")) out.push(ID.B); return out; }
+
+/* Zero-delay command-buffer reset.  This uses the game's own reset path
+   instead of fabricating a weak slash.  Returns false only while the wasm
+   RAM base is unavailable, so compileMove can retain the old safe fallback. */
+function clearCommandBuffer(){
+  ensureHeap();
+  try{
+    const g=gm();
+    if(heapBase<0||!g||!g.Module||!g.Module.HEAPU8) return false;
+    g.Module.HEAPU8[heapBase+CMD_RESET_OFF]=1;
+    return true;
+  }catch(e){ return false; }
+}
+
+const MACRO={active:false,raf:0,el:null,held:[],release:false};
+/* 매크로 구동 타이머.
+   rAF는 화면 갱신 큐에 얹히므로, CPU가 달릴 때 **에뮬레이터의 렌더/오디오 스케줄링과 경합**한다
+   (CPU 4x 스로틀 재현: 연타 시 끊김 26~52회). 매크로는 어차피 에뮬 프레임 카운터로
+   자체 동기화하므로 화면 주사에 묶일 이유가 없다 → 짧은 타이머로 구동한다. */
+let MACRO_TICK_MS=16;
+let MACRO_TICK=fn=>setTimeout(()=>fn(performance.now()),MACRO_TICK_MS);
+let MACRO_CANCEL=id=>clearTimeout(id);
+function compileMove(mv,facing,opts){
+  opts=opts||{};
+  const [DIRF,BTNF,GAPF]=tf();
+  const F=c=>facing?(MIRROR[c]||c):c;
+  const steps=[];
+  /* 이미 공중이면 점프 프리앰블 생략하고 즉시 공중기 커맨드 */
+  /* 직전(0.25s 이내)에 기본기를 쳤다면 6f 지연 후 시작 — 공격 초반 프레임에선 캔슬이 안 받고,
+     약간 지나서 넣으면 버퍼로 성립함 (실기 검증: 약공격+6f 후 커맨드 = 발동) */
+  /* 공중/점프 스타트업 중 지상기: 착지까지 대기 후 발동 (그냥 쏘면 씹힘 — 실측 0/3 → 대기 시 3/3) */
+  if(opts.waitGround){ steps.push({d:"5",f:4},{d:"5",wg:1,f:72}); } /* 4f 리드: 점프 스쿼트가 액션ID에 잡히길 기다림 */
+  /* 공중기 고속 모션: 체공 중엔 수용 창이 짧아 표준 4f가 간헐 실패 — 3f 스텝 + 3f 버튼이 최적(실측) */
+  const airFast=mv.air&&opts.skipJump;
+  /* ═══ 방향 오염 보정 (실측 기반, 2가지 경로) ═══
+     누르고 있던 방향이 커맨드 앞에 붙어 다른 패턴으로 매칭되는 현상:
+       ① 뒤 유지 + 6으로 시작 → 4+62..=462(비오의)/463214  (겐주로 광양인=비오의 오발, 한조 63214=불발)
+          → 보정: 약베기 플러시(5/5). 중립 대기는 한조 케이스에서 무효(0/5)라 사용 불가.
+       ② 앞 유지 + 23으로 시작 → 6+236=623 승룡 오발 (겐주로 삼련살→광양인)
+          → 보정: **중립 12프레임 대기만으로 5/5** — 슬래시가 없어 3연참 등 연속기가 끊기지 않는다.
+     아래·대각 유지는 무해(실측). 보정으로도 못 살리는 캐릭터 고유 제약(우쿄 나다레+앞걷기)은
+     v1.1에서 제거된 자동 재시도가 흡수하던 부분은 RAM 리셋이 대신한다. */
+  compileMove.poisonFlush=false;
+  compileMove.bufferReset=!!opts.bufferReset;
+  /* RAM 리셋(0x1DCD)이 성공하면 링이 이미 깨끗하다 → 하이재킹 판정·프리앰블 전부 생략(연산 0).
+     heapBase 미확보 등 리셋 실패 시에만 구 약베기 플러시 폴백을 탄다. */
+  if(!opts.bufferReset){
+    const heldBack=facing?(prevApplied[3]&&!prevApplied[1]):(prevApplied[2]&&!prevApplied[1]);
+    const heldFwd =facing?(prevApplied[2]&&!prevApplied[1]):(prevApplied[3]&&!prevApplied[1]);
+    const recent  =(t)=>performance.now()-t<560;
+    const backAt=facing?lastRightAt:lastLeftAt, fwdAt=facing?lastLeftAt:lastRightAt;
+    const backOn=heldBack||recent(backAt), fwdOn=heldFwd||recent(fwdAt);
+    const m=mv.m;
+    /* ── 하이재킹 일반 규칙(실측 4종으로 검증) ──
+       눌린 방향 토큰 h가 커맨드 앞에 붙어 h+m 이 되고, 그 **앞부분**이 같은 버튼의 다른 커맨드와
+       일치하면 게임이 그쪽을 먼저 완성해 버린다.
+         앞(6)+236 → 623 승룡      (겐주로 삼련살→광양인)
+         뒤(4)+623 → 462 비오의    (겐주로 광양인→비오의)
+         뒤(4)+63214 → 463214     (한조 라이·카스미 불발)
+         뒤(4)+214 → 421          (우쿄 무소 카스미→아사나기/유우나기)
+       비오의(462)는 A버튼 기술이므로 A버튼 커맨드에 한해 후보로 포함.
+       후보가 없으면 보정하지 않는다(우쿄 오보로가타나 3연참·한조 바츠 등은 그대로 유지). */
+    const h = backOn ? "4" : (fwdOn ? "6" : "");
+    let clash=false;
+    if(h){
+      const cand=curMoves().filter(x=>x!==mv&&x.b===mv.b).map(x=>x.m);
+      if(mv.b==="A") cand.push(SUPER_M);
+      const s2=h+m;
+      clash=cand.some(pm=>pm.length>=3&&pm!==m&&s2.startsWith(pm));
+      compileMove.dbg={h:h,m:m,cand:cand,clash:clash,back:backOn,fwd:fwdOn};
+    }
+    if(clash){
+      compileMove.poisonFlush=true;
+      steps.push({d:"5",f:2},{d:"5",b:"A",f:3},{d:"5",hs:1,f:30});
+    }
+  }
+  if(opts.afterBasic){ steps.push({d:"5",f:6}); }
+  /* 점프 프리앰블은 순수 위(8): 전진점프(9)의 앞 성분이 공중 커맨드 매칭을 오염시켜 점프공격 오발 (실측 9=1/3, 8=5/5) */
+  if(mv.air&&!opts.skipJump){ steps.push({d:"8",f:5},{d:"5",f:8}); }
+  /* 마지막 방향은 버튼과 "동시에" 누른다 (네이티브 검증 패턴과 동일 — 틈 제거)
+     주의: 필살기는 버튼 릴리즈 트리거 + 짧은 버퍼 — 버튼을 6f 이상 쥐면 오히려 불발(실측).
+     그래서 홀드/서스테인 방식은 폐기, 항상 짧은 프레스로 발동한다. */
+  for(const ch of mv.m.slice(0,-1)) steps.push({d:F(ch),f:airFast?3:DIRF});
+  const last=F(mv.m[mv.m.length-1]);
+  /* sus: 버튼을 계속 쥐고 있으면 홀드를 최대 14f까지 연장 → 8f 임계로 강판 필살기
+     (v10.5 재검증: 홀드해도 불발 아님 — 삼련살 0x1B0→0x1B4 등 약/강 변형이 실존) */
+  steps.push({d:last,b:mv.b,f:airFast?3:Math.min(5,Math.max(BTNF,DIRF+1)),sus:opts.sustain?1:0});
+  /* 후속입력(followups): 모션 반복이 아니라 버튼 추가입력 (인계문서 §3-1) */
+  if(mv.chain&&!opts.noChain){ for(const c of mv.chain){ steps.push({d:"5",f:GAPF},{d:"5",b:c,f:5}); } }
+  steps.push({d:"5",f:2});
+  return steps;
+}
+/* faceRef: 컴파일 시점의 facing(0=오른쪽). 넘기면 스텝을 적용할 때마다 실제 facing을
+   다시 읽어, 매크로가 도는 중(착지 대기 등으로 최대 1.2초) 방향이 뒤집혔으면 좌우를
+   되미러링한다. 긴 기술 직후 236이 214로 들어가 엉뚱한 기술이 나가던 문제 대응.
+   MIRROR는 대합(involution)이라 반복 적용해도 안정적이다. */
+function runSteps(steps,el,kind,faceRef){
+  runSteps.lastSteps=JSON.stringify(steps);
+  runSteps.mirrorHits=0;   /* 이번 매크로에서 되미러링된 스텝 수(디버그) */
+  MACRO.active=true; MACRO.el=el; MACRO.release=false; MACRO.kind=kind||"special";
+  if(el) el.classList.add("busy");
+  let i=0,left=steps[0].f;
+  /* 게이지 링을 [A] 버튼처럼 '누른 순간부터' 연속으로 채운다 —
+     sus 스텝은 커맨드가 다 들어간 뒤에야 시작하므로, 그전 구간(커맨드 입력 프레임)도 진행률에 포함.
+     susAt = 강 확정까지의 총 프레임(선행 스텝 합 + 8f 임계) */
+
+  const applyStep=st=>{
+    let d=st.d;
+    if(faceRef!==undefined&&d!=="5"){
+      const g=readGame();
+      if(g.ok&&g.facing!==faceRef){ d=MIRROR[d]||d; runSteps.mirrorHits++; }
+    }
+    applyDir(DIRBITS[d]||DIRBITS[5]);
+    const want=btnIds(st.b);
+    for(const id of MACRO.held) if(!want.includes(id)) sim(id,0);
+    for(const id of want) sim(id,1);
+    MACRO.held=want;
+  };
+  applyStep(steps[0]);
+  /* 에뮬레이터 실제 프레임 카운터에 잠금 — 기기 랙으로 게임이 60fps 밑으로 떨어져도
+     스텝당 "에뮬 프레임 수"가 보장됨 (긴 커맨드 씹힘 방지). 카운터가 없으면 벽시계 폴백 */
+  let getFn=null;
+  try{ const g=gm(); if(g&&g.functions&&g.functions.getFrameNum) getFn=()=>g.functions.getFrameNum(); }catch(e){}
+  let lastFn=getFn?getFn():0;
+  let lastT=performance.now(), acc=0;
+  const FRAME=1000/60;
+  const loop=t=>{
+    PROF.raf++;
+    if(!MACRO.active) return;
+    let df=0;
+    if(getFn){
+      const fn=getFn();
+      df=fn-lastFn; lastFn=fn;
+      if(df<0||df>20) df=1; /* 리셋/스테이트 로드 등 비정상 점프 보호 */
+    }else{
+      acc+=Math.min(t-lastT,100); lastT=t;
+      while(acc>=FRAME){ acc-=FRAME; df++; }
+    }
+    /* 게이지는 벽시계 기준(부드럽게) — 프레임 기반이면 스텝 전환 제한(틱당 1회) 때문에 뚝뚝 끊김 */
+    /* 게이지는 conic-gradient라 값이 바뀔 때마다 리페인트가 발생한다(실측: 연타 시 -8.5fps).
+       8단계로 양자화한다. (16단계는 차지 구간이 짧아 매 프레임과 동일해 효과가 없었다 — 실측) */
+    while(df-->0){
+      /* wg 스텝: 착지(지상에서 행동 가능한 상태)를 감지하면 즉시 다음 스텝으로 — f는 최대 대기 프레임.
+         지상 = Y 복귀 + 액션이 idle/앉기/걷기 (공격·경직·점프스쿼트 0x50+ 제외, 걷기턴 0x10C 허용) */
+      if(steps[i].wg){
+        const a=readGame();
+        if(a.ok&&!isAirborne(a)&&(a.act<0x50||a.act===0x10C)) left=1;
+      }
+      /* hs 스텝: 최소 7f 경과(임팩트 창 통과) + 히트스톱 타이머 0이면 즉시 다음 스텝 */
+      if(steps[i].hs){
+        const a=readGame();
+        const el=steps[i].f-left;
+        if(el>=7&&(!a.ok||!a.hs)) left=1;
+      }
+      /* sus 스텝: 버튼을 쥐고 있는 동안 홀드 연장(최대 14f) — 8f 넘기면 강판, 일찍 떼면 약판.
+         8프레임을 넘기면 armed(테두리 발광)로 강 확정을 알린다 */
+      if(steps[i].sus){
+        steps[i]._el=(steps[i]._el||0)+1;
+        if(MACRO.el&&steps[i]._el>=8) MACRO.el.classList.add("armed");
+        if(!MACRO.release&&steps[i]._el<14&&left<=1) left=2;
+      }
+      if(--left<=0){
+        const prev=steps[i];
+        i++;
+        if(prev.sus){
+          runSteps.lastSus={el:prev._el||0,rel:MACRO.release};
+          if(MACRO.name) toast(MACRO.name+((prev._el||0)>=8?"  — 강":"  — 약"));
+        }
+        if(i>=steps.length){ endMacro(); return; }
+        applyStep(steps[i]); left=steps[i].f;
+        /* 스텝 전환은 틱당 1회 — 새 입력은 "적용 이후"의 에뮬 프레임만 카운트해야
+           프레임이 몰려 지나갈 때 방향이 스킵되는 것(승룡→앉아약 오발)을 방지 */
+        break;
+      }
+    }
+    MACRO.raf=MACRO_TICK(loop);
+  };
+  MACRO.raf=MACRO_TICK(loop);
+}
+function runMove(mv,el,opts){
+  if(MACRO.active||editing) return;
+  const g=gm(); if(!g||!window.EJS_emulator||!EJS_emulator.started){ toast("게임이 아직 준비되지 않았어요"); return; }
+  const facing=readFacing();
+  MACRO.name=mv.n;
+  opts=Object.assign({},opts,{bufferReset:clearCommandBuffer()});
+  runSteps(compileMove(mv,facing,opts),el,undefined,facing);
+}
+function endMacro(){
+  MACRO_CANCEL(MACRO.raf);
+  sim(ID.A,0); sim(ID.B,0);
+  MACRO.held=[];
+  applyDir(userDir);
+  if(MACRO.el){ MACRO.el.classList.remove("busy","armed"); }
+  MACRO.active=false; MACRO.el=null; MACRO.name=null;
+}
+/* 발동 결과 표시: 실제로 나온 액션ID를 기술명으로 변환해 알려준다(불발이면 "불발"). */
+let fireWatch=null;
+/* 발동 결과 보고. 특수기 액션ID가 잡히는 즉시 보고하고 폴링을 끝낸다.
+   (구버전: 1.5초 내내 40ms = ~37회 읽음 → 보통 3~8회) */
+function watchFire(intended){
+  clearInterval(fireWatch);
+  /* [발동 결과 표시]를 끄면 폴링 자체를 하지 않는다 —
+     "RAM을 읽는 동작이 느려짐의 원인"인지 사용자가 직접 A/B 할 수 있게 한 스위치. */
+  if(!cfg.watch) return;
+  const t0=Date.now();
+  const a0=(readGame().act|0);      /* 호출 시점 액션 — 직전 기술을 새 발동으로 오인하지 않도록 */
+  fireWatch=setInterval(()=>{
+    PROF.watch++;
+    const g=readGame();
+    const el=Date.now()-t0;
+    /* 매크로가 커맨드를 다 넣는 데 ~250ms. 그 전 결과와 직전 액션은 무시한다. */
+    const hit=g.ok&&g.act>=0x180&&g.act!==a0&&el>=320;
+    if(!hit&&el<1200) return;
+    clearInterval(fireWatch);
+    if(!hit){ toast("✖ 불발 — "+intended); return; }
+    const tbl=(typeof ACTNAME!=="undefined")?ACTNAME[cfg.char+"_"+cfg.style]:null;
+    const nm=tbl?tbl["0x"+g.act.toString(16)]:null;
+    /* 이름을 못 찾으면 강 변형·파생타(0x1B4·0x1B8 등)일 가능성이 크므로 의도한 이름을 쓴다 */
+    toast(nm&&nm!==intended ? ("⚠ 실제: "+nm+"  (의도: "+intended+")") : ("✔ "+(nm||intended)));
+  },100);
+}
+
+/* 지상기 자동 재시도는 v1.1에서 **제거**했다.
+   커맨드 버퍼 RAM 리셋(0x1DCD) 도입 후 불발이 42/42로 사라져 역할이 없어졌는데,
+   40ms 폴링 + 최대 2회 재발동이 남아 **연타를 멈춘 뒤에도 매크로가 계속 돌며 끊김을 만들었다**
+   (사용자 제보: "연타 후 한동안 계속 끊기다가 지나면 괜찮아짐"). */
+let spRetry=null;
+
+/* 공중기 자동 재시도: 체공 수용 창이 좁아 간헐 불발(실측 1/3~3/5) — 미발동+체공이면 최대 2회 재긁기,
+   그 사이 착지했으면 엔진 8점프로 1회 재발동. 공중 기본기가 나가버렸으면(0x50대) 중단 */
+let airWatch=null;
+function armAirRetry(mv,el){
+  clearInterval(airWatch);
+  let tries=0; const t0=Date.now();
+  airWatch=setInterval(()=>{
+    const g=readGame();
+    if(!g.ok||g.act>=0x180||Date.now()-t0>1200){ clearInterval(airWatch); return; }
+    if(MACRO.active) return;
+    if(isAirborne(g)){
+      if(g.act>=0x50&&g.act<0x180){ clearInterval(airWatch); return; } /* 공중 기본기 커밋됨 */
+      if(tries<2){ tries++; runMove(mv,el,{skipJump:true,sustain:true,noChain:true}); }
+    }else if(g.act<0x50||g.act===0x10C){
+      clearInterval(airWatch);
+      runMove(mv,el,{sustain:true}); /* 착지 → 엔진 점프(8)로 확정 발동 */
+    }
+  },100);   /* v1.1: 30ms → 100ms. 공중 판정에 30Hz 폴링은 과했다 */
+}
+/* ═══ 매크로 전면 중단 ═══
+   진행 중인 매크로 + 예약된 재시도·후속타·발동확인을 한 번에 끊는다.
+   ★ 세이브스테이트를 불러올 때 반드시 불러야 한다.
+   (코어 이식판에서 같은 버그를 만났다: 상태를 갈아끼워도 매크로 잔여물이 남아
+    다음 입력이 통째로 씹혔다. 브라우저판도 [불러오기]에 같은 구멍이 있었다.) */
+function abortMacros(){
+  if(MACRO.active) endMacro();
+  clearInterval(fireWatch); clearInterval(spRetry); clearInterval(airWatch);
+  applyDir(userDir);
+  sim(ID.A,0); sim(ID.B,0);
+}
+/* 탭 숨김 시 매크로 중단 + 입력 전부 해제 (인계문서 §7-3) */
+document.addEventListener("visibilitychange",()=>{ if(document.hidden){ abortMacros(); applyDir([0,0,0,0]); } });
+function runSuper(el){
+  if(ctxState==="menu") return;
+  const mvs=curMoves(), mv=mvs[mvs.length-1];   /* 목록 끝 = 비오의 */
+  runMove(mv,el||null,{sustain:true});
+}
+
+/* ═══════════════ SP 모드 (방향+SP, 인계문서 §5) ═══════════════ */
+const DIR_LABEL={n:"",f:"→",b:"←",d:"↓",df:"↘",db:"↙",air:"↑"};
+/* SP 문법(사용자 확정): 중립=장풍/견제, 앞=대공, 아래=잡기·근접, 뒤=나머지 */
+function deriveSpMap(moves){
+  const map={n:null,f:null,d:null,b:null,df:null,db:null,air:null}; /* df=아래앞(↘), db=아래뒤(↙) — 자동 배치 없음, 직접 지정 전용 */
+  const take=(k,i)=>{ if(map[k]===null) map[k]=i; };
+  moves.forEach((mv,i)=>{
+    if(mv.unv||mv.card||mv.sup) return; /* 미검증·카드·비오의는 자동 배치 제외 (직접 배치만) */
+    if(mv.air){ take("air",i); return; }
+    if(mv.near){ take("d",i); return; }
+    if(mv.m==="623") take("f",i);
+    else if(mv.m==="236") take("n",i);
+    else if(["214","421","412"].includes(mv.m)) take("b",i);
+    else take("f",i);
+  });
+  moves.forEach((mv,i)=>{
+    if(mv.unv||mv.card||mv.sup||mv.air) return;
+    if(!Object.values(map).includes(i)){
+      for(const k of ["n","f","d","b"]) if(map[k]===null){ map[k]=i; break; }
+    }
+  });
+  return map;
+}
+/* SP 버튼 라벨: 지금 누르고 있는 방향의 기술 이름을 실시간 표시 (기존엔 중립 기술만 고정 표시) */
+/* 방향 입력 → SP 슬롯 해석. 라벨 표시와 실제 발동이 **같은 함수**를 쓴다
+   (v1.0 이전엔 두 곳에 복제돼 있어 가드가 서로 달랐다). */
+function resolveSpSlot(g){
+  const map=curSpMap();
+  const airborne=isAirborne(g);
+  const [u,d,l,r]=userDir;
+  const fwd=g.facing?l:r, back=g.facing?r:l;
+  const has=k=>map[k]!==null&&map[k]!==undefined;
+  /* 우선순위: 실제 공중 > ↑(공중기 의도) > ↘/↙ > 아래 > 앞/뒤 > 중립 */
+  let rel="n";
+  if((airborne||u)&&has("air")) rel="air";
+  else if(d&&fwd&&has("df")) rel="df";
+  else if(d&&back&&has("db")) rel="db";
+  else if(d&&has("d")) rel="d";
+  else if(fwd&&has("f")) rel="f";
+  else if(back&&has("b")) rel="b";
+  if(!has(rel)) rel="n";
+  const idx=map[rel];
+  const mv=(idx!==null&&idx!==undefined)?curMoves()[idx]:null;
+  return {rel:rel, mv:mv, airborne:airborne};
+}
+/* SP 버튼 아래 기술명 표시는 0.6에서 제거했다.
+   setDirs()에서 불려서 **디패드를 한 칸 움직일 때마다** readGame(힙 읽기) + curSpMap()이
+   돌았다. 정보는 [기술] 팔레트와 [캐릭터] 시트에 이미 있다. */
+function curSpMap(){
+  const c=curChar();
+  const ov=cfg.style==="b"?c.spB:c.spS;
+  const map=deriveSpMap(curMoves());
+  if(ov) for(const k in ov) map[k]=ov[k];
+  /* 사용자 지정(시트 [SP 배치] 탭)이 최우선 */
+  const us=cfg.spSlots[slotKey()];
+  if(us) for(const k in us){ if(us[k]!==undefined&&us[k]!==null) map[k]=us[k]; }
+  return map;
+}
+function fireSp(mv,rel,airborne,waitGround){
+  let warn="";
+  if(mv.card){
+    const rdy=cardMoveReady(mv,cardState());
+    if(!rdy.ok){ toast("🃏 카드 미장착 — 전투 전 '능력 추가'에서 [지정] 필요"); return; }
+    if(rdy.warn) warn="  🃏"+rdy.warn;
+  }
+  let msg=(DIR_LABEL[rel]?DIR_LABEL[rel]+"+":"")+"SP  "+mv.n;
+  if(mv.near){
+    /* 실측: 커맨드 잡기는 거리 32 이하에서만 성립하고 그 밖에선 헛잡기 경직만 남는다.
+       사용자 확정 사양: **헛잡기도 그대로 발동**시키고 사거리 안내만 표시한다(막지 않는다). */
+    const gd=readGame();
+    /* 헛잡기도 그대로 발동시킨다(사용자 요청) — 사거리 안내만 표시 */
+    const far=gd.ok&&gd.dist!==undefined&&gd.dist>GRAB_RANGE;
+    msg+= far ? (mv.grab?"  (잡기 사거리 밖)":"  (근접 필요 — 멉니다)") : "  (근접)";
+  }
+  const o={noChain:false, skipJump:airborne, afterBasic:fireSp._midAttack, waitGround:waitGround, sustain:true};
+  runMove(mv,$("#spBig"),o);
+  if(mv.air&&airborne) armAirRetry(mv,$("#spBig"));
+  watchFire(mv.n);   /* 비오의는 분노 미충족 시 재시도 무의미 */
+  if(waitGround) msg+="  (착지 후)";
+  else if(compileMove.poisonFlush) msg+="  (입력 보정)";
+  toast(msg+warn);
+}
+function spPress(){
+  if(editing||ctxState==="menu") return;
+  clearInterval(spRetry); clearInterval(fireWatch);
+  /* 기본기 매크로(A+B 등)는 SP가 선점 — 기본기→기술 연결 부드럽게 */
+  if(MACRO.active){
+    if(MACRO.kind==="basic") endMacro();
+    else return;
+  }
+  /* A 아날로그 홀드 중이면 놓고 시작 */
+  if(CHG.held) chgStop();
+  const gme=readGame();
+  const sel=resolveSpSlot(gme);
+  const rel=sel.rel, mv=sel.mv, airborne=sel.airborne;
+  if(!mv){ toast("배정된 기술이 없습니다"); return; }
+  /* 캔슬 지연: 실제 공격 모션 중이거나, 방금(0.15s) A를 릴리즈해 공격이 시작되는 참일 때만
+     (약공격은 릴리즈 발동이라 직후엔 액션ID가 아직 idle — 시간 조건으로 보완). 평시 SP는 지연 0 */
+  /* 캔슬 지연은 "방금 우리가 낸 기본기" 기준으로만 판단 — 액션ID 임계(0x50)는 캐릭터마다
+     걷기 ID가 달라(우쿄 등) 걷기를 공격으로 오분류하는 버그가 있었음 */
+  /* 지상기를 공중/점프 스타트업 중 입력 → 착지 대기 후 발동 (검수: 점프 직후 지상기 씹힘 방지)
+     점프 스쿼트는 액션ID가 공격 모션과 겹침(0xD0) — ↑ 최근 적용이면 공격이 아니라 점프로 판정 */
+  const upRecent=prevApplied[0]||performance.now()-lastUpAt<200;
+  const waitGround=rel!=="air"&&!mv.air&&gme.ok&&(airborne||upRecent);
+  fireSp._midAttack=!waitGround&&(Date.now()-lastBasicAt<150);
+  fireSp(mv,rel,airborne,waitGround);
+}
+function spRelease(){
+  if(MACRO.active) MACRO.release=true;
+}
+
+/* ═══════════════ 컨트롤 배치 (참조 레이아웃 + 스킬 아크) ═══════════════ */
+let editing=false;
+function ctlEls(){ return [...document.querySelectorAll("#controls .ctl")]; }
+function baseLayout(){
+  const c=$("#controls");
+  const W=c.clientWidth||innerWidth, H=c.clientHeight||360;
+  const u=Math.min(W,470);
+  /* 어떤 화면 비율에서도 버튼이 잘리지 않도록 컨트롤 영역 안으로 물린다 */
+  const place=(el,cx,cy,size)=>{
+    if(size){
+      const x=Math.min(Math.max(cx-size/2,4), W-size-4);
+      const y=Math.min(Math.max(cy-size/2,4), H-size-4);
+      el.style.width=size+"px"; el.style.left=x+"px"; el.style.top=y+"px";
+    }
+    else{ el.style.left=cx+"px"; el.style.top=cy+"px"; }
+  };
+  /* 상단 유틸 줄 */
+  $("#ffBtn").style.left="10px"; $("#ffBtn").style.top="8px";
+  const opt=$("#optBtn"), pal=$("#palBtn");
+  opt.style.left=""; opt.style.right="10px"; opt.style.top="8px";
+  pal.style.left=""; pal.style.right="96px"; pal.style.top="8px";
+  /* 좌측 원형 패드 */
+  const ds=Math.min(0.42*W,215)*(cfg.scale.pad/100);
+  const dp=$("#dpad");
+  dp.style.width=ds+"px";
+  dp.style.left=Math.max(6,0.02*W)+"px";
+  dp.style.top=(H-ds-Math.max(14,H*0.05))+"px";
+  /* ═══ 우하단 코너 기준 아크 (기본 배치) ═══
+     엄지는 화면 우하단 모서리를 축으로 부채꼴을 그린다. 그 호 위에 버튼을 얹는다.
+
+     0.6 접근성 개정 — 세 가지를 바꿨다.
+     ① **다섯 버튼 지름을 전부 같게** 했다. 크기가 제각각이면 보지 않고 누를 때
+        손이 기준을 못 잡는다. SP만 크던 것도 없앴다(사용자 요청).
+     ② 지름을 0.155u → **0.170u**로 키웠다. 390px 폭에서 약 66px —
+        권장 최소 터치 표적(44px)을 여유 있게 넘긴다.
+     ③ A·B를 26°/70°로 벌려 **인접 간격을 0.198u → 0.225u**로 넓혔다.
+        가장 가까운 두 버튼 사이가 지름보다 0.055u 크므로 어떤 배율에서도 붙지 않는다.
+
+     각도는 25~85°만 쓴다 — 벗어나면 화면 밖이거나 디패드 위로 넘어간다(실측). */
+  const bs=cfg.scale.btn/100;
+  const corner={x:W-36*bs, y:H-32*bs};
+  const rad=t=>t*Math.PI/180;
+  const at=(th,r)=>({x:corner.x-r*Math.cos(rad(th)), y:corner.y-r*Math.sin(rad(th))});
+  const su=u*0.170*bs;          /* 다섯 버튼 공통 지름 */
+  const pA=at(26,u*0.30*bs), pB=at(70,u*0.30*bs);
+  place($("#btnA"),pA.x,pA.y,su);            /* A = 짧게 누르면 약, 8프레임 넘기면 강 */
+  place($("#btnB"),pB.x,pB.y,su);
+  place($("#spBig"),   at(46,u*0.50*bs).x, at(46,u*0.50*bs).y, su);
+  place($("#btnCombo"),at(80,u*0.52*bs).x, at(80,u*0.52*bs).y, su);   /* 히트컨펌 콤보 */
+  place($("#btnAB"),   at(60,u*0.70*bs).x, at(60,u*0.70*bs).y, su);   /* 분노폭발 — 바깥 위쪽.
+                                                 아래로 내리면 디패드와 겹친다(실측) */
+}
+/* ═══ 프레임 보정(자동 프레임스킵) — v1.2에서 **완전 삭제** ═══
+   코어에 frameskip 옵션이 없어 vsync를 끄는 방식으로 대신했었다(setVSync(false)).
+   렌더 부하에는 약이었지만, 터치 조작에는 독이었다:
+   vsync를 끄면 에뮬 루프가 rAF가 아니라 타이머로 도는데
+   브라우저 스케줄러는 타이머보다 터치 입력을 먼저 처리한다.
+   실측(CPU 2배, 컨트롤 영역 연타, 3회 중앙값):
+       vsync 유지 : 유휴 56.6 → 연타 59.1   (낙폭 없음)
+       vsync 끔   : 유휴 60.2 → 연타 44.7   (낙폭 15.5)
+   게다가 자동 판정이 연타로 떨어진 fps를 보고 보정을 켜는 되먹임까지 있었다.
+   데스크톱(마우스)에서는 이 부작용이 전혀 안 나와서 늦게 잡혔다 — 마우스 이벤트 폭주는 비용 0.
+   → 폰에서는 손가락이 늘 닿아 있으므로 이득 볼 구간이 사실상 없다. 기능째로 들어냈다.
+   ※ 다시 넣으려거든 인계문서 §0(v1.2)의 실측표부터 읽을 것.
+   ※ 남은 lastTouchT는 진단 HUD가 "터치 중" 표시에 쓴다. */
+let lastTouchT=0;
+try{
+  const stamp=()=>{ lastTouchT=performance.now(); };
+  window.addEventListener("pointerdown",stamp,{passive:true,capture:true});
+  window.addEventListener("touchstart",stamp,{passive:true,capture:true});
+}catch(e){}
+/* 2초 주기 자동 판정 — 에뮬 프레임 카운터로 실제 진행 속도를 잰다(추가 비용 사실상 0) */
+/* ═══ 진단 오버레이 ═══
+   화면에 상태를 뿌려 스크린샷으로 보낼 수 있게 한다.
+   ⚠️ 자기 자신이 부하가 되면 안 되므로:
+     · 갱신은 기존 600ms 폴러에 얹는다(새 타이머 없음)
+     · rAF 간격 샘플링은 **HUD를 켰을 때만** 돈다
+     · DOM은 textContent 한 번만 쓴다 */
+let hudRaf=0, hudGaps=[], hudLast=0, hudPrev=null, hudFrame0=0, hudT0=0, hudFps=[], hudSkip=0;
+function hudLoop(t){
+  if(!cfg.hud){ hudRaf=0; return; }
+  if(hudLast) hudGaps.push(t-hudLast);
+  hudLast=t;
+  if(hudGaps.length>240) hudGaps.shift();
+  hudRaf=requestAnimationFrame(hudLoop);
+}
+function setHud(on){
+  cfg.hud=on?1:0;
+  const el=$("#hud"); if(el) el.hidden=!on;
+  const c=$("#controls"); if(c) c.dataset.hud=on?"1":"0";   /* 토스트를 HUD 아래로 */
+  hudGaps=[]; hudLast=0; hudPrev=null; hudFrame0=0; hudFps=[]; hudSkip=0;
+  if(on&&!hudRaf) hudRaf=requestAnimationFrame(hudLoop);
+}
+function hudTick(){
+  if(!cfg.hud) return;
+  const el=$("#hud"); if(!el) return;
+  const now=performance.now();
+  let fps=0;
+  try{
+    const g=gm(); const fn=g&&g.functions&&g.functions.getFrameNum?g.functions.getFrameNum():0;
+    if(hudFrame0&&now>hudT0) fps=(fn-hudFrame0)/((now-hudT0)/1000);
+    hudFrame0=fn; hudT0=now;
+  }catch(e){}
+  /* 최근 10초 최저 fps — 순간값보다 이게 원인 추적에 유용하다(뚝 떨어지는 순간을 잡는다) */
+  /* 첫 2회는 버린다 — HUD를 켠 직후 표본은 설정창 조작 시간이 섞여 있다 */
+  hudSkip++;
+  if(fps>0&&hudSkip>2){ hudFps.push(fps); if(hudFps.length>17) hudFps.shift(); }
+  const fMin=hudFps.length?Math.min.apply(null,hudFps):0;
+  const gaps=hudGaps.slice().sort((a,b)=>a-b);
+  const p95=gaps.length?gaps[Math.floor(gaps.length*0.95)]:0;
+  const mx=gaps.length?gaps[gaps.length-1]:0;
+  const long=gaps.filter(x=>x>33).length;      /* 2프레임 이상 건너뛴 횟수 */
+  hudGaps=[];
+  const d=hudPrev?{rg:PROF.rg-hudPrev.rg,raf:PROF.raf-hudPrev.raf,watch:PROF.watch-hudPrev.watch}
+                 :{rg:0,raf:0,watch:0};
+  hudPrev={rg:PROF.rg,raf:PROF.raf,watch:PROF.watch};
+  const heapOk=heapBase>=0;
+  const warn=[];
+  if(!heapOk) warn.push("힙실패");
+  if(PERF.getState>2) warn.push("getState "+PERF.getState);
+  if(long>2) warn.push("끊김 "+long);
+  if(fMin&&fMin<50) warn.push("에뮬 느림 "+fMin.toFixed(0)+"fps");
+  el.innerHTML =
+    "fps "+fps.toFixed(1)+"  <b>최저10초 "+fMin.toFixed(1)+"</b>  간격 "+p95.toFixed(0)+"/"+mx.toFixed(0)+"ms\n"+
+    "끊김 "+long+"/s   터치 "+((performance.now()-lastTouchT<800)?"중":"—")+"   매크로 "+(MACRO.active?"실행":"대기")+"\n"+
+    "RAM "+d.rg+"/s   rAF "+d.raf+"   확인 "+d.watch+"\n"+
+    "힙 "+(heapOk?("OK@"+heapBase):"<i>실패</i>")+"   gState "+PERF.getState+"   스캔 "+PERF.scans+"\n"+
+    cfg.char+"_"+cfg.style+"  "+cfg.speed+"  "+cfg.shader+
+    (warn.length?("   <i>⚠ "+warn.join(" ")+"</i>"):"   <b>정상</b>");
+}
+function applyShader(){
+  try{
+    const e=window.EJS_emulator;
+    if(e&&e.enableShader) e.enableShader(cfg.shader==="off"?"disabled":cfg.shader);
+  }catch(err){}
+}
+function applyLayout(){
+  if(dpadRemeasure) setTimeout(dpadRemeasure,0);   /* 배치가 바뀌면 디패드 사각형 캐시 무효화 */
+  baseLayout();
+  ctlEls().forEach(el=>{
+    const o=cfg.layout[el.id]||{};
+    el.style.transform=`translate(${o.x||0}px,${o.y||0}px)`;
+  });
+  const c=$("#controls");
+  c.style.setProperty("--ctlA",(cfg.alpha/100).toFixed(2));
+}
+window.addEventListener("resize",()=>{ if(!$("#stage").hidden) applyLayout(); });
+window.addEventListener("orientationchange",()=>{ if(dpadRemeasure) dpadRemeasure(); });
+
+/* ═══════════════ 터치 컨트롤 ═══════════════ */
+["touchstart","touchend","touchmove","pointerdown","pointerup","mousedown","mouseup","click"].forEach(ev=>{
+  ["controls","topbar"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener(ev,e=>e.stopPropagation());
+  });
+});
+
+function bindHold(el,id){
+  const down=e=>{ if(editing) return; e.preventDefault(); e.stopPropagation(); el.classList.add("pressed"); sim(id,1); };
+  const up=e=>{ if(editing) return; e.preventDefault(); e.stopPropagation(); el.classList.remove("pressed"); sim(id,0); };
+  el.addEventListener("pointerdown",down);
+  el.addEventListener("pointerup",up);
+  el.addEventListener("pointercancel",up);
+  el.addEventListener("pointerleave",up);
+  el.addEventListener("contextmenu",e=>e.preventDefault());
+}
+bindHold($("#btnB"),ID.B);
+bindHold($("#optBtn"),ID.OPT);
+
+function dirCharFromUser(){
+  const [u,d,l,r]=userDir;
+  if(u&&l)return"7"; if(u&&r)return"9"; if(d&&l)return"1"; if(d&&r)return"3";
+  if(u)return"8"; if(d)return"2"; if(l)return"4"; if(r)return"6"; return"5";
+}
+/* [A] = 아날로그 + 차지 게이지: 누르는 동안 A 유지(방향키 실시간 조합).
+   짧게 떼면 약(릴리즈 발동), 링이 차는 8f부터 강 자동 발동 — 게이지가 곧 약/강 경계 표시 */
+const CHG={held:false,raf:0,f0:0,t0:0,getFn:null};
+function chgFrames(){
+  if(CHG.getFn){
+    try{
+      const d=CHG.getFn()-CHG.f0;
+      if(d>=0) return d;
+      return 999; /* 스테이트 로드 등으로 카운터 역행 → 즉시 완료 처리 */
+    }catch(e){}
+  }
+  return (performance.now()-CHG.t0)/(1000/60);
+}
+let lastBasicAt=0; /* 직후 SP 캔슬 지연용 */
+function chgStop(){
+  cancelAnimationFrame(CHG.raf);
+  const el=$("#btnA");
+  el.classList.remove("armed","pressed");
+  sim(ID.A,0);
+  CHG.held=false;
+  lastBasicAt=Date.now();
+}
+function chgPress(){
+  clearInterval(spRetry);
+  if(CHG.held) return;
+  const g=gm(); if(!g||!window.EJS_emulator||!EJS_emulator.started) return;
+  CHG.held=true;
+  CHG.getFn=null;
+  CHG.t0=performance.now();
+  try{ if(g.functions&&g.functions.getFrameNum){ CHG.getFn=()=>g.functions.getFrameNum(); CHG.f0=CHG.getFn(); } }catch(err){}
+  const el=$("#btnA");
+  el.classList.add("pressed");
+  sim(ID.A,1);
+  const loop=()=>{
+    if(!CHG.held) return;
+    const f=chgFrames();
+    if(f>=8) el.classList.add("armed");
+    CHG.raf=requestAnimationFrame(loop);
+  };
+  CHG.raf=requestAnimationFrame(loop);
+}
+$("#btnA").addEventListener("pointerdown",e=>{
+  if(editing||CHG.held) return;
+  e.preventDefault(); e.stopPropagation();
+  try{ $("#btnA").setPointerCapture(e.pointerId); }catch(err){}
+  chgPress();
+});
+["pointerup","pointercancel"].forEach(ev=>$("#btnA").addEventListener(ev,e=>{
+  if(editing||!CHG.held) return;
+  e.preventDefault(); e.stopPropagation();
+  chgStop();
+}));
+$("#btnA").addEventListener("contextmenu",e=>e.preventDefault());
+document.addEventListener("visibilitychange",()=>{ if(document.hidden&&CHG.held) chgStop(); });
+/* A+B 동시입력 (분노폭발) */
+function fireAB(){
+  if(MACRO.active||ctxState==="menu") return;
+  const g=gm(); if(!g||!window.EJS_emulator||!EJS_emulator.started) return;
+  const dc=dirCharFromUser();
+  lastBasicAt=Date.now();
+  runSteps([{d:dc,b:"AB",f:6},{d:dc,f:2}],$("#btnAB"),"basic");
+}
+$("#btnAB").addEventListener("pointerdown",e=>{
+  if(editing) return;
+  e.preventDefault(); e.stopPropagation();
+  fireAB();
+});
+$("#btnAB").addEventListener("contextmenu",e=>e.preventDefault());
+
+/* [콤보] = 히트컨펌 자동 콤보: 약베기 → 상대가 피격 리액션이면 자동 캔슬로 마무리 기술.
+   막히거나 빗나가면 거기서 정지 (원작 시스템 내 동작 — 임의 캔슬 창조 없음) */
+let comboWatch=null;
+/* 콤보 마무리: ① 시트 [콤보] 탭에서 고른 기술 ② 없으면 앞→중립 */
+function comboEnderIdx(){
+  const pick=cfg.comboMove[slotKey()];
+  const mvs=curMoves();
+  if(pick!==undefined&&pick!==null&&mvs[pick]) return pick;
+  const map=curSpMap();
+  return map.f!==null?map.f:map.n;
+}
+function comboEnder(){
+  const idx=comboEnderIdx();
+  return (idx!==null&&idx!==undefined)?curMoves()[idx]:null;
+}
+function fireCombo(){
+  if(ctxState==="menu") return;
+  const g=gm(); if(!g||!window.EJS_emulator||!EJS_emulator.started) return;
+  if(MACRO.active){ if(MACRO.kind==="basic") endMacro(); else return; }
+  if(CHG.held) chgStop();
+  if(comboWatch){ clearInterval(comboWatch); comboWatch=null; }
+  const ender=comboEnder();
+  const strong=cfg.comboOpener==="strong";
+  toast("콤보: "+(strong?"강베기":"약베기")+(ender?" → (명중 시) "+ender.n:""));
+  lastBasicAt=Date.now();
+  const gr0=readGame();
+  const hp0=(gr0.hp2)|0;
+  /* 중립 2f 선행: 앞을 쥔 채면 앞베기(0x58)가 나가 캔슬 타이밍이 어긋나던 것 방지 — 항상 제자리 베기.
+     시작타 강=12f 홀드(8f 임계 초과 → 강베기 0x64), 약=3f 탭(릴리즈 발동 0x54) */
+  runSteps([{d:"5",f:2},{d:"5",b:"A",f:strong?12:3},{d:"5",f:2}],$("#btnCombo"),"basic");
+  if(!ender||!gr0.ok) return; /* 힙 미확보면 히트컨펌 감시 자체를 생략 (getState 스팸 금지) */
+  const t0=Date.now();
+  comboWatch=setInterval(()=>{
+    const gme=readGame();
+    /* 히트컨펌 = P2 체력 감소 (가드는 노데미지 → 캔슬 안 함) */
+    if(gme.ok&&gme.hp2!==undefined&&gme.hp2<hp0){
+      clearInterval(comboWatch); comboWatch=null;
+      if(MACRO.active) endMacro();
+      toast("→ "+ender.n+"!");
+      runMove(ender,$("#btnCombo"),{afterBasic:true});
+    }else if(Date.now()-t0>350){
+      clearInterval(comboWatch); comboWatch=null; /* 헛방/가드 → 정지 */
+    }
+  },25);
+}
+$("#btnCombo").addEventListener("pointerdown",e=>{
+  if(editing) return;
+  e.preventDefault(); e.stopPropagation();
+  fireCombo();
+});
+$("#btnCombo").addEventListener("contextmenu",e=>e.preventDefault());
+
+/* 빨리감기 토글 */
+let ffOn=false;
+$("#ffBtn").addEventListener("click",e=>{
+  if(editing) return;
+  e.preventDefault(); e.stopPropagation();
+  const g=gm(); if(!g){ toast("게임이 실행 중이 아닙니다"); return; }
+  ffOn=!ffOn;
+  try{ g.setFastForwardRatio(3.0); g.toggleFastForward(ffOn?1:0); }catch(err){ console.error(err); }
+  $("#ffBtn").classList.toggle("on",ffOn);
+  toast(ffOn?"빨리감기 ×3 켜짐":"빨리감기 꺼짐");
+});
+$("#ffBtn").addEventListener("contextmenu",e=>e.preventDefault());
+
+let physSetDirs=null; /* 키보드가 터치 디패드와 같은 경로로 방향을 넣기 위한 노출 */
+let dpadRemeasure=null; /* 디패드 사각형 캐시 재측정 훅 */
+(function initDpad(){
+  const pad=$("#dpad");
+  const caps={u:pad.querySelector(".cap.u"),d:pad.querySelector(".cap.d"),l:pad.querySelector(".cap.l"),r:pad.querySelector(".cap.r")};
+  let pid=null;
+  /* ⚡ 디패드 사각형은 pointerdown·리사이즈·배치변경 때만 다시 잰다.
+     예전엔 pointermove마다 getBoundingClientRect()를 불러 **매 이동 이벤트가 강제 리플로우**를
+     일으켰다. 폰은 터치 이벤트가 초당 120회까지 오므로 그 비용이 그대로 프레임에 실린다. */
+  let padRect=null;
+  function measurePad(){ padRect=pad.getBoundingClientRect(); }
+  dpadRemeasure=measurePad;
+  function setDirs(u,d,l,r){
+    /* 방향이 그대로면 아무것도 하지 않는다 — 드래그 중 대부분의 이벤트가 여기서 끝난다.
+       (예전엔 같은 칸을 훑어도 클래스 토글·readGame·curSpMap이 매번 돌았다) */
+    if(userDir[0]===u&&userDir[1]===d&&userDir[2]===l&&userDir[3]===r) return;
+    userDir=[u,d,l,r];
+    caps.u.classList.toggle("on",!!u); caps.d.classList.toggle("on",!!d);
+    caps.l.classList.toggle("on",!!l); caps.r.classList.toggle("on",!!r);
+    if(!MACRO.active) applyDir(userDir);
+  }
+  function track(e){
+    /* 3×3 사각 맵: 모서리 셀 = 대각 확정, 중앙 셀 = 중립 */
+    const rc=padRect||(padRect=pad.getBoundingClientRect());
+    const nx=(e.clientX-rc.left)/rc.width, ny=(e.clientY-rc.top)/rc.height;
+    const col=nx<0.34?0:(nx>0.66?2:1);
+    const row=ny<0.34?0:(ny>0.66?2:1);
+    setDirs(row===0?1:0, row===2?1:0, col===0?1:0, col===2?1:0);
+  }
+  pad.addEventListener("pointerdown",e=>{ if(editing) return; e.preventDefault(); pid=e.pointerId; measurePad(); try{ pad.setPointerCapture(pid); }catch(err){} track(e); });
+  pad.addEventListener("pointermove",e=>{ if(e.pointerId===pid&&!editing) track(e); });
+  const end=e=>{ if(e.pointerId===pid){ pid=null; setDirs(0,0,0,0); } };
+  pad.addEventListener("pointerup",end);
+  pad.addEventListener("pointercancel",end);
+  pad.addEventListener("contextmenu",e=>e.preventDefault());
+  physSetDirs=setDirs;
+})();
+
+/* ═══════════════ 물리 키보드 입력 (PC · 게임기 키보드 모드) ═══════════════
+   EJS 자체 매핑은 매크로 중 방향을 끼워넣어 커맨드를 깨뜨리므로 무력화하고, 모든 입력을
+   러너의 모던 레이어(SP·강약·카드·보정)로 라우팅한다.
+   ⚠️ 게임패드(Gamepad API) 폴링은 v10.15에서 제거 — 상시 폴링이 프레임을 잡아먹음.
+      물리 패드는 기기/브라우저의 '패드→키보드 매핑' 기능으로 아래 키에 배정해 사용할 것. */
+function disableEjsPhysical(){
+  try{
+    const ctl=EJS_emulator.controls;
+    for(const p in ctl) for(const b in ctl[p]){
+      if(ctl[p][b]){ delete ctl[p][b].value; delete ctl[p][b].value2; } /* 키보드+게임패드 모두 */
+    }
+  }catch(e){}
+}
+/* 키보드 풀맵: 방향키+ZXCV, 스페이스=SP */
+const KEYDIR={ArrowUp:0,ArrowDown:1,ArrowLeft:2,ArrowRight:3};
+const keyHeld=[0,0,0,0];
+document.addEventListener("keydown",e=>{
+  if(e.repeat||editing) return;
+  if(e.key in KEYDIR){ e.preventDefault(); keyHeld[KEYDIR[e.key]]=1; if(physSetDirs) physSetDirs(...keyHeld); return; }
+  const k=e.key.toLowerCase();
+  if(k==="z") chgPress();
+  else if(k==="x") sim(ID.B,1);
+  else if(k==="c") fireAB();
+  else if(k==="v") fireCombo();
+  else if(k===" "){ e.preventDefault(); spPress(); }
+  else if(k==="enter") sim(ID.OPT,1);
+});
+document.addEventListener("keyup",e=>{
+  if(e.key in KEYDIR){ keyHeld[KEYDIR[e.key]]=0; if(physSetDirs) physSetDirs(...keyHeld); return; }
+  const k=e.key.toLowerCase();
+  if(k==="z"&&CHG.held) chgStop();
+  else if(k==="x") sim(ID.B,0);
+  else if(k===" ") spRelease();
+  else if(k==="enter") sim(ID.OPT,0);
+});
+
+/* SP 버튼 (동적 생성 · id 고정 sp0~sp4) */
+function refreshSpButtons(){
+  /* v1.1: 클래식(슬롯 버튼) 모드 제거 — SP 버튼 + 콤보 버튼 체계만 유지 */
+  document.querySelectorAll("#controls .btnSP").forEach(el=>{ if(el.id!=="spBig") el.remove(); });
+  const mvs=curMoves(), c=curChar();
+  const spb=$("#spBig");
+  spb.hidden=false;
+  const map=curSpMap();
+  $("#charBtn").textContent=c.n+" · "+(cfg.style==="b"?"나찰":"수라");
+  applyLayout();
+}
+
+/* ═══ 캐릭터 자동 감지 (실기 리버싱: 0x1B51 = 8*(2*내부캐릭IDX + 유파)) — 전 캐릭터 전수 매핑 ═══ */
+const CHAR_BY_IDX={0:"kazuki",1:"sogetsu",2:"haohmaru",3:"genjuro",4:"nakoruru",5:"rimururu",
+                   6:"hanzo",7:"galford",8:"asura",9:"charlotte",10:"morozumi",11:"ukyo",
+                   12:"jubei",13:"shiki",14:"yuga"};
+/* ═══ 컨텍스트 컨트롤 (포팅판식 메뉴/전투 버튼 전환) — 실기 리버싱: 0x00A7 비트0 = 전투 중 ═══
+   전투: 즉시 전환 / 메뉴: 3연속(1.8s) 확인 후 전환 — 라운드 사이 1.9s 간막이에 흔들리지 않음 */
+const CTX_OFF=0xA7;
+let ctxState="battle", ctxMenuStreak=0;
+function setCtx(c){
+  if(ctxState===c) return;
+  ctxState=c;
+  $("#controls").dataset.ctx=c;
+}
+function pollCtx(){
+  if(!cfg.ctxButtons){ if(ctxState!=="battle") setCtx("battle"); return; } /* 끔 = 항상 전체 조작창 */
+  if(heapBase<0||editing) return;
+  const g=gm(); if(!g||!g.Module||!g.Module.HEAPU8) return;
+  const inB=(g.Module.HEAPU8[heapBase+CTX_OFF]&1)===1;
+  if(inB){ ctxMenuStreak=0; setCtx("battle"); }
+  else if(++ctxMenuStreak>=4) setCtx("menu"); /* 4틱(2.4s) — 라운드 간막이(1.9s)에 안 흔들림 */
+}
+$("#controls").dataset.ctx="battle"; /* 초기 표시 상태 명시 */
+/* 인게임 리셋은 0xA7을 지우지 않아 스테일 0xF1로 전투 컨트롤이 유지됨 — 리셋 시 직접 F0 포킹 */
+function noteRestart(){
+  setTimeout(()=>{
+    try{ const g=gm(); if(g&&heapBase>=0&&g.Module&&g.Module.HEAPU8) g.Module.HEAPU8[heapBase+CTX_OFF]=0xF0; }catch(e){}
+    ctxMenuStreak=99; setCtx("menu");
+  },400);
+}
+
+let manualBlkHold=null; /* 수동 캐릭터 선택 시 현재 전투(blk)의 자동 감지를 보류 — 다음 전투부터 재개 */
+function autoDetectChar(){
+  if(cfg.autoChar===false||heapBase<0) return;
+  const g=readGame(); if(!g.ok||g.blk===undefined) return;
+  if(manualBlkHold!==null){
+    if(g.blk===manualBlkHold) return; /* 같은 전투 동안엔 수동 선택 우선 */
+    manualBlkHold=null;               /* 전투가 바뀌면 자동 감지 재개 */
+  }
+  /* 블록 바이트는 전투 시작 시에만 기록됨(선택·스토리 화면에선 0/잔존값) —
+     전투 성립(양쪽 HP 유효) 상태에서만 판독. 부팅 시 blk=0이 카즈키로 오인되던 버그 방지 */
+  const H=gm().Module.HEAPU8;
+  const hp1=H[heapBase+0x1A46], hp2=H[heapBase+P2HP_OFF];
+  if(!(hp1>0&&hp1<=128&&hp2>0&&hp2<=128)) return;
+  const blk=g.blk;
+  if(blk&7||blk>0xE8) return; /* 유효 블록 = 8의 배수 */
+  const ci=blk>>4, st=(blk>>3)&1;
+  let id=CHAR_BY_IDX[ci]; if(!id) return;
+  let style=st?"b":"s";
+  /* 쿠로코는 샤를로트-나찰과 블록(0x98) 공유 — 실기 확인(쿠로코 수라=0x98, 샤를로트 나찰=0x98).
+     현재 선택이 샤를로트면 나찰로, 아니면 쿠로코로 해석 */
+  if(ci===9&&st===1){ if(cfg.char==="charlotte"){ id="charlotte"; style="b"; } else { id="kuroko"; style="s"; } }
+  const c=CHARS.find(x=>x.id===id); if(!c) return;
+  if(style==="b"&&(!c.bst||!c.bst.length)) style="s";
+  if(cfg.char===id&&cfg.style===style) return;
+  cfg.char=id; cfg.style=style;
+  saveCfg(); refreshSpButtons();
+  toast("👤 캐릭터 자동 감지: "+c.n+" · "+(style==="b"?"나찰":"수라"));
+}
+
+/* 저속 폴링 통합 (타이머 1개): 600ms마다 컨텍스트 + 캐릭터 자동 감지(켠 경우만, 힙 전용 무비용).
+   카드 전용 버튼은 v10.19에서 제거 — 카드 기술은 시트에서 SP/슬롯에 직접 배치해 사용한다
+   (장착 여부 게이팅은 cardMoveReady가 발동 시점에 그대로 검사). */
+setInterval(()=>{
+  pollCtx();
+  autoDetectChar();
+  hudTick();
+},600);
+
+$("#spBig").addEventListener("pointerdown",e=>{
+  if(editing) return;
+  e.preventDefault(); e.stopPropagation();
+  try{ $("#spBig").setPointerCapture(e.pointerId); }catch(err){}
+  spPress();
+});
+/* pointerleave는 제외 — 손가락이 살짝 미끄러져도 홀드(강)가 유지되게 */
+["pointerup","pointercancel"].forEach(ev=>$("#spBig").addEventListener(ev,e=>{
+  if(editing) return;
+  e.preventDefault(); e.stopPropagation();
+  spRelease();
+}));
+$("#spBig").addEventListener("contextmenu",e=>e.preventDefault());
+
+/* 키보드: 1 = SP, 2 = 비오의 */
+document.addEventListener("keydown",e=>{
+  if(e.repeat) return;
+  const d=+e.key;
+  if(!d||d>9) return;
+  if(d===1) spPress();
+  else if(d===2) runSuper();
+});
+document.addEventListener("keyup",e=>{ if(e.key==="1") spRelease(); });
+
+/* ═══════════════ 기술 팔레트 ═══════════════ */
+function renderPalette(){
+  const c=curChar();
+  const cs=cardState(readGame(true)); /* 팔레트 열기 = 단발성 → 느린 폴백 허용 */
+  let cardsTxt="";
+  if(cs.known){
+    const label=cs.nums.map(n=>n===null?"—":"#"+n).join(" · ");
+    cardsTxt="  |  장착 카드: "+label;
+  }
+  $("#palTitle").textContent=c.n+" · "+(cfg.style==="b"?"나찰":"수라")+cardsTxt;
+  const g=$("#palGrid"); g.innerHTML="";
+  curMoves().forEach((mv,idx)=>{
+    const b=document.createElement("button");
+    let tag="";
+    if(mv.card){
+      const rdy=cardMoveReady(mv,cs);
+      tag+=rdy.ok?(cs.known&&mv.ci!==undefined?" 🃏장착됨":" 🃏"):" 🃏미장착";
+      if(!rdy.ok) b.style.opacity=".5";
+    }
+    if(mv.near) tag+=" 근접";
+    if(mv.air) tag+=" 공중";
+    b.innerHTML="<b>"+mv.n+tag+"</b><small>"+cmdText(mv)+"</small>";
+    b.onclick=()=>{
+      if(mv.card){
+        const rdy=cardMoveReady(mv,cardState());
+        if(!rdy.ok){ toast("🃏 카드 미장착 — 전투 전 '능력 추가'에서 [지정] 필요"); return; }
+      }
+      $("#palette").hidden=true; runMove(mv,null);
+    };
+    g.appendChild(b);
+  });
+}
+let palOpenedAt=0;
+$("#palBtn").addEventListener("click",e=>{ if(editing) return; e.preventDefault(); e.stopPropagation(); renderPalette(); palOpenedAt=Date.now(); $("#palette").hidden=false; });
+$("#palClose").onclick=()=>{ $("#palette").hidden=true; };
+$("#palette").addEventListener("click",e=>{ if(e.target===$("#palette")&&Date.now()-palOpenedAt>350) $("#palette").hidden=true; });
+
+/* ═══════════════ 캐릭터 시트 ═══════════════ */
+/* 시트 편집기 상태: 탭 + SP 배치 대상 자리 */
+const SP_SLOTS=[{k:"n",label:"중립"},{k:"f",label:"앞"},{k:"d",label:"아래"},{k:"b",label:"뒤"},{k:"df",label:"↘"},{k:"db",label:"↙"},{k:"air",label:"공중"}];
+let sheetTab="sp", spSlotTarget="n";
+function renderSheet(){
+  const grid=$("#charGrid"); grid.innerHTML="";
+  CHARS.forEach(c=>{
+    const b=document.createElement("button");
+    b.textContent=c.n;
+    b.classList.toggle("sel",c.id===cfg.char);
+    b.onclick=()=>{ cfg.char=c.id; holdAuto(); renderSheet(); };
+    grid.appendChild(b);
+  });
+  $("#styleS").classList.toggle("sel",cfg.style==="s");
+  $("#styleB").classList.toggle("sel",cfg.style==="b");
+  const acb=$("#autoCharBtn");
+  acb.textContent=cfg.autoChar?"👤 감지 (자동 켬)":"👤 감지";
+  acb.classList.toggle("on",!!cfg.autoChar);
+  const list=$("#mvList"); list.innerHTML="";
+  const c=curChar();
+  if(c.note){
+    const p=document.createElement("p");
+    p.className="note"; p.style.cssText="font-size:12px;margin:4px 2px;color:#e8b8a0;";
+    p.textContent=c.note; list.appendChild(p);
+  }
+  const mvs=curMoves();
+  const tab=sheetTab, map=curSpMap(), enderIdx=comboEnderIdx();
+  /* 탭별 안내 + 보조 UI */
+  $("#sheetTabs").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.t===tab));
+  $("#spSlotRow").hidden=tab!=="sp";
+  $("#comboOpt").hidden=tab!=="combo";
+  $("#tabHint").innerHTML=
+    tab==="sp" ? '위에서 <b>자리</b>를 고르고 기술을 탭하면 그 방향에 배치됩니다. 같은 기술을 다시 탭하면 해제(자동 배치로 복귀).'
+   :             '[콤보] 버튼의 <b>마무리 기술</b>을 고르세요. 안 고르면 앞 슬롯의 기술이 쓰입니다.';
+  if(tab==="sp"){
+    const row=$("#spSlotRow"); row.innerHTML="";
+    SP_SLOTS.forEach(s=>{
+      const b=document.createElement("button");
+      const cur=map[s.k], nm=(cur!==null&&cur!==undefined&&mvs[cur])?mvs[cur].n:"—";
+      b.innerHTML=s.label+"<i>"+(nm.length>7?nm.slice(0,7)+"…":nm)+"</i>";
+      b.classList.toggle("sel",s.k===spSlotTarget);
+      b.onclick=()=>{ spSlotTarget=s.k; renderSheet(); };
+      row.appendChild(b);
+    });
+  }
+  if(tab==="combo") $("#openerSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.o===(cfg.comboOpener||"weak")));
+  mvs.forEach((mv,idx)=>{
+    const row=document.createElement("div");
+    row.className="mv";
+    let badge="＋";
+    if(tab==="sp"){
+      const hit=SP_SLOTS.filter(s=>map[s.k]===idx).map(s=>s.label);
+      if(hit.length){ row.classList.add("slotted"); badge=hit.join(""); }
+    }else{
+      if(enderIdx===idx){ row.classList.add("ender"); badge="마무리"; }
+    }
+    let tags="";
+    if(mv.sup) tags+='<span class="tag">분노 MAX</span>';
+    if(mv.air) tags+='<span class="tag">공중</span>';
+    if(mv.near) tags+='<span class="tag">근접</span>';
+    if(mv.chain) tags+='<span class="tag">연계</span>';
+    if(mv.card) tags+='<span class="tag card">카드</span>';
+    if(mv.unv) tags+='<span class="tag unv">미확인</span>';
+    row.innerHTML='<span class="badge">'+badge+'</span><span class="nm">'+mv.n+'</span>'+tags+'<span class="cmd">'+cmdText(mv)+'</span>';
+    row.onclick=()=>{
+      const key=slotKey();
+      if(tab==="sp"){
+        const cur=cfg.spSlots[key]||{};
+        if(cur[spSlotTarget]===idx) delete cur[spSlotTarget];   /* 재탭 = 해제(자동 복귀) */
+        else cur[spSlotTarget]=idx;
+        cfg.spSlots[key]=cur;
+        const i=SP_SLOTS.findIndex(s=>s.k===spSlotTarget);       /* 다음 자리로 자동 이동 */
+        if(i>=0) spSlotTarget=SP_SLOTS[(i+1)%SP_SLOTS.length].k;
+      }else{
+        cfg.comboMove[key]=(cfg.comboMove[key]===idx)?undefined:idx;
+        if(cfg.comboMove[key]===undefined) delete cfg.comboMove[key];
+      }
+      saveCfg(); refreshSpButtons(); renderSheet();
+    };
+    list.appendChild(row);
+  });
+}
+/* 수동 선택 즉시 자동 감지 보류 — 고르는 도중 0.6초 폴링이 되돌려버리는 것 방지 */
+function holdAuto(){ const g=readGame(); manualBlkHold=(g.ok&&g.blk!==undefined)?g.blk:-1; }
+$("#styleS").onclick=()=>{ cfg.style="s"; holdAuto(); renderSheet(); };
+$("#styleB").onclick=()=>{ cfg.style="b"; holdAuto(); renderSheet(); };
+$("#sheetTabs").addEventListener("click",e=>{ const t=e.target.dataset.t; if(t){ sheetTab=t; renderSheet(); } });
+$("#openerSeg").addEventListener("click",e=>{ const o=e.target.dataset.o; if(o){ cfg.comboOpener=o; saveCfg(); renderSheet(); } });
+$("#resetAssign").onclick=()=>{
+  const k=slotKey();
+  delete cfg.spSlots[k]; delete cfg.comboMove[k];
+  saveCfg(); refreshSpButtons(); renderSheet();
+  toast("이 캐릭터 배치를 기본값으로 되돌렸어요");
+};
+$("#charBtn").onclick=()=>{ holdAuto(); renderSheet(); $("#sheet").hidden=false; }; /* 시트 여는 순간부터 보류 */
+$("#sheetOk").onclick=()=>{
+  /* 수동 적용 = 이 전투 동안 자동 감지 보류 (0.6초 뒤 자동으로 되돌아가는 것 방지) */
+  const g=readGame(); manualBlkHold=(g.ok&&g.blk!==undefined)?g.blk:null;
+  saveCfg(); refreshSpButtons(); $("#sheet").hidden=true;
+};
+/* 캐릭터 자동 감지 켬/끔 (⚙설정) — 기본은 끔, [지금 감지]로 수동 사용 */
+function setAutoChar(on){
+  cfg.autoChar=on;
+  saveCfg();
+  if(on){ manualBlkHold=null; detectCharNow(true); }
+  else toast("👤 자동 감지 끔 — [지금 감지]로 직접 맞추세요");
+  renderSheet(); renderSettings(); refreshSpButtons();
+}
+/* 수동 감지: 누른 순간에만 현재 전투 캐릭터로 맞춤 (자동 켬/끔과 무관하게 동작) */
+function detectCharNow(quiet){
+  const before=cfg.char+"/"+cfg.style;
+  const hold=manualBlkHold;
+  manualBlkHold=null;
+  const auto=cfg.autoChar;
+  cfg.autoChar=true;          /* 감지 로직 1회 강제 실행 */
+  autoDetectChar();
+  cfg.autoChar=auto;
+  const changed=cfg.char+"/"+cfg.style!==before;
+  if(!changed){
+    manualBlkHold=hold;       /* 감지 실패 시 기존 보류 유지 */
+    if(!quiet) toast("전투 중이 아니면 감지할 수 없어요 — 전투 화면에서 눌러주세요");
+    else toast("👤 자동 감지 켬 — 전투 시작 시 전환됩니다");
+  }else if(!auto) manualBlkHold=null;
+  renderSheet(); refreshSpButtons();
+}
+$("#autoCharBtn").onclick=()=>detectCharNow(false);
+
+/* ═══ 딸깍 점검: 현재 배치를 자동으로 한 번씩 시험 발동해 결과표를 보여준다 ═══
+   각 자리의 방향을 실제로 유지한 채(=이동 중 상황) SP 경로를 그대로 태워 액션ID로 판정. */
+let selfTesting=false;
+async function selfTest(){
+  if(selfTesting) return;
+  const g0=readGame();
+  if(!g0.ok){ toast("전투 중에만 점검할 수 있어요"); return; }
+  selfTesting=true;
+  $("#sheet").hidden=true;
+  const map=curSpMap(), mvs=curMoves(), tbl=(typeof ACTNAME!=="undefined")?ACTNAME[cfg.char+"_"+cfg.style]:null;
+  const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  const rows=[];
+  for(const s2 of SP_SLOTS){
+    const idx=map[s2.k];
+    if(idx===null||idx===undefined||!mvs[idx]) continue;
+    const mv=mvs[idx];
+    let ok=0, other=null;
+    for(let t=0;t<2;t++){                      /* 자리당 2회 — 상대 난입 등 우연 실패를 걸러냄 */
+      for(let k=0;k<60;k++){
+        const g=readGame();
+        if(g.ok&&!isAirborne(g)&&!g.hs&&(g.act<0x50||g.act===0x10C)) break;
+        await wait(50);
+      }
+      const f=readGame().facing;
+      const fwd=f?[0,0,1,0]:[0,0,0,1], back=f?[0,0,0,1]:[0,0,1,0];
+      const dirs={n:[0,0,0,0],f:fwd,b:back,d:[0,1,0,0],
+                  df:f?[0,1,1,0]:[0,1,0,1], db:f?[0,1,0,1]:[0,1,1,0], air:[1,0,0,0]}[s2.k];
+      userDir=dirs.slice(); applyDir(userDir);
+      await wait(320);
+      let seen=null;
+      const iv=setInterval(()=>{ const g=readGame(); if(g.ok&&g.act>=0x180&&seen===null) seen=g.act; },16);
+      clearInterval(fireWatch);
+      spPress(); spRelease();
+      await wait(2200);
+      clearInterval(iv);
+      userDir=[0,0,0,0]; applyDir(userDir);
+      if(seen!==null){
+        ok++;
+        const nm=tbl?tbl["0x"+seen.toString(16)]:null;
+        if(nm&&nm!==mv.n) other=nm;
+      }
+      await wait(600);
+    }
+    rows.push({slot:s2.label, name:mv.n, ok:ok,
+               got:(ok===0?"불발":(other?("⚠ "+other):"정상 "+ok+"/2"))});
+  }
+  selfTesting=false;
+  const okN=rows.filter(r=>r.ok>0).length;
+  $("#testTitle").textContent=curChar().n+" · "+(cfg.style==="b"?"나찰":"수라")+" — "+okN+"/"+rows.length+" 발동";
+  $("#testBody").innerHTML=rows.map(r=>
+    '<div class="mv"><span class="badge">'+r.slot+'</span><span class="nm">'+r.name+'</span>'+
+    '<span class="cmd" style="color:'+(r.ok===2?"#8fb573":(r.ok===1?"#e8b8a0":"#cf4638"))+'">'+r.got+'</span></div>').join("");
+  $("#testModal").hidden=false;
+}
+$("#selfTestBtn").onclick=()=>selfTest();
+$("#testClose").onclick=()=>{ $("#testModal").hidden=true; };
+$("#sheet").addEventListener("click",e=>{ if(e.target===$("#sheet")){ saveCfg(); refreshSpButtons(); $("#sheet").hidden=true; } });
+
+/* ═══════════════ 설정 · 배치 커스텀 ═══════════════ */
+function renderSettings(){
+  $("#speedSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.s===cfg.speed));
+  $("#langSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.l===cfg.lang));
+  $("#watchSeg")&&$("#watchSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.w===(cfg.watch?1:0)));
+  $("#hudSeg")&&$("#hudSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.h===(cfg.hud?1:0)));
+  $("#shaderSeg")&&$("#shaderSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.shader===(cfg.shader||"off")));
+  $("#autoCharSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.a===(cfg.autoChar?"1":"0")));
+  $("#ctxSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.c===(cfg.ctxButtons?"1":"0")));
+  $("#padScale").value=cfg.scale.pad; $("#padScaleOut").textContent=cfg.scale.pad+"%";
+  $("#btnScale").value=cfg.scale.btn; $("#btnScaleOut").textContent=cfg.scale.btn+"%";
+  $("#alphaRange").value=cfg.alpha; $("#alphaOut").textContent=cfg.alpha+"%";
+}
+$("#watchSeg")&&$("#watchSeg").addEventListener("click",e=>{
+  const v=e.target.dataset.w;
+  if(v!==undefined){ cfg.watch=+v; if(!cfg.watch) clearInterval(fireWatch); renderSettings(); saveCfg(); }
+});
+$("#hudSeg")&&$("#hudSeg").addEventListener("click",e=>{
+  const v=e.target.dataset.h;
+  if(v!==undefined){ setHud(+v); renderSettings(); saveCfg(); }
+});
+$("#shaderSeg")&&$("#shaderSeg").addEventListener("click",e=>{
+  const v=e.target.dataset.shader;
+  if(v){ cfg.shader=v; applyShader(); renderSettings(); saveCfg();
+    toast(v==="off"?"필터 없음":"필터 적용 — 느려지면 [없음]으로"); }
+});
+
+$("#cfgBtn").onclick=()=>{ renderSettings(); $("#settings").hidden=false; };
+$("#cfgClose").onclick=()=>{ saveCfg(); $("#settings").hidden=true; };
+$("#settings").addEventListener("click",e=>{ if(e.target===$("#settings")){ saveCfg(); $("#settings").hidden=true; } });
+$("#autoCharSeg").addEventListener("click",e=>{
+  const a=e.target.dataset.a;
+  if(a!==undefined&&a!=="") setAutoChar(a==="1");
+});
+$("#ctxSeg").addEventListener("click",e=>{
+  const c=e.target.dataset.c;
+  if(c!==undefined&&c!==""){
+    cfg.ctxButtons=c==="1"; saveCfg(); renderSettings();
+    if(!cfg.ctxButtons) setCtx("battle"); else ctxMenuStreak=0;
+    toast(cfg.ctxButtons?"메뉴에선 전투 버튼을 숨깁니다":"메뉴에서도 전체 조작창 유지");
+  }
+});
+$("#speedSeg").addEventListener("click",e=>{
+  const s=e.target.dataset.s;
+  if(s){ cfg.speed=s; renderSettings(); saveCfg(); }
+});
+$("#langSeg").addEventListener("click",e=>{
+  const l=e.target.dataset.l;
+  if(l){ cfg.lang=l; renderSettings(); saveCfg(); enforceLang(true); }
+});
+$("#padScale").addEventListener("input",e=>{ cfg.scale.pad=+e.target.value; $("#padScaleOut").textContent=cfg.scale.pad+"%"; applyLayout(); });
+$("#btnScale").addEventListener("input",e=>{ cfg.scale.btn=+e.target.value; $("#btnScaleOut").textContent=cfg.scale.btn+"%"; applyLayout(); });
+/* 슬라이더 오터치 가드: 설정 창 조작 중 손가락이 슬라이더에 닿으면 값이 튀어
+   "크기가 저절로 바뀌는" 문제 발생. 순수 '가로 드래그'만 값 변경 허용 —
+   탭(움직임 없음)과 세로 제스처(스크롤 의도)는 원래 값으로 복원 */
+document.querySelectorAll(".setRow input[type=range]").forEach(inp=>{
+  let v0=null,sx=0,sy=0,mode=0; /* mode: 0=미정(탭 포함) 1=가로허용 2=세로취소 */
+  const restore=()=>{ if(mode!==1&&v0!==null&&inp.value!==v0){ inp.value=v0; inp.dispatchEvent(new Event("input",{bubbles:false})); } };
+  inp.addEventListener("pointerdown",e=>{ v0=inp.value; sx=e.clientX; sy=e.clientY; mode=0; });
+  inp.addEventListener("pointermove",e=>{
+    if(v0===null) return;
+    if(mode===0){
+      const dx=Math.abs(e.clientX-sx), dy=Math.abs(e.clientY-sy);
+      if(dx>10) mode=1;
+      else if(dy>12) mode=2;
+    }
+    restore();
+  });
+  ["pointerup","pointercancel"].forEach(ev=>inp.addEventListener(ev,()=>{ restore(); v0=null; mode=0; }));
+  /* 키보드 화살표 조절(물리 컨트롤러/PC)은 그대로 허용 */
+});
+$("#alphaRange").addEventListener("input",e=>{ cfg.alpha=+e.target.value; $("#alphaOut").textContent=cfg.alpha+"%"; applyLayout(); });
+$("#layoutReset").onclick=()=>{ cfg.layout={}; cfg.scale={pad:100,btn:100}; applyLayout(); renderSettings(); saveCfg(); toast("배치·크기 초기화"); };
+$("#gameReset").onclick=()=>{
+  if(!confirm("게임을 리셋할까요? (타이틀 화면으로 돌아갑니다. 저장 안 한 진행은 사라져요)")) return;
+  $("#settings").hidden=true;
+  const g=gm(); if(!g){ toast("게임이 실행 중이 아닙니다"); return; }
+  abortMacros();
+  try{ g.saveSaveFiles(); }catch(e){}
+  try{ g.restart(); noteRestart(); toast("게임 리셋 — 타이틀로 돌아갑니다"); }catch(e){ toast("리셋 실패"); }
+};
+
+function setEditing(on){
+  editing=on;
+  bindDrag(on);   /* 편집 중에만 document 포인터 리스너를 붙인다 */
+  ctlEls().forEach(el=>el.classList.toggle("editTarget",on));
+  $("#editBanner").hidden=!on;
+  if(on){ ctxState="battle"; $("#controls").dataset.ctx="battle"; } /* 편집 중엔 전 버튼 표시 */
+  if(!on) saveCfg();
+}
+$("#editStart").onclick=()=>{ $("#settings").hidden=true; setEditing(true); toast("각 버튼을 개별로 드래그할 수 있어요"); };
+$("#editDone").onclick=()=>setEditing(false);
+/* ═══ 배치 편집 드래그 ═══
+   ⚠️ 예전에는 이 리스너들이 **document에 상시 등록**돼 있었다.
+   `pointermove`가 `passive:false, capture:true`라서, 편집 중이 아니어도
+   **모든 터치가 메인 스레드의 JS를 거친 뒤에야 합성**된다 — 브라우저가 빠른 경로를 못 쓴다.
+   사용자 제보: "디패드 아래 허공을 터치해도 매번 끊긴다".
+   → 편집 모드에 들어갈 때만 붙이고 나올 때 뗀다. 평시 document 터치 리스너 0개. */
+let dragBound=false;
+const DRAG={target:null,key:null,sx:0,sy:0,ox:0,oy:0};
+function dragDown(e){
+  const el=e.target.closest&&e.target.closest(".editTarget");
+  if(!el) return;
+  e.preventDefault();
+  DRAG.target=el; DRAG.key=el.id;
+  const o=cfg.layout[el.id]||{};
+  DRAG.sx=e.clientX; DRAG.sy=e.clientY; DRAG.ox=o.x||0; DRAG.oy=o.y||0;
+}
+function dragMove(e){
+  if(!DRAG.target) return;
+  e.preventDefault();
+  cfg.layout[DRAG.key]={x:DRAG.ox+e.clientX-DRAG.sx, y:DRAG.oy+e.clientY-DRAG.sy};
+  applyLayout();
+}
+function dragUp(){ DRAG.target=null; }
+function bindDrag(on){
+  if(on===dragBound) return;
+  dragBound=on;
+  const m=on?"addEventListener":"removeEventListener";
+  document[m]("pointerdown",dragDown,true);
+  document[m]("pointermove",dragMove,{passive:false,capture:true});
+  document[m]("pointerup",dragUp,true);
+  document[m]("pointercancel",dragUp,true);
+  if(!on) DRAG.target=null;
+}
+
+/* ═══════════════ 세이브 / 로드 ═══════════════ */
+const stateKey=k=>romKey+":"+k;
+async function saveSlot(k,label){
+  const g=gm(); if(!g){ toast("게임이 실행 중이 아닙니다"); return; }
+  try{
+    const st=g.getState();
+    await idbPut("states",stateKey(k),{t:Date.now(),d:st});
+    toast(label+" 저장 완료");
+    renderSlots();
+  }catch(e){ console.error(e); toast("저장 실패"); }
+}
+async function loadSlot(k,label){
+  const g=gm(); if(!g){ toast("게임이 실행 중이 아닙니다"); return; }
+  try{
+    let r=await idbGet("states",stateKey(k));
+    if(!r) r=await idbGet("states",k); /* 구버전 세이브 폴백 */
+    if(!r){ toast(label+"에 저장된 데이터가 없습니다"); return; }
+    abortMacros();   /* 상태를 갈아끼우기 전에 진행 중인 매크로·예약을 모두 끊는다 */
+    g.loadState(r.d instanceof Uint8Array?r.d:new Uint8Array(r.d));
+    lastStateLoad=Date.now();
+    ctxMenuStreak=0; setCtx("battle"); /* 세이브스테이트 = 대부분 전투 — 즉시 전투 컨트롤 */
+    toast(label+" 불러오기 완료");
+  }catch(e){ console.error(e); toast("불러오기 실패"); }
+}
+$("#qSaveBtn").onclick=()=>saveSlot("q","퀵세이브");
+$("#qLoadBtn").onclick=()=>loadSlot("q","퀵세이브");
+async function renderSlots(){
+  const wrap=$("#slotList"); if($("#slots").hidden) return;
+  wrap.innerHTML="";
+  for(const k of ["q","1","2","3"]){
+    const label=k==="q"?"퀵세이브":"슬롯 "+k;
+    const r=(await idbGet("states",stateKey(k)))||(await idbGet("states",k));
+    const row=document.createElement("div");
+    row.className="slotRow";
+    const when=r?new Date(r.t).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"비어 있음";
+    row.innerHTML='<b>'+label+'</b><small>'+when+'</small>';
+    const bs=document.createElement("button"); bs.textContent="저장"; bs.className="gold"; bs.onclick=()=>saveSlot(k,label);
+    const bl=document.createElement("button"); bl.textContent="불러오기"; bl.disabled=!r; bl.onclick=()=>loadSlot(k,label);
+    row.appendChild(bs); row.appendChild(bl);
+    if(r){ const bd=document.createElement("button"); bd.textContent="삭제"; bd.onclick=async()=>{ await idbDel("states",stateKey(k)); await idbDel("states",k); renderSlots(); }; row.appendChild(bd); }
+    wrap.appendChild(row);
+  }
+}
+$("#slotsBtn").onclick=()=>{ $("#slots").hidden=false; renderSlots(); };
+$("#slotsClose").onclick=()=>{ $("#slots").hidden=true; };
+$("#slots").addEventListener("click",e=>{ if(e.target===$("#slots")) $("#slots").hidden=true; });
+
+$("#fsBtn").onclick=()=>{
+  if(document.fullscreenElement) document.exitFullscreen();
+  else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+};
+
+/* ═══════════════ 랜딩 초기화 ═══════════════ */
+const drop=$("#drop");
+$("#pickBtn").onclick=()=>$("#fileInput").click();
+$("#fileInput").addEventListener("change",e=>{ if(e.target.files[0]) acceptFile(e.target.files[0]); });
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add("drag"); }));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove("drag"); }));
+drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptFile(f); });
+
+(async function init(){
+  if(Q.get("debug")==="1"){
+    window.__ss2={readFacing,readGame,cardState,readLangByte,enforceLang,effLang,runMove,runSuper,gm,curMoves,cfg,applyLayout,spPress,spRelease,curSpMap,
+      ver:APP_VER, prof:PROF,
+      get romKey(){return romKey;},
+      findHeap:()=>{heapBase=findHeapBase();return heapBase;},
+      get heapBase(){return heapBase;},
+      get perf(){return PERF;},
+      get lastSus(){return runSteps.lastSus;},
+      get lastSteps(){return runSteps.lastSteps;},
+      get mirrorHits(){return runSteps.mirrorHits;},
+      get tickMs(){return MACRO_TICK_MS;}, set tickMs(v){MACRO_TICK_MS=v;},
+      get lastFlush(){return compileMove.poisonFlush;},
+      get lastBufferReset(){return compileMove.bufferReset;},
+      get clashDbg(){return compileMove.dbg;},
+      get dbg(){return {prevApplied:prevApplied.slice(),lastLeftAt,lastRightAt,now:performance.now(),userDir:userDir.slice()};},
+      clearCommandBuffer,
+      poke:(off,v)=>{const g=gm(); if(g&&heapBase>=0&&g.Module&&g.Module.HEAPU8) g.Module.HEAPU8[heapBase+off]=v;},
+      setDir:(u,d,l,r)=>{userDir=[u,d,l,r]; applyDir(userDir);},
+      get macroActive(){return MACRO.active;},
+      abortMacros,
+      loadStateBytes:b=>{const g=gm(); if(g){ abortMacros(); g.loadState(b instanceof Uint8Array?b:new Uint8Array(b)); lastStateLoad=Date.now(); ctxMenuStreak=0; setCtx("battle"); }}};
+  }
+  const romUrl=Q.get("rom");
+  if(romUrl){
+    try{
+      const bytes=new Uint8Array(await (await fetch(romUrl)).arrayBuffer());
+      await idbPut("files","rom",bytes);
+      startGame(bytes);
+      return;
+    }catch(e){ console.error(e); }
+  }
+  /* v7 멀티롬으로 저장했던 경우 최근 항목을 단일 롬으로 복원 */
+  let cached=await idbGet("files","rom").catch(()=>null);
+  if(!cached){
+    try{
+      const keys=(await idbAllKeys("files")).filter(k=>String(k).startsWith("rom:"));
+      let best=null;
+      for(const k of keys){ const r=await idbGet("files",k); if(r&&r.d&&(!best||((r.t||0)>(best.t||0)))) best=r; }
+      if(best){ cached=best.d; await idbPut("files","rom",cached); }
+    }catch(e){}
+  }
+  if(cached&&cached.length){
+    $("#cachedRow").hidden=false;
+    $("#drop").hidden=true;
+    setStatus("저장된 롬이 있습니다. 바로 시작할 수 있어요.");
+    $("#resumeBtn").onclick=()=>startGame(cached);
+    $("#changeRomBtn").onclick=()=>{ $("#drop").hidden=false; $("#fileInput").click(); };
+    $("#clearRomBtn").onclick=async()=>{ await idbDel("files","rom"); location.reload(); };
+    if(Q.get("autostart")==="1") startGame(cached);
+  }
+})();
+})();
+</script>
+</body>
+</html>
