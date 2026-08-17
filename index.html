@@ -16,7 +16,7 @@
 <meta property="og:description" content="필살기 커맨드를 버튼 하나로. 방향은 게임 메모리를 읽어 자동으로 뒤집습니다. HTML 한 장.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
-<title>사무라이 스피리츠! 2 한글판 · SP 실행기 v1.0</title>
+<title>사무라이 스피리츠! 2 한글판 · SP 실행기 v1.3</title>
 <style>
   :root{
     color-scheme: dark;
@@ -110,18 +110,15 @@
   .btnB{background:#3a4b96;font-weight:900;font-size:17px;color:#fff;}
   .btnSP{background:#947a33;color:#fff8e6;padding:2px;}
   .btnAB{background:#4d525d;border-color:rgba(200,210,235,.45);font-weight:900;font-size:12px;color:#e8ecf5;}
-  .btnCombo{background:#3d7a46;border-color:rgba(150,230,160,.5);color:#eaffe9;padding:2px;}
   .btnSP b{display:block;font-size:10px;line-height:1.12;text-align:center;word-break:keep-all;}
   #spBig b{font-size:19px;letter-spacing:.04em;}
-  .btnCombo b{display:block;font-size:13.5px;text-align:center;}
   /* 눌림 = 색만 밝게 */
   .btnA:active,.btnA.pressed,.btnA.busy{background:#d8543f;}
   .btnB:active,.btnB.pressed,.btnB.busy{background:#5a72d4;}
   .btnSP:active,.btnSP.pressed,.btnSP.busy{background:#d3ac48;}
   .btnAB:active,.btnAB.pressed,.btnAB.busy{background:#767d8c;}
-  .btnCombo:active,.btnCombo.pressed,.btnCombo.busy{background:#5aab66;}
   /* 매크로 실행 중 = 테두리 흰색 (아웃라인/필터 대신) */
-  .btnA.busy,.btnB.busy,.btnSP.busy,.btnAB.busy,.btnCombo.busy{border-color:#fff;}
+  .btnA.busy,.btnB.busy,.btnSP.busy,.btnAB.busy{border-color:#fff;}
   /* 강(强) 확정: 홀드 8프레임을 넘기면 색이 바뀐다.
      0.6에서 box-shadow를 걷어냈다 — 유일하게 남아 있던 그림자였고, 하필
      '누르고 있는 동안' 켜져서 모바일 GPU에 계속 합성을 시켰다. */
@@ -154,17 +151,11 @@
   .mv .cmd{margin-left:auto;font-size:12.5px;color:var(--gold);white-space:nowrap;font-family:ui-monospace,Menlo,monospace;}
   .mv .tag{flex:0 0 auto;font-size:9.5px;color:var(--muted);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:1px 4px;margin-left:4px;}
   /* 시트 탭 편집기 (SP 배치 / 슬롯 / 콤보) */
-  .tabRow{display:flex;gap:6px;margin:10px 0 8px;}
-  .tabRow button{flex:1;border:1px solid rgba(255,255,255,.12);background:#1b1512;border-radius:10px;padding:9px 4px;font-size:12.5px;font-weight:800;cursor:pointer;}
-  .tabRow button.sel{border-color:var(--gold);color:var(--gold);background:rgba(217,185,104,.12);}
   .slotChips{display:flex;gap:5px;margin:2px 0 8px;}
   .slotChips button{flex:1;border:1px solid rgba(255,255,255,.12);background:#17120f;border-radius:9px;padding:7px 2px;cursor:pointer;font-size:11px;font-weight:800;color:var(--muted);line-height:1.35;}
   .slotChips button.sel{border-color:var(--gold);color:var(--gold);background:rgba(217,185,104,.13);box-shadow:0 0 0 1px rgba(217,185,104,.25) inset;}
   .slotChips button i{display:block;font-style:normal;font-size:9px;opacity:.75;font-weight:600;}
-  .comboOpt{display:flex;align-items:center;gap:9px;margin:2px 0 9px;font-size:12.5px;}
-  .comboOpt>span{flex:0 0 auto;color:var(--muted);}
   .mv.slotted .badge{background:linear-gradient(180deg,#7fb0e8,#2f5f96);color:#06121e;border-color:transparent;}
-  .mv.ender .badge{background:linear-gradient(180deg,#7ce0a8,#2b7d52);color:#04180d;border-color:transparent;}
   .mv .tag.card{color:#a8d1ff;border-color:rgba(120,170,255,.35);}
   .mv .tag.unv{color:#e8b8a0;border-color:rgba(230,150,110,.35);}
   .sheetFoot{display:flex;gap:8px;margin-top:16px;}
@@ -216,7 +207,7 @@
 <!-- ═══════════ 랜딩 ═══════════ -->
 <div class="page" id="landing">
   <div class="panel"><div class="hero">
-    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v1.0</p>
+    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v1.3</p>
     <h1>사무라이 스피리츠! 2 <span>한글판 · SP 버튼 실행기</span></h1>
     <p class="lead">브라우저에서 바로 실행됩니다. 모바일 격투게임처럼 <b>SP 버튼</b> 한 번으로 필살기가 나가고,
       캐릭터가 바라보는 방향을 <b>자동으로 감지</b>해 커맨드를 뒤집어 줍니다. 스킬 아크 배치 · 전 요소 드래그 커스텀 · 빨리감기 지원.</p>
@@ -272,7 +263,6 @@
     <button class="ctl rbtn btnA" id="btnA">A</button>
     <button class="ctl rbtn btnB" id="btnB">B</button>
     <button class="ctl rbtn btnAB combatOnly" id="btnAB">A+B</button>
-    <button class="ctl rbtn btnCombo combatOnly" id="btnCombo"><b>콤보</b></button>
     <button class="ctl rbtn btnSP combatOnly" id="spBig" hidden><b>SP</b></button>
     <div id="toast"></div>
     <pre id="hud" hidden></pre>
@@ -289,16 +279,8 @@
       <button id="styleS">수라 (베기)</button>
       <button id="styleB">나찰 (힘)</button>
     </div>
-    <div class="tabRow" id="sheetTabs">
-      <button data-t="sp" class="sel">SP 배치</button>
-      <button data-t="combo">콤보</button>
-    </div>
     <div id="tabHint" class="note"></div>
-    <div id="spSlotRow" class="slotChips" hidden></div>
-    <div id="comboOpt" class="comboOpt" hidden>
-      <span>시작타</span>
-      <div class="seg" id="openerSeg"><button data-o="weak">약베기</button><button data-o="strong">강베기</button></div>
-    </div>
+    <div id="spSlotRow" class="slotChips"></div>
     <div class="mvList" id="mvList"></div>
     <div class="sheetFoot">
       <button id="resetAssign">기본 배치</button>
@@ -414,7 +396,7 @@ const HITSTOP_OFF = 0x1DC7;
 /* TLCS-900/H reverse: P1 input-history struct=0x1DC9, reset flag=+4.
    Writing 1 makes game routine 0x202E1F reset the 128-byte ring cursor and
    place an FF sentinel before recording the next sample. */
-const APP_VER = "1.0";
+const APP_VER = "1.3";
 /* 버전 표기: 0.5가 첫 공개 배포판, 0.6~0.7은 검수 반영판, 1.0이 정식 배포판이다. 아래 주석에 남아 있는 v1.0~v1.4는
    공개 전 내부 개발 리비전 번호이며, 왜 그렇게 만들었는지의 근거로 남겨 둔다. */
 const CMD_RESET_OFF = 0x1DCD;
@@ -525,9 +507,10 @@ cfg.layout=cfg.layout||{};       /* {elId:{x,y}} */
 if(cfg.autoChar===undefined) cfg.autoChar=false;
 if(cfg.ctxButtons===undefined) cfg.ctxButtons=false;
 cfg.spSlots=cfg.spSlots||{};   /* 캐릭터·유파별 SP 방향 배치 사용자 지정 {n,f,d,b,df,db,air} */
-delete cfg.comboEnder;   /* 0.6: [콤보 마무리] 방향 규칙 제거 — 시트에서 직접 고른다 */
-cfg.comboMove=cfg.comboMove||{}; /* 캐릭터·유파별 콤보 마무리 기술 인덱스 */
-cfg.comboOpener=cfg.comboOpener||"weak";
+/* v1.2: [콤보] 버튼 폐기. 약베기로 열고 히트컨펌되면 마무리 기술로 캔슬하는 버튼이었는데,
+   25ms 폴링으로 P2 체력을 감시해야 했고 가드·헛방이면 그냥 멈춰서 손해만 봤다.
+   기술은 SP 자리에 다 걸려 있으니 기본기는 [A]로 직접 치는 편이 낫다. */
+delete cfg.comboEnder; delete cfg.comboMove; delete cfg.comboOpener;
 cfg.scale=cfg.scale||{pad:100,btn:100};
 if(cfg.scale.pad>130) cfg.scale.pad=130;  /* 오터치로 커진 값 자동 복구 */
 if(cfg.scale.btn>150) cfg.scale.btn=150;  /* 동상 (UI 최대치와 일치) */
@@ -1208,11 +1191,27 @@ function resolveSpSlot(g){
 /* SP 버튼 아래 기술명 표시는 0.6에서 제거했다.
    setDirs()에서 불려서 **디패드를 한 칸 움직일 때마다** readGame(힙 읽기) + curSpMap()이
    돌았다. 정보는 [기술] 팔레트와 [캐릭터] 시트에 이미 있다. */
+/* ── 기본 SP 배치 (v1.1) ────────────────────────────────────────────
+   코어판·NGP판과 **똑같은 표**를 그대로 박아 둔다. 예전엔 커맨드 모양으로
+   추측해 채웠고(236=중립, 623=앞…) 대각선 두 자리와 공중은 비어 있었다.
+   지금은 세 판이 한 표를 본다 — 대각선·공중까지 채웠고, 채우는 건
+   **실용 기술만**이다(카드가 있어야 나가는 기술, 실기 미검증 기술은 뺐다).
+   171기 중 131기가 SP+방향에 걸린다. 나머지는 시트에서 직접 꽂아 쓴다.
+   ★ 중립 자리는 항상 기술 목록의 첫 기술이다 — 그래서 버튼 직결의 SP1과
+     방향 없이 누른 SP가 같은 기술이 된다.
+   값은 이 파일 CHARS 의 기술 인덱스다. deriveSpMap()은 표에 없는 유파
+   (쿠로코)만 쓴다. */
+const DEF_SPMAP={"kazuki_s":{n:0,f:1,b:2,d:5,df:4,db:3,air:null},"kazuki_bst":{n:2,f:1,b:4,d:0,df:3,db:null,air:null},"sogetsu_s":{n:1,f:0,b:2,d:3,df:0,db:null,air:4},"sogetsu_bst":{n:2,f:0,b:1,d:null,df:null,db:null,air:null},"haohmaru_s":{n:1,f:0,b:3,d:4,df:2,db:5,air:null},"haohmaru_bst":{n:1,f:0,b:3,d:2,df:null,db:4,air:null},"genjuro_s":{n:2,f:0,b:1,d:3,df:4,db:3,air:null},"genjuro_bst":{n:0,f:1,b:2,d:3,df:3,db:3,air:null},"nakoruru_s":{n:3,f:0,b:1,d:5,df:2,db:4,air:null},"nakoruru_bst":{n:0,f:3,b:2,d:4,df:5,db:1,air:null},"rimururu_s":{n:0,f:1,b:2,d:4,df:5,db:null,air:3},"rimururu_bst":{n:2,f:4,b:1,d:4,df:5,db:6,air:3},"hanzo_s":{n:0,f:3,b:1,d:6,df:5,db:2,air:null},"hanzo_bst":{n:5,f:2,b:0,d:6,df:7,db:7,air:null},"galford_s":{n:0,f:2,b:1,d:3,df:4,db:5,air:null},"galford_bst":{n:0,f:2,b:3,d:4,df:1,db:5,air:null},"asura_s":{n:0,f:1,b:2,d:3,df:null,db:null,air:null},"asura_bst":{n:0,f:1,b:3,d:2,df:null,db:null,air:null},"charlotte_s":{n:1,f:0,b:2,d:3,df:null,db:null,air:null},"charlotte_bst":{n:1,f:0,b:2,d:3,df:null,db:null,air:null},"morozumi_s":{n:0,f:1,b:3,d:2,df:null,db:null,air:null},"morozumi_bst":{n:0,f:1,b:null,d:2,df:null,db:null,air:null},"ukyo_s":{n:1,f:2,b:4,d:3,df:null,db:null,air:0},"ukyo_bst":{n:5,f:3,b:3,d:4,df:1,db:2,air:0},"jubei_s":{n:0,f:1,b:2,d:3,df:null,db:null,air:null},"jubei_bst":{n:0,f:2,b:1,d:3,df:4,db:5,air:null},"shiki_s":{n:1,f:0,b:2,d:5,df:null,db:null,air:null},"shiki_bst":{n:1,f:2,b:0,d:3,df:4,db:5,air:null},"yuga_s":{n:0,f:1,b:2,d:3,df:null,db:null,air:null},"yuga_bst":{n:0,f:1,b:2,d:3,df:5,db:null,air:4}};
 function curSpMap(){
   const c=curChar();
-  const ov=cfg.style==="b"?c.spB:c.spS;
-  const map=deriveSpMap(curMoves());
-  if(ov) for(const k in ov) map[k]=ov[k];
+  const def=DEF_SPMAP[c.id+(cfg.style==="b"?"_bst":"_s")];
+  let map;
+  if(def){ map=Object.assign({},def); }
+  else{
+    const ov=cfg.style==="b"?c.spB:c.spS;
+    map=deriveSpMap(curMoves());
+    if(ov) for(const k in ov) map[k]=ov[k];
+  }
   /* 사용자 지정(시트 [SP 배치] 탭)이 최우선 */
   const us=cfg.spSlots[slotKey()];
   if(us) for(const k in us){ if(us[k]!==undefined&&us[k]!==null) map[k]=us[k]; }
@@ -1319,7 +1318,6 @@ function baseLayout(){
   place($("#btnA"),pA.x,pA.y,su);            /* A = 짧게 누르면 약, 8프레임 넘기면 강 */
   place($("#btnB"),pB.x,pB.y,su);
   place($("#spBig"),   at(46,u*0.50*bs).x, at(46,u*0.50*bs).y, su);
-  place($("#btnCombo"),at(80,u*0.52*bs).x, at(80,u*0.52*bs).y, su);   /* 히트컨펌 콤보 */
   place($("#btnAB"),   at(60,u*0.70*bs).x, at(60,u*0.70*bs).y, su);   /* 분노폭발 — 바깥 위쪽.
                                                  아래로 내리면 디패드와 겹친다(실측) */
 }
@@ -1514,57 +1512,6 @@ $("#btnAB").addEventListener("pointerdown",e=>{
 });
 $("#btnAB").addEventListener("contextmenu",e=>e.preventDefault());
 
-/* [콤보] = 히트컨펌 자동 콤보: 약베기 → 상대가 피격 리액션이면 자동 캔슬로 마무리 기술.
-   막히거나 빗나가면 거기서 정지 (원작 시스템 내 동작 — 임의 캔슬 창조 없음) */
-let comboWatch=null;
-/* 콤보 마무리: ① 시트 [콤보] 탭에서 고른 기술 ② 없으면 앞→중립 */
-function comboEnderIdx(){
-  const pick=cfg.comboMove[slotKey()];
-  const mvs=curMoves();
-  if(pick!==undefined&&pick!==null&&mvs[pick]) return pick;
-  const map=curSpMap();
-  return map.f!==null?map.f:map.n;
-}
-function comboEnder(){
-  const idx=comboEnderIdx();
-  return (idx!==null&&idx!==undefined)?curMoves()[idx]:null;
-}
-function fireCombo(){
-  if(ctxState==="menu") return;
-  const g=gm(); if(!g||!window.EJS_emulator||!EJS_emulator.started) return;
-  if(MACRO.active){ if(MACRO.kind==="basic") endMacro(); else return; }
-  if(CHG.held) chgStop();
-  if(comboWatch){ clearInterval(comboWatch); comboWatch=null; }
-  const ender=comboEnder();
-  const strong=cfg.comboOpener==="strong";
-  toast("콤보: "+(strong?"강베기":"약베기")+(ender?" → (명중 시) "+ender.n:""));
-  lastBasicAt=Date.now();
-  const gr0=readGame();
-  const hp0=(gr0.hp2)|0;
-  /* 중립 2f 선행: 앞을 쥔 채면 앞베기(0x58)가 나가 캔슬 타이밍이 어긋나던 것 방지 — 항상 제자리 베기.
-     시작타 강=12f 홀드(8f 임계 초과 → 강베기 0x64), 약=3f 탭(릴리즈 발동 0x54) */
-  runSteps([{d:"5",f:2},{d:"5",b:"A",f:strong?12:3},{d:"5",f:2}],$("#btnCombo"),"basic");
-  if(!ender||!gr0.ok) return; /* 힙 미확보면 히트컨펌 감시 자체를 생략 (getState 스팸 금지) */
-  const t0=Date.now();
-  comboWatch=setInterval(()=>{
-    const gme=readGame();
-    /* 히트컨펌 = P2 체력 감소 (가드는 노데미지 → 캔슬 안 함) */
-    if(gme.ok&&gme.hp2!==undefined&&gme.hp2<hp0){
-      clearInterval(comboWatch); comboWatch=null;
-      if(MACRO.active) endMacro();
-      toast("→ "+ender.n+"!");
-      runMove(ender,$("#btnCombo"),{afterBasic:true});
-    }else if(Date.now()-t0>350){
-      clearInterval(comboWatch); comboWatch=null; /* 헛방/가드 → 정지 */
-    }
-  },25);
-}
-$("#btnCombo").addEventListener("pointerdown",e=>{
-  if(editing) return;
-  e.preventDefault(); e.stopPropagation();
-  fireCombo();
-});
-$("#btnCombo").addEventListener("contextmenu",e=>e.preventDefault());
 
 /* 빨리감기 토글 */
 let ffOn=false;
@@ -1640,7 +1587,6 @@ document.addEventListener("keydown",e=>{
   if(k==="z") chgPress();
   else if(k==="x") sim(ID.B,1);
   else if(k==="c") fireAB();
-  else if(k==="v") fireCombo();
   else if(k===" "){ e.preventDefault(); spPress(); }
   else if(k==="enter") sim(ID.OPT,1);
 });
@@ -1797,7 +1743,7 @@ $("#palette").addEventListener("click",e=>{ if(e.target===$("#palette")&&Date.no
 /* ═══════════════ 캐릭터 시트 ═══════════════ */
 /* 시트 편집기 상태: 탭 + SP 배치 대상 자리 */
 const SP_SLOTS=[{k:"n",label:"중립"},{k:"f",label:"앞"},{k:"d",label:"아래"},{k:"b",label:"뒤"},{k:"df",label:"↘"},{k:"db",label:"↙"},{k:"air",label:"공중"}];
-let sheetTab="sp", spSlotTarget="n";
+let spSlotTarget="n";
 function renderSheet(){
   const grid=$("#charGrid"); grid.innerHTML="";
   CHARS.forEach(c=>{
@@ -1820,15 +1766,9 @@ function renderSheet(){
     p.textContent=c.note; list.appendChild(p);
   }
   const mvs=curMoves();
-  const tab=sheetTab, map=curSpMap(), enderIdx=comboEnderIdx();
-  /* 탭별 안내 + 보조 UI */
-  $("#sheetTabs").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.t===tab));
-  $("#spSlotRow").hidden=tab!=="sp";
-  $("#comboOpt").hidden=tab!=="combo";
-  $("#tabHint").innerHTML=
-    tab==="sp" ? '위에서 <b>자리</b>를 고르고 기술을 탭하면 그 방향에 배치됩니다. 같은 기술을 다시 탭하면 해제(자동 배치로 복귀).'
-   :             '[콤보] 버튼의 <b>마무리 기술</b>을 고르세요. 안 고르면 앞 슬롯의 기술이 쓰입니다.';
-  if(tab==="sp"){
+  const map=curSpMap();
+  $("#tabHint").innerHTML='위에서 <b>자리</b>를 고르고 기술을 탭하면 그 방향에 배치됩니다. 같은 기술을 다시 탭하면 해제(기본 배치로 복귀).';
+  {
     const row=$("#spSlotRow"); row.innerHTML="";
     SP_SLOTS.forEach(s=>{
       const b=document.createElement("button");
@@ -1839,16 +1779,13 @@ function renderSheet(){
       row.appendChild(b);
     });
   }
-  if(tab==="combo") $("#openerSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.o===(cfg.comboOpener||"weak")));
   mvs.forEach((mv,idx)=>{
     const row=document.createElement("div");
     row.className="mv";
     let badge="＋";
-    if(tab==="sp"){
+    {
       const hit=SP_SLOTS.filter(s=>map[s.k]===idx).map(s=>s.label);
       if(hit.length){ row.classList.add("slotted"); badge=hit.join(""); }
-    }else{
-      if(enderIdx===idx){ row.classList.add("ender"); badge="마무리"; }
     }
     let tags="";
     if(mv.sup) tags+='<span class="tag">분노 MAX</span>';
@@ -1860,17 +1797,12 @@ function renderSheet(){
     row.innerHTML='<span class="badge">'+badge+'</span><span class="nm">'+mv.n+'</span>'+tags+'<span class="cmd">'+cmdText(mv)+'</span>';
     row.onclick=()=>{
       const key=slotKey();
-      if(tab==="sp"){
-        const cur=cfg.spSlots[key]||{};
-        if(cur[spSlotTarget]===idx) delete cur[spSlotTarget];   /* 재탭 = 해제(자동 복귀) */
-        else cur[spSlotTarget]=idx;
-        cfg.spSlots[key]=cur;
-        const i=SP_SLOTS.findIndex(s=>s.k===spSlotTarget);       /* 다음 자리로 자동 이동 */
-        if(i>=0) spSlotTarget=SP_SLOTS[(i+1)%SP_SLOTS.length].k;
-      }else{
-        cfg.comboMove[key]=(cfg.comboMove[key]===idx)?undefined:idx;
-        if(cfg.comboMove[key]===undefined) delete cfg.comboMove[key];
-      }
+      const cur=cfg.spSlots[key]||{};
+      if(cur[spSlotTarget]===idx) delete cur[spSlotTarget];   /* 재탭 = 해제(기본값 복귀) */
+      else cur[spSlotTarget]=idx;
+      cfg.spSlots[key]=cur;
+      const i=SP_SLOTS.findIndex(s=>s.k===spSlotTarget);       /* 다음 자리로 자동 이동 */
+      if(i>=0) spSlotTarget=SP_SLOTS[(i+1)%SP_SLOTS.length].k;
       saveCfg(); refreshSpButtons(); renderSheet();
     };
     list.appendChild(row);
@@ -1880,11 +1812,9 @@ function renderSheet(){
 function holdAuto(){ const g=readGame(); manualBlkHold=(g.ok&&g.blk!==undefined)?g.blk:-1; }
 $("#styleS").onclick=()=>{ cfg.style="s"; holdAuto(); renderSheet(); };
 $("#styleB").onclick=()=>{ cfg.style="b"; holdAuto(); renderSheet(); };
-$("#sheetTabs").addEventListener("click",e=>{ const t=e.target.dataset.t; if(t){ sheetTab=t; renderSheet(); } });
-$("#openerSeg").addEventListener("click",e=>{ const o=e.target.dataset.o; if(o){ cfg.comboOpener=o; saveCfg(); renderSheet(); } });
 $("#resetAssign").onclick=()=>{
   const k=slotKey();
-  delete cfg.spSlots[k]; delete cfg.comboMove[k];
+  delete cfg.spSlots[k];
   saveCfg(); refreshSpButtons(); renderSheet();
   toast("이 캐릭터 배치를 기본값으로 되돌렸어요");
 };
