@@ -13,13 +13,15 @@
 
 ### [▶ 지금 실행](https://rmdkdkr-png.github.io/ss2-sp-runner/) — 설치 없음, 자기 롬만 고르면 끝
 
-[사용설명서](docs/manual.html) &nbsp;·&nbsp; [변경 이력](CHANGELOG.md)
+[사용설명서](https://rmdkdkr-png.github.io/ss2-sp-runner/docs/manual.html) &nbsp;·&nbsp; [📱 안드로이드 앱판](https://rmdkdkr-png.github.io/ss2-sp-runner/app.html) &nbsp;·&nbsp; [변경 이력](CHANGELOG.md)
 
 `HTML 한 장` · `설치 없음` · `롬 미포함` · `v1.3`
 
-<img src="docs/shots/02_play.webp" width="250" alt="플레이 화면">
-<img src="docs/shots/03_sheet.webp" width="250" alt="SP 배치">
-<img src="docs/shots/04_settings.webp" width="250" alt="설정">
+<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/play_1.webp"><img src="docs/shots/play_1_still.webp" width="180" alt="실기 플레이 1 (클릭하면 영상)"></a>
+<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/play_2.webp"><img src="docs/shots/play_2_still.webp" width="180" alt="실기 플레이 2 (클릭하면 영상)"></a>
+<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/play_3.webp"><img src="docs/shots/play_3_still.webp" width="180" alt="실기 플레이 3 (클릭하면 영상)"></a>
+
+*↑ 실기 터치 화면 — 클릭하면 플레이 영상이 열립니다*
 
 </div>
 
