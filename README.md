@@ -4,16 +4,18 @@
 
 <div align="center">
 
-# 사무라이 스피리츠! 2 · SP 실행기
+# 버튼 하나 = 필살기
 
-**네오지오 포켓 컬러 『사무라이 스피리츠! 2』 한글판을 브라우저에서 바로.
-필살기 커맨드를 버튼 하나로.**
+<img src="docs/shots/demo.gif" width="320" alt="SP 버튼 하나로 필살기가 나가는 장면">
 
-### [▶ 바로 실행하기](https://rmdkdkr-png.github.io/ss2-sp-runner/)
+**네오지오 포켓 컬러 『사무라이 스피리츠! 2』를 브라우저에서.
+↓↘→＋A 같은 커맨드는 몰라도 됩니다.**
+
+### [▶ 지금 실행](https://rmdkdkr-png.github.io/ss2-sp-runner/) — 설치 없음, 자기 롬만 고르면 끝
 
 [사용설명서](docs/manual.html) &nbsp;·&nbsp; [변경 이력](CHANGELOG.md)
 
-`HTML 한 장` · `설치 없음` · `롬 미포함` · `v1.0`
+`HTML 한 장` · `설치 없음` · `롬 미포함` · `v1.3`
 
 <img src="docs/shots/02_play.webp" width="250" alt="플레이 화면">
 <img src="docs/shots/03_sheet.webp" width="250" alt="SP 배치">
