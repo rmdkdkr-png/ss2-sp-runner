@@ -13,7 +13,7 @@
 
 ### [▶ 지금 실행](https://rmdkdkr-png.github.io/ss2-sp-runner/) — 설치 없음, 자기 롬만 고르면 끝
 
-[사용설명서](https://rmdkdkr-png.github.io/ss2-sp-runner/docs/manual.html) &nbsp;·&nbsp; [변경 이력](CHANGELOG.md)
+[사용설명서](https://rmdkdkr-png.github.io/ss2-sp-runner/docs/manual.html) &nbsp;·&nbsp; [📱 안드로이드 앱판](https://rmdkdkr-png.github.io/ss2-sp-runner/app.html) &nbsp;·&nbsp; [변경 이력](CHANGELOG.md)
 
 `HTML 한 장` · `설치 없음` · `롬 미포함` · `v1.3`
 
