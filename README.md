@@ -15,7 +15,7 @@
 
 [사용설명서](https://rmdkdkr-png.github.io/ss2-sp-runner/docs/manual.html) &nbsp;·&nbsp; [📱 안드로이드 앱판](https://rmdkdkr-png.github.io/ss2-sp-runner/app.html) &nbsp;·&nbsp; [변경 이력](CHANGELOG.md)
 
-`HTML 한 장` · `설치 없음` · `롬 미포함` · `v1.3`
+`HTML 한 장` · `설치 없음` · `롬 미포함` · `v0.3`
 
 <a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/play_1.webp"><img src="docs/shots/play_1_still.webp" width="180" alt="실기 플레이 1 (클릭하면 영상)"></a>
 <a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/play_2.webp"><img src="docs/shots/play_2_still.webp" width="180" alt="실기 플레이 2 (클릭하면 영상)"></a>
@@ -68,6 +68,8 @@ NGPC판 『사무라이 스피리츠! 2』는 커맨드 판정이 유난히 인�
 - **세이브** — 퀵 1칸 + 이름 슬롯 3칸, 게임 내 카드 저장은 자동 보관
 - **전 버튼 드래그 배치** + 크기·투명도 조절
 - **화면 필터** — 없음 / 스캔라인 / 부드럽게 / 강하게
+- **자동 해설** — 전황을 읽어 자막·한국어 음성으로 중계 (입문/캐스터/분석/핵심만 4모드).
+  기술 발동과 결과를 한 문장으로 — "선풍열참, 맞췄습니다!" 기본은 끔
 
 ---
 
