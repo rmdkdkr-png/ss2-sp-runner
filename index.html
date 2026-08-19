@@ -589,7 +589,7 @@ if(cfg.commentary) cfg.commMode="on";
 delete cfg.commentary;
 /* v1.7 모드 폐지 → v1.8 TTS 폐지(자막 전용) + 화자=캐릭터 */
 if(cfg.commMode&&cfg.commMode!=="off") cfg.commMode="on";
-cfg.commMode=cfg.commMode||"off";   /* off | on */
+cfg.commMode=cfg.commMode||"on";   /* off | on — v0.3.1: 기본 켬 (사용자 지시). 끈 사람 선택은 저장값으로 유지 */
 delete cfg.commVoice; delete cfg.commVol; delete cfg.commVoiceName; delete cfg.commTone;
 cfg.commSpk=cfg.commSpk||"haohmaru";   /* 해설자: haohmaru | nakoruru | hanzo | galford */
 cfg.commNames=cfg.commNames===undefined?1:cfg.commNames;  /* 해설에 기술명 표시 */
