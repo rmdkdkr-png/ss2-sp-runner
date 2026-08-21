@@ -70,16 +70,17 @@ async def main():
             except Exception: pass
             await page.evaluate(f"window.__ss2.setDir({dirs[0]},{dirs[1]},{dirs[2]},{dirs[3]})")
             await page.evaluate("window.__ss2.spPress(); window.__ss2.spRelease();")
-            # v1.4 게이트: 행동 불가 순간에 눌리면 선입력으로 밀린다(발동 토스트가 늦음).
-            # 반대로 빨리 발동하면 완주 토스트("… — 약/강")가 먼저 덮는다. 둘 다 인정하며 폴링한다.
+            # v0.5.7: 하단 기술명 알림을 없앴으므로 **실제로 주입된 입력 스텝**으로 확인한다.
+            # (선입력으로 밀릴 수 있으므로 폴링한다. expect 는 기술명 — runMove 가 기록한다.)
             ok = False; t = ""
-            for _ in range(12):
+            for _ in range(16):
                 await page.wait_for_timeout(50)
-                t = await page.text_content("#toast")
-                fired = ("SP" in t) or ("— 약" in t) or ("— 강" in t)
-                ok = fired and (expect is None or expect in t)
+                st = await page.evaluate("({s:window.__ss2.lastSteps, n:window.__ss2.runMove.lastName})")
+                t = (st.get("n") or "") + " " + (st.get("s") or "")[:80]
+                fired = bool(st.get("s")) and bool(st.get("n"))
+                ok = fired and (expect is None or expect in (st.get("n") or ""))
                 if ok: break
-            check(f"4.2 {rel}+SP fires ({t.strip()})", ok, t)
+            check(f"4.2 {rel}+SP fires ({(t or '').strip()[:40]})", ok, t)
             await page.wait_for_timeout(400)
         await page.evaluate("window.__ss2.setDir(0,0,0,0)")
 
@@ -92,12 +93,13 @@ async def main():
         fac = await page.evaluate("window.__ss2.readGame().facing")
         await page.evaluate(f"window.__ss2.setDir(0,0,{0 if fac else 1},{1 if fac else 0})")
         await page.evaluate("window.__ss2.fireAB()")
+        # v0.5.7: 토스트 대신 runMove 가 기록한 기술명으로 확인한다
         t = ""
-        for _ in range(14):
+        for _ in range(16):
             await page.wait_for_timeout(50)
-            t = await page.text_content("#toast")
-            if "비오의" in (t or ""): break
-        check("4.2c 뒤+A+B = 비오의", "비오의" in (t or ""), t)
+            t = await page.evaluate("window.__ss2.runMove.lastName") or ""
+            if "비오의" in t: break
+        check("4.2c 뒤+A+B = 비오의", "비오의" in t, t)
         await page.evaluate("window.__ss2.setDir(0,0,0,0)")
         await page.wait_for_timeout(600)
 
@@ -183,8 +185,9 @@ async def main():
               bool(br) or bool(fl) or ("베기캔슬" in tb) or ("뒤이동 보정" in tb), (tb, fl, br))
         cb = await page.evaluate("window.__ss2.clearCommandBuffer()")
         check("7.2b clearCommandBuffer 성공", cb is True, cb)
-        st72 = await page.evaluate("JSON.stringify(window.__ss2.lastSteps)")
-        check("7.2c reset 시 슬래시 프리앰블 없음", (not br) or ('"b":"A","f":3' not in st72), st72[:160])
+        st72 = await page.evaluate("window.__ss2.lastSteps") or ""
+        # 프리앰블은 **중립(5)에서의 약베기**다. 기술 자체의 마지막 A 스텝과 헷갈리면 안 된다.
+        check("7.2c reset 시 슬래시 프리앰블 없음", (not br) or ('"d":"5","b":"A"' not in st72), st72[:160])
         await page.evaluate("window.__ss2.setDir(0,0,0,0)")
         await page.wait_for_timeout(1400)
         # 점프 직후 SP: 착지 대기 문구
@@ -193,8 +196,9 @@ async def main():
         await page.evaluate("window.__ss2.setDir(0,0,0,0)")
         await page.evaluate("window.__ss2.spPress(); window.__ss2.spRelease();")
         await page.wait_for_timeout(120)
-        tj = await page.text_content("#toast")
-        check("7.3 waitGround applied", "착지 후" in tj, tj)
+        # v0.5.7: "착지 후" 토스트가 없어졌으므로 **주입된 스텝에 wg 대기**가 들어갔는지로 본다
+        tj = await page.evaluate("window.__ss2.lastSteps") or ""
+        check("7.3 waitGround applied", '"wg":1' in tj, tj[:160])
         await page.wait_for_timeout(2000)
         gs1 = await page.evaluate("window.__ss2.perf.getState")
         check("7.4 no getState during combat presses", gs1==gs0, (gs0,gs1))
@@ -663,11 +667,21 @@ async def main():
         STG=("연전","풀렸","데워","익었","지치","다음 상대","계속 가자","도전자")
         seen=await lines_until(lambda t:any(w in t for w in STG), 6.0)
         got1=any(any(w in t for w in STG) for t in seen)
-        # 1차 대사(매치업·설정·연전 세 줄)가 큐에서 다 빠질 때까지 기다렸다 재진입한다.
-        # 안 그러면 마지막 줄이 2차 창에 걸쳐 잔상으로 잡힌다.
-        await page.wait_for_timeout(3200)
+        # 1차 대사(매치업·설정·연전 세 줄)가 큐에서 **다 빠질 때까지** 기다렸다 재진입한다.
+        # 고정 대기(3.2초)로는 큐가 길 때 마지막 줄이 2차 창에 잔상으로 걸쳐 간헐 실패했다.
+        # 대기열이 0이 되고 화면 줄도 비는 것을 **확인하고** 넘어간다.
+        try:
+            await page.wait_for_function("window.__ss2.annQ===0", timeout=12000)
+        except Exception:
+            pass
         await page.evaluate("window.__ss2.lineFade()")
-        await page.wait_for_timeout(900)
+        try:
+            await page.wait_for_function(
+                "document.getElementById('commLine').textContent.trim()===''"
+                " || document.getElementById('commLine').textContent.trim()==='…'", timeout=6000)
+        except Exception:
+            pass
+        await page.wait_for_timeout(600)
         await page.evaluate("""() => {
             const S=(m,st)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,surv:0,stage:st,fresh:false});
             S(0xF0,3); S(0xF1,3); }""")   # 같은 stage 값으로 재진입
@@ -766,8 +780,7 @@ async def main():
         check("14.59 뒤+A+B 는 A+B 버튼에 불이 들어온다",
               abr and "busy" in abr["ab"] and "busy" not in abr["sp"], abr)
         await page.wait_for_timeout(400)
-        tt=(await page.text_content("#toast")) or ""
-        check("14.60 하단 알림도 A+B 로 뜬다", ("A+B" in tt) and ("+SP" not in tt), tt)
+        # v0.5.7: 기술명 하단 알림을 없앴으므로 "SP 버튼에 불이 안 들어온다"만 확인하면 된다(14.59)
         await page.evaluate("window.__ss2.setDir(0,0,0,0)")
         await page.wait_for_timeout(1200)
 
@@ -776,16 +789,16 @@ async def main():
         check("14.48 입력 속도 최속 고정·속도/연계 설정 삭제",
               sp["speed"]=="max" and not sp["seg"] and not sp["chainSeg"], sp)
 
-        # 14.43 하단 알림 끔 = SP 토스트 완전 침묵
-        await page.evaluate("window.__ss2.cfg.spToast=0")
+        # 14.43 SP 발동 시 하단 기술명 알림이 아예 뜨지 않는다 (v0.5.7: 기능째 폐지)
         await page.evaluate("""() => { document.getElementById('toast').textContent=''; }""")
         try: await page.wait_for_function("window.__ss2.ss2Actable()", timeout=4000)
         except Exception: pass
         await page.evaluate("window.__ss2.spPress(); window.__ss2.spRelease();")
         await page.wait_for_timeout(1500)
         t=await page.text_content("#toast")
-        check("14.43 하단 알림 끔 = 토스트 침묵", (t or "").strip()=="", t)
-        await page.evaluate("window.__ss2.cfg.spToast=1")
+        check("14.43 SP 기술명 하단 알림 폐지", (t or "").strip()=="", t)
+        seg=await page.evaluate("()=>!!document.getElementById('spToastSeg')")
+        check("14.43b 하단 알림 설정 항목도 없다", seg is False, seg)
         # 14.44 연계 자동입력 폐지 — chain 이 있어도 추가 A 를 넣지 않는다 (v0.5.1)
         cs=await page.evaluate("""() => {
             const plain={n:"t",m:"236",b:"A"};
@@ -856,6 +869,150 @@ async def main():
         line=await page.evaluate("document.getElementById('commLine').textContent")
         check("14.7 해설 끄기 — 예약 정리", q==0 and line.strip() in ("…",""), {"q":q,"line":line})
         await page.evaluate("window.__ss2.cfg.commMode='off'; window.__ss2.commSynth=false; window.__ss2.commReset()")
+
+        # ── 14.61~ 촬영 모드 자막 (v0.5.8) ─────────────────────────────
+        # 끔이 기본이고, 켜면 기술을 낼 때 [누른 것 ▶ 커맨드]가 뜬다. 점등은 **실제 입력 시점**에 한다.
+        await page.evaluate("window.__ss2.cfg.cap='off'; window.__ss2.capApply();")
+        await page.evaluate("window.__ss2.capShow(window.__ss2.curMoves()[0],'← + SP')")
+        check("14.61 촬영 모드 끔이면 자막 없음",
+              not await page.evaluate("document.getElementById('capBar').classList.contains('show')"))
+
+        await page.evaluate("window.__ss2.cfg.cap='on'; window.__ss2.capApply();")
+        cap=await page.evaluate("""() => { const mv=window.__ss2.curMoves()[0];
+            window.__ss2.capShow(mv,'← + SP');
+            const b=document.getElementById('capBar');
+            return {show:b.classList.contains('show'), big:b.classList.contains('big'),
+                    name:b.querySelector('.capName').textContent,
+                    press:(b.querySelector('.capPress')||{}).textContent,
+                    glyphs:[...b.querySelectorAll('.g')].map(e=>e.textContent).join(''),
+                    lit:[...b.querySelectorAll('.g.on')].length, mvn:mv.n, m:mv.m}; }""")
+        check("14.62 자막에 [누른 것 · 기술명 · 커맨드]가 모두 실린다",
+              cap["show"] and cap["name"].endswith(cap["mvn"]) and cap["press"]=="← + SP"
+              and len(cap["glyphs"])>=len(cap["m"]) and cap["lit"]==0, cap)
+
+        lit=await page.evaluate("""() => { window.__ss2.capStep(0);
+            return [...document.querySelectorAll('#capBar .g.on')].length; }""")
+        check("14.63 커맨드 글자는 그 입력이 들어갈 때 점등", lit==1, lit)
+
+        # 컴파일된 스텝에 cg(자막 글자 번호)가 커맨드 길이만큼 달려 있어야 점등이 성립한다
+        cg=await page.evaluate("""() => { const mv=window.__ss2.curMoves()[0];
+            const st=window.__ss2.compileMove(mv,0,{});
+            return {cg:st.filter(s=>s.cg!==undefined).map(s=>s.cg), len:mv.m.length}; }""")
+        check("14.64 컴파일 스텝에 자막 점등 표식(cg)이 커맨드 전부에 붙는다",
+              sorted(set(x for x in cg["cg"] if x>=0))==list(range(cg["len"])), cg)
+
+        # [크게]는 배율만 올린다 / 자막은 배치 편집으로 옮길 수 있고 [배치 초기화]로 돌아온다
+        await page.evaluate("window.__ss2.cfg.cap='big'; window.__ss2.capApply();")
+        big=await page.evaluate("document.getElementById('capBar').classList.contains('big')")
+        check("14.65 [크게] 배율 적용", big)
+
+        mv=await page.evaluate("""() => { window.__ss2.cfg.layout.capBar={x:0,y:-120};
+            window.__ss2.applyLayout();
+            const t=document.getElementById('capBar').style.transform;
+            window.__ss2.cfg.layout={}; window.__ss2.applyLayout();
+            return {moved:t, reset:document.getElementById('capBar').style.transform}; }""")
+        check("14.66 자막 위치는 배치 편집으로 옮기고 초기화로 되돌아온다",
+              "-120px" in mv["moved"] and "-120px" not in mv["reset"], mv)
+        await page.evaluate("window.__ss2.cfg.cap='off'; window.__ss2.capApply();")
+
+        # ── 14.72~ 촬영 자막을 배치 편집의 정식 구성원으로 (v0.5.8c) ────
+        # 제보 "드래그가 잘 안 됨". 원인은 touch-action — 없으면 브라우저가 스크롤 제스처로
+        # 채 가면서 pointercancel 을 쏘고 드래그가 끊긴다. 되돌리지 말 것.
+        ta=await page.evaluate("getComputedStyle(document.getElementById('capBar')).touchAction")
+        check("14.72 자막에 touch-action:none (드래그가 안 끊기게)", ta=="none", ta)
+
+        # 제보: "촬영모드 꺼져 있으면 드래그 편집할 때도 꺼내놓지 마라."
+        await page.evaluate("window.__ss2.cfg.cap='off'; window.__ss2.capApply();")
+        await page.evaluate("""() => { document.querySelector('#cfgBtn').click(); }""")
+        await page.wait_for_timeout(150)
+        await page.click("#editStart")
+        await page.wait_for_timeout(250)
+        off=await page.evaluate("""() => { const b=document.getElementById('capBar');
+            return {tgt:b.classList.contains('editTarget'), show:b.classList.contains('show'),
+                    grab:b.querySelectorAll('.capGrab').length}; }""")
+        check("14.73 촬영 모드가 꺼져 있으면 편집에서도 자막을 안 꺼낸다",
+              not off["tgt"] and not off["show"] and off["grab"]==0, off)
+        await page.evaluate("""() => { document.querySelector('#editDone').click(); }""")
+        await page.wait_for_timeout(150)
+
+        await page.evaluate("window.__ss2.cfg.cap='on'; window.__ss2.capApply();")
+        await page.evaluate("""() => { document.querySelector('#cfgBtn').click(); }""")
+        await page.wait_for_timeout(150)
+        await page.click("#editStart")
+        await page.wait_for_timeout(250)
+        ed=await page.evaluate("""() => { const b=document.getElementById('capBar');
+            const h=b.querySelector('.capGrab');
+            return {tgt:b.classList.contains('editTarget'), show:b.classList.contains('show'),
+                    grab:b.querySelectorAll('.capGrab').length,
+                    box:getComputedStyle(b).pointerEvents,
+                    handle:h?getComputedStyle(h).pointerEvents:null}; }""")
+        # 상자 전체가 아니라 **손잡이 한 줄만** 잡힌다 — 안 그러면 밑에 깔린 버튼을 못 잡는다
+        check("14.73b 촬영 모드가 켜져 있으면 편집에서 자막 손잡이를 잡을 수 있다",
+              ed["tgt"] and ed["show"] and ed["grab"]==1
+              and ed["box"]=="none" and ed["handle"]=="auto", ed)
+
+        # 화면 밖으로 밀어도 다시 못 잡는 일이 없게 안으로 물린다
+        cl=await page.evaluate("""() => { window.__ss2.cfg.layout.capBar={x:-4000,y:-4000};
+            window.__ss2.applyLayout();
+            const r=document.getElementById('capBar').getBoundingClientRect();
+            const s=document.getElementById('stage').getBoundingClientRect();
+            window.__ss2.cfg.layout.capBar=null; window.__ss2.applyLayout();
+            return {inside:(r.left>=s.left-1&&r.top>=s.top-1&&r.right<=s.right+1&&r.bottom<=s.bottom+1),
+                    r:[Math.round(r.left),Math.round(r.top)]}; }""")
+        check("14.74 자막을 화면 밖으로 밀어도 안으로 물린다", cl["inside"], cl)
+        await page.evaluate("""() => { document.querySelector('#editDone').click(); }""")
+        await page.wait_for_timeout(200)
+        check("14.75 편집을 마치면 견본 자막이 사라진다",
+              not await page.evaluate("document.getElementById('capBar').classList.contains('show')"))
+
+        # ── 14.67~ 더미 상대 (v0.5.8) ──────────────────────────────────
+        # COM 판단 바이트(0xE88) 하위 2비트를 세워 반격을 없애고, 가로 좌표를 물어 제자리에 세운다.
+        # 액션ID를 직접 덮어쓰던 첫 방식은 라운드 종료 연출을 막아 게임이 멈췄다 — 되돌리지 말 것.
+        await page.evaluate("window.__ss2.cfg.dummy=false; window.__ss2.dummyApply();")
+        check("14.67 더미 끔이면 감시 타이머가 없다", not await page.evaluate("window.__ss2.dummyOn"))
+
+        await page.evaluate("""async () => { const r=await fetch('nav_fight.bin'); window.__ss2.loadStateBytes(new Uint8Array(await r.arrayBuffer())); }""")
+        await page.wait_for_timeout(500)
+        await page.evaluate("window.__ss2.findHeap()")
+        await page.evaluate("window.__ss2.cfg.dummy=true; window.__ss2.dummyApply();")
+        await page.wait_for_timeout(600)
+        # 게임이 매 프레임 이 자리를 0으로 되돌리고 우리는 16ms마다 비트를 세운다 —
+        # 한 번만 읽으면 게임이 지운 직후에 걸릴 수 있다(실측 약 1/5). 표본으로 본다.
+        ai=await page.evaluate("""async () => { const H=window.EJS_emulator.gameManager.Module.HEAPU8, hb=window.__ss2.heapBase;
+            let set=0; for(let i=0;i<60;i++){ if((H[hb+0xE88]&3)===3) set++; await new Promise(r=>setTimeout(r,5)); }
+            return {set:set, n:60, on:window.__ss2.dummyOn, mode:H[hb+0xA7]}; }""")
+        check("14.68 더미 켬 — COM 판단 바이트 하위 2비트가 선다",
+              ai["on"] and ai["set"]>=40, ai)
+
+        # v0.5.8d: 좌표 고정은 **폐기**했다. 0xE38·0xE78 은 월드가 아니라 카메라 상대 좌표라
+        # 고정이 성립하지 않았고(써 넣어도 231→215→199 로 흐름), 상대를 화면 한 점에 묶어
+        # 스테이지를 가로질러 끌고 다니는 부작용만 났다("더미가 이상하게 멀어진다").
+        # 대신 라운드 종료 연출 중에는 아예 손대지 않는지를 본다.
+        ph=await page.evaluate("""() => { const H=window.EJS_emulator.gameManager.Module.HEAPU8, hb=window.__ss2.heapBase;
+            const keep=H[hb+0x11A];
+            H[hb+0x11A]=3; H[hb+0xE88]=0;      /* 라운드 종료 연출 중이라고 속인다 */
+            window.__ss2.dummyTick();
+            const during=H[hb+0xE88];
+            H[hb+0x11A]=1; H[hb+0xE88]=0;
+            window.__ss2.dummyTick();
+            const fighting=H[hb+0xE88];
+            H[hb+0x11A]=keep;
+            return {during:during, fighting:fighting}; }""")
+        check("14.69 라운드 종료 연출 중에는 더미가 손대지 않는다",
+              ph["during"]==0 and (ph["fighting"]&3)==3, ph)
+
+        # 좌표를 건드리지 않는다 — 이걸 되살리면 카메라 스크롤에 상대가 끌려다닌다
+        nox=await page.evaluate("""() => { const H=window.EJS_emulator.gameManager.Module.HEAPU8, hb=window.__ss2.heapBase;
+            const want=(H[hb+0xE78]|(H[hb+0xE79]<<8))+40;
+            H[hb+0xE78]=want&0xFF; H[hb+0xE79]=(want>>8)&0xFF;
+            window.__ss2.dummyTick();
+            return {want:want, now:H[hb+0xE78]|(H[hb+0xE79]<<8)}; }""")
+        check("14.70 더미는 상대 좌표를 건드리지 않는다(카메라 상대값)", nox["now"]==nox["want"], nox)
+
+        hp=await page.evaluate("""async () => { const H=window.EJS_emulator.gameManager.Module.HEAPU8, hb=window.__ss2.heapBase;
+            H[hb+0x1C46]=10; await new Promise(r=>setTimeout(r,120)); return H[hb+0x1C46]; }""")
+        check("14.71 더미 켬 — 쓰러지기 직전에 체력을 채운다", hp==128, hp)
+        await page.evaluate("window.__ss2.cfg.dummy=false; window.__ss2.dummyApply();")
 
         check("12.1 zero page errors", len(errors)==0, errors)
 

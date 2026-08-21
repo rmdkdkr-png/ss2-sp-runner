@@ -17,7 +17,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
-<title>HTML NGP SS2 runner — SP button · Character chat · v0.5.6</title>
+<title>HTML NGP SS2 runner — SP button · Character chat · v0.5.9</title>
 <style>
   :root{
     color-scheme: dark;
@@ -96,8 +96,21 @@
   #topbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;background:rgba(10,8,7,.85);border-bottom:1px solid rgba(255,255,255,.06);z-index:30;}
   .tbtn{border:1px solid rgba(255,255,255,.12);background:var(--btn);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
   .tbtn:active{background:#2c231d;}
+  /* v0.5.8d: 상단 줄 8개가 412px 폰에서 넘쳐 [캐릭터]가 잘리고 [⛶]가 화면 밖으로 나갔다.
+     좁은 화면에서 간격·여백을 줄여 다 들어오게 하고, 그래도 넘치면 가로로 밀리게 둔다. */
+  #topbar{overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+  #topbar::-webkit-scrollbar{display:none;}
+  @media(max-width:470px){
+    #topbar{gap:5px;padding-left:6px;padding-right:6px;}
+    .tbtn{padding:8px 7px;font-size:12.5px;}
+  }
+  @media(max-width:380px){ .tbtn{padding:8px 5px;font-size:11.5px;} }
   .tbtn.gold{border-color:rgba(217,185,104,.5);color:var(--gold);}
-  #charBtn{margin-left:auto;overflow:hidden;text-overflow:ellipsis;max-width:34vw;}
+  #charBtn{margin-left:auto;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:34vw;}
+  /* 좁은 폰에서 캐릭터 이름이 길면(「카즈키 · 나찰」) 상단 줄이 밀려 ⚙·⛶ 가 화면 밖으로 나갔다.
+     이름 칸을 먼저 줄여서 나머지가 항상 들어오게 한다. 유파는 아래 JS에서 뗀다. */
+  @media(max-width:470px){ #charBtn{max-width:22vw;} }
+  @media(max-width:380px){ #charBtn{max-width:19vw;} }
   #gamewrap{flex:1 1 auto;position:relative;min-height:0;background:#000;}
   #game{position:absolute;inset:0;z-index:1;}
   /* 화면 양옆 빈 자리 — 스테이지가 화면 밖으로 번져 나가는 것처럼 채운다.
@@ -106,8 +119,9 @@
     opacity:0;transition:opacity .8s ease;background:#000;}
   .sideArt.on{opacity:1;}
   #artL{left:0;} #artR{right:0;}
+  /* v0.5.7c: 너무 흐리고 어두워 "뭔가 있긴 한데 안 보이는" 상태였다 — 흐림 7→3.5px, 밝기 .55→.72 */
   .sideArt .bg{position:absolute;inset:-14%;background-position:center;background-size:cover;
-    filter:blur(7px) brightness(.55) saturate(1.15);transform:scale(1.25);}
+    filter:blur(3.5px) brightness(.72) saturate(1.2);transform:scale(1.22);}
   #artL .bg{transform:scale(1.25) scaleX(-1);}          /* 왼쪽은 거울처럼 뒤집어 이어지게 */
   .sideArt .card{position:absolute;left:50%;transform:translateX(-50%);
     image-rendering:pixelated;border:2px solid rgba(217,185,104,.55);border-radius:3px;
@@ -115,7 +129,7 @@
   /* 이름판 — 게임이 세로로 그려 둔 그 판을 그대로 떠 온다. 글자는 우리가 그리지 않는다. */
   .sideArt .plate{position:absolute;left:50%;transform:translateX(-50%);
     image-rendering:pixelated;display:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.7));}
-  #benchWrap{position:fixed;inset:0;z-index:60;background:rgba(6,5,7,.9);display:flex;align-items:center;justify-content:center;}
+  #benchWrap,#howWrap{position:fixed;inset:0;z-index:60;background:rgba(6,5,7,.9);display:flex;align-items:center;justify-content:center;}
   #benchBox{width:min(92vw,460px);background:#141013;border:1px solid rgba(217,185,104,.35);border-radius:14px;
     padding:22px 18px;text-align:center;color:#efe6d6;box-shadow:0 20px 60px rgba(0,0,0,.7);}
   #benchPhase{font-size:15px;color:#d9b968;letter-spacing:.08em;}
@@ -125,7 +139,7 @@
     background:#0b090b;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px;margin:14px 0 10px;
     max-height:46vh;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;}
   .sideArt .glow{position:absolute;inset:0;
-    background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.05) 38%,rgba(0,0,0,.55));}
+    background:linear-gradient(180deg,rgba(0,0,0,.34),rgba(0,0,0,0) 40%,rgba(0,0,0,.42));}
   #artL .edge,#artR .edge{position:absolute;top:0;bottom:0;width:16px;}
   #artL .edge{right:0;background:linear-gradient(90deg,rgba(0,0,0,0),rgba(0,0,0,.8));
     box-shadow:inset -2px 0 0 rgba(217,185,104,.28);}
@@ -188,6 +202,16 @@
 
   /* 배치 편집 모드 */
   .editTarget{outline:2px dashed var(--gold);outline-offset:3px;cursor:grab;}
+  /* ═══ 가로 모드 ═══════════════════════════════════════════════════
+     #controls 가 고정 300px을 먹어서, 가로에선 게임이 **0~47px로 짜부라졌다**(실측:
+     900x420 게임 7px / 780x360 게임 0px). 제보 "가로모드하면 레알 저렇게 되나?"가 그것.
+     가로에서는 컨트롤을 흐름에서 빼내 **게임 위에 얹는다** — 실사용 화면이 원래 그 모양이다. */
+  @media (orientation:landscape) and (max-height:600px){
+    #controls{position:absolute;left:0;right:0;top:0;bottom:0;height:auto;background:none;}
+    #controls #toast{top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px));}
+    #controls[data-hud="1"] #toast{top:auto;}
+    #hud{top:auto;bottom:44px;}
+  }
   #editBanner{position:fixed;top:calc(52px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:80;display:flex;gap:10px;align-items:center;background:rgba(20,15,12,.95);border:1px solid var(--gold);border-radius:999px;padding:8px 10px 8px 16px;font-size:13px;font-weight:700;white-space:nowrap;}
   #editBanner button{border:none;border-radius:999px;background:linear-gradient(180deg,#e4c877,#b5924a);color:#191408;font-weight:800;padding:7px 14px;cursor:pointer;}
 
@@ -311,6 +335,68 @@
   .mv{flex-wrap:wrap;}
   .mv .kbn{flex:1 0 100%;font-size:11px;color:var(--muted);margin:2px 0 0 2px;line-height:1.35;}
   .mv .kbn b{color:var(--gold);font-weight:700;}
+
+  /* ═══ 촬영 모드 자막 (v0.5.8) ═══════════════════════════════════════
+     플레이용이 아니라 **녹화·스샷용**이다. 한 버튼이 어떤 커맨드로 풀리는지를
+     화면 아래에 큼직하게 깔아 준다. 글자가 작으면 영상으로 옮겼을 때 안 읽히므로
+     기본이 이미 크고, [크게]는 세로 480p 캡처에서도 읽히는 크기다.
+     pointer-events:none — 자막 위를 눌러도 그대로 게임에 들어간다. */
+  #capBar{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+    z-index:120;pointer-events:none;text-align:center;
+    /* touch-action:none 이 없으면 브라우저가 스크롤 제스처로 채 가면서 pointercancel 을 쏘고
+       배치 편집 드래그가 중간에 끊긴다 (제보: "드래그가 잘 안 됨").
+       #controls 안의 버튼들은 #controls 가 이미 none 이라 무사했고 자막만 밖에 있어서 걸렸다. */
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    /* left:50% 로 붙이면 절대배치 축소폭이 화면 절반으로 잡혀 커맨드가 줄바꿈된다 — max-content 로 푼다 */
+    width:max-content;max-width:96vw;
+    opacity:0;transition:opacity .22s ease-out;
+    --capS:1;--capG:#ffd166;
+    /* 스테이지가 밝으면(초원·설원) 흰 글자가 묻힌다 — 가장자리로 사라지는 그늘을 깐다.
+       사각 판때기를 깔면 캡처에서 UI처럼 보여 자막의 맛이 죽는다. */
+    padding:calc(16px * var(--capS)) calc(30px * var(--capS)) calc(12px * var(--capS));
+    background:radial-gradient(ellipse at 50% 62%, rgba(8,5,4,.80) 0%, rgba(8,5,4,.62) 48%, rgba(8,5,4,0) 78%);}
+  #capBar.show{opacity:1;}
+  /* 편집 중 잡는 곳은 **위쪽 손잡이 한 줄뿐**이다. 상자 전체를 잡게 두면 기본 자리가
+     A·B 버튼 위에 겹쳐서 버튼을 못 잡는다(회귀 11.1이 그렇게 깨졌다). */
+  #capBar.editTarget{pointer-events:none;opacity:1;
+    border-radius:calc(14px * var(--capS));background:rgba(8,5,4,.62);}
+  #capBar .capGrab{display:block;pointer-events:auto;cursor:grab;touch-action:none;
+    margin:0 auto calc(6px * var(--capS));width:max-content;max-width:100%;
+    padding:calc(6px * var(--capS)) calc(14px * var(--capS));border-radius:999px;
+    font-size:calc(12.5px * var(--capS));font-weight:800;letter-spacing:.02em;
+    color:#141010;background:linear-gradient(180deg,#f0d089,#d9b968);
+    box-shadow:0 2px 0 rgba(0,0,0,.6);}
+  #capBar .capGrab:active{cursor:grabbing;}
+  #capBar:not(.editTarget) .capGrab{display:none;}
+  #capBar.big{--capS:1.55;}
+  #capBar .capName{font-weight:900;letter-spacing:.5px;line-height:1.15;
+    font-size:calc(23px * var(--capS));
+    color:#fff8ec;text-shadow:0 2px 0 #000,0 0 calc(14px * var(--capS)) rgba(0,0,0,.95),0 0 calc(26px * var(--capS)) rgba(255,190,90,.35);}
+  #capBar .capName .sup{color:var(--capG);}
+  #capBar .capRow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+    gap:calc(5px * var(--capS));margin-top:calc(6px * var(--capS));}
+  #capBar .capPress{font-weight:900;font-size:calc(19px * var(--capS));line-height:1;
+    padding:calc(5px * var(--capS)) calc(11px * var(--capS));border-radius:999px;
+    color:#141010;background:linear-gradient(180deg,#f0d089,#d9b968);
+    box-shadow:0 2px 0 rgba(0,0,0,.6),0 0 calc(16px * var(--capS)) rgba(217,185,104,.45);
+    white-space:nowrap;}
+  #capBar .capTo{font-size:calc(17px * var(--capS));color:var(--capG);font-weight:900;
+    text-shadow:0 2px 4px #000;margin:0 calc(2px * var(--capS));}
+  #capBar .g{display:inline-flex;align-items:center;justify-content:center;
+    min-width:calc(30px * var(--capS));height:calc(30px * var(--capS));
+    font-size:calc(21px * var(--capS));font-weight:900;line-height:1;
+    padding:0 calc(4px * var(--capS));border-radius:calc(8px * var(--capS));
+    background:rgba(18,13,10,.82);border:calc(1.5px * var(--capS)) solid rgba(255,255,255,.16);
+    color:#8d8378;box-shadow:0 2px 6px rgba(0,0,0,.7);
+    transition:color .06s,background .06s,border-color .06s,transform .06s;}
+  #capBar .g.btn{font-size:calc(17px * var(--capS));letter-spacing:.5px;}
+  #capBar .g.on{color:#141010;background:linear-gradient(180deg,#ffe6a6,#ffd166);
+    border-color:#fff3d0;transform:translateY(calc(-2px * var(--capS))) scale(1.06);
+    box-shadow:0 2px 0 rgba(0,0,0,.6),0 0 calc(18px * var(--capS)) rgba(255,209,102,.75);}
+  #capBar .capTag{font-size:calc(13px * var(--capS));font-weight:800;color:var(--capG);
+    padding:calc(3px * var(--capS)) calc(8px * var(--capS));border-radius:999px;
+    background:rgba(217,185,104,.14);border:1px solid rgba(217,185,104,.4);
+    text-shadow:0 1px 3px #000;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -318,12 +404,19 @@
 <!-- ═══════════ 랜딩 ═══════════ -->
 <div class="page" id="landing">
   <div class="panel"><div class="hero">
-    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v0.5.6</p>
+    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v0.5.9</p>
     <h1>사무라이 스피리츠! 2 <span>한글판 · SP 버튼 실행기</span></h1>
     <div class="startPlate">
       <button class="spStart" id="spStartBtn">SP</button>
       <div class="blink" id="startHint">PRESS  SP  TO  START</div>
     </div>
+
+    <p style="margin:16px 0 0"><button class="pick alt" id="installBtn2" hidden
+       style="max-width:22em">📲 홈 화면에 설치</button></p>
+
+    <p id="brTip" hidden style="margin:14px auto 0;max-width:30em;font-size:13px;line-height:1.6;
+      color:#a99f92;background:rgba(217,185,104,.08);border-left:3px solid rgba(217,185,104,.5);
+      border-radius:0 8px 8px 0;padding:10px 14px;text-align:left"></p>
 
     <div id="cachedRow" class="cachedRow" hidden>
       <button class="pick" id="resumeBtn">▶ 바로 시작</button>
@@ -354,7 +447,7 @@
     <button class="tbtn gold" id="qSaveBtn">세이브</button>
     <button class="tbtn" id="qLoadBtn">로드</button>
     <button class="tbtn" id="slotsBtn">슬롯</button>
-    <button class="tbtn" id="artBtn" title="화면 양옆 아트웍 바꾸기">🎴</button>
+    <button class="tbtn" id="artBtn" title="양옆 아트웍 — 길게 누르면 지금 화면을 담습니다">아트</button>
     <button class="tbtn gold" id="installBtn" hidden title="홈 화면에 설치 — 전체화면 + 오프라인">설치</button>
     <button class="tbtn" id="charBtn">캐릭터</button>
     <button class="tbtn" id="cfgBtn">⚙</button>
@@ -382,7 +475,9 @@
     <pre id="hud" hidden></pre>
 
   </div>
-  <div id="editBanner" hidden><span>버튼을 드래그해서 배치하세요</span><button id="editDone">완료</button></div>
+  <div id="editBanner" hidden><span>버튼을 드래그해서 배치하세요 — 촬영 자막도 같이 옮겨집니다</span><button id="editDone">완료</button></div>
+  <!-- 촬영 모드 자막: 한 버튼 → 실제 커맨드 (녹화·스샷 전용) -->
+  <div id="capBar"><div class="capName"></div><div class="capRow"></div></div>
 </div>
 
 <!-- 캐릭터 시트 -->
@@ -436,12 +531,6 @@
     <div class="setRow"><b>해설자<br><small style="color:var(--muted)">캐릭터가 중계합니다</small></b>
       <div class="seg" id="commSpkSeg"><button data-spk="haohmaru">하오마루</button><button data-spk="nakoruru">나코루루</button><button data-spk="hanzo">한조</button><button data-spk="galford">갈포드</button></div>
     </div>
-    <div class="setRow"><b>기술명<br><small style="color:var(--muted)">해설에 기술 이름 표시</small></b>
-      <div class="seg" id="commNamesSeg"><button data-nm="1">표시</button><button data-nm="0">숨김</button></div>
-    </div>
-    <div class="setRow"><b>하단 알림<br><small style="color:var(--muted)">화면 아래 기술명 표시</small></b>
-      <div class="seg" id="spToastSeg"><button data-t="1">켬</button><button data-t="0">끔</button></div>
-    </div>
     <div class="setRow"><b>게임 언어<br><small style="color:var(--muted)">본체 설정</small></b>
       <div class="seg" id="langSeg"><button data-l="auto">자동</button><button data-l="japanese">일본어</button><button data-l="english">영어</button></div>
     </div>
@@ -450,6 +539,16 @@
     </div>
     <div class="setRow"><b>패드 크기</b><input type="range" id="padScale" min="70" max="130" step="5"><output id="padScaleOut"></output></div>
     <div class="setRow"><b>버튼 크기</b><input type="range" id="btnScale" min="70" max="150" step="5"><output id="btnScaleOut"></output></div>
+    <div class="setRow"><b>촬영 모드<br><small style="color:var(--muted)">커맨드 자막 · 녹화용</small></b>
+      <div class="seg" id="capSeg">
+        <button data-cap="off">끔</button><button data-cap="on">켬</button><button data-cap="big">크게</button>
+      </div>
+    </div>
+    <div class="setRow"><b>더미 상대<br><small style="color:var(--muted)">반격하지 않는 연습 상대</small></b>
+      <div class="seg" id="dummySeg">
+        <button data-dum="0">끔</button><button data-dum="1">켬</button>
+      </div>
+    </div>
     <div class="setRow"><b>진단 표시<br><small style="color:var(--muted)">화면에 상태 표시</small></b>
       <div class="seg" id="hudSeg">
         <button data-h="0">끔</button><button data-h="1">켬</button>
@@ -478,6 +577,15 @@
       </div>
     </div>
     <div class="sheetFoot"><button class="ok" id="cfgClose">닫기</button></div>
+  </div>
+</div>
+
+<!-- 설치 안내 -->
+<div id="howWrap" hidden>
+  <div id="benchBox">
+    <div id="benchPhase">홈 화면에 설치</div>
+    <div id="howBody" style="text-align:left;font-size:14.5px;line-height:1.8;margin:14px 0 4px"></div>
+    <div class="seg"><button id="howClose">닫기</button></div>
   </div>
 </div>
 
@@ -630,6 +738,64 @@ function cmdText(mv){
   return t;
 }
 
+/* ═══════════════ 촬영 모드 자막 (v0.5.8) ═══════════════════════════════
+   왜 만들었나: "요런 컨셉으로 몇 개 만들 건데 가독성 크게" — 시연 영상용이다.
+   한 버튼(SP+방향 / A+B)이 **실제로 어떤 커맨드 열로 풀리는지**를 화면 아래에 깔아 준다.
+
+   설계 결정 두 가지:
+   ① **표기는 기술표와 같은 정규형(↓↘→)으로 낸다.** 왼쪽을 보고 있으면 실제 입력은
+      좌우가 뒤집히지만, 자막까지 뒤집으면 같은 기술이 클립마다 달라 보인다.
+   ② **점등은 실제 입력 시점에 한다.** 컴파일된 스텝에 cg(글자 번호)를 달아 두고,
+      그 스텝이 패드에 실제로 들어가는 순간 불이 들어온다 — 연출이 아니라 계측이다. */
+let capT=null;
+function capOn(){ return cfg.cap && cfg.cap!=="off"; }
+function capApply(){
+  const b=$("#capBar"); if(!b) return;
+  b.classList.toggle("big", cfg.cap==="big");
+  if(!capOn()){ b.classList.remove("show"); clearTimeout(capT); }
+}
+/* 지금 손가락이 잡고 있는 방향을 **화면 기준** 화살표로 (미러 전) */
+function capDirArrow(){
+  const [u,d,l,r]=userDir;
+  if(u&&l) return "↖"; if(u&&r) return "↗"; if(d&&l) return "↙"; if(d&&r) return "↘";
+  if(u) return "↑"; if(d) return "↓"; if(l) return "←"; if(r) return "→";
+  return "";
+}
+function capPress(btn){ const a=capDirArrow(); return a?(a+" + "+btn):btn; }
+function capShow(mv,press){
+  if(!capOn()||!mv) return;
+  const b=$("#capBar"), nm=b.querySelector(".capName"), row=b.querySelector(".capRow");
+  b.querySelectorAll(".capGrab").forEach(e=>e.remove());   /* 편집 견본 라벨은 매번 새로 붙는다 */
+  const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  /* 이름 자체가 「비오의」인 캐릭터가 있어 접두를 그대로 붙이면 「비오의 비오의」가 된다 */
+  const supTag=mv.sup&&mv.n.indexOf("비오의")<0;
+  nm.innerHTML=(supTag?'<span class="sup">비오의 </span>':"")+esc(mv.n);
+  let h="";
+  if(press) h+='<span class="capPress">'+esc(press)+'</span><span class="capTo">▶</span>';
+  if(mv.air) h+='<span class="g" data-cg="-1">점프</span>';
+  const m=[...mv.m];
+  m.forEach((c,i)=>{ h+='<span class="g" data-cg="'+i+'">'+(ARROW[c]||c)+'</span>'; });
+  h+='<span class="capTo">＋</span><span class="g btn" data-cg="'+(m.length-1)+'">'+esc(mv.b)+'</span>';
+  if(mv.x) h+='<span class="capTag">×'+mv.x+'</span>';
+  if(mv.hold) h+='<span class="capTag">꾹</span>';
+  if(mv.card) h+='<span class="capTag">카드</span>';
+  row.innerHTML=h;
+  b.classList.add("show");
+  clearTimeout(capT); capT=null;
+}
+/* 스텝이 실제로 패드에 들어가는 순간 호출된다 */
+function capStep(cg){
+  if(!capOn()) return;
+  const b=$("#capBar"); if(!b.classList.contains("show")) return;
+  b.querySelectorAll('.g[data-cg="'+cg+'"]').forEach(e=>e.classList.add("on"));
+}
+/* 매크로가 끝나면 잠깐 남겼다가 지운다 — 캡처에서 마지막 프레임을 놓치지 않게 */
+function capEnd(){
+  if(!capOn()) return;
+  clearTimeout(capT);
+  capT=setTimeout(()=>{ $("#capBar").classList.remove("show"); }, 2200);
+}
+
 /* ═══════════════ 저장 ═══════════════ */
 function idb(){
   return new Promise((res,rej)=>{
@@ -643,7 +809,26 @@ async function idbGet(store,key){ const db=await idb(); return new Promise((res,
 async function idbDel(store,key){ const db=await idb(); return new Promise((res,rej)=>{ const t=db.transaction(store,"readwrite"); t.objectStore(store).delete(key); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
 
 let cfg;
-try{ cfg=JSON.parse(localStorage.getItem("ss2sp_cfg_v3"))||{}; }catch(e){ cfg={}; }
+let cfgFresh=false;
+try{ const raw=localStorage.getItem("ss2sp_cfg_v3"); cfgFresh=!raw; cfg=JSON.parse(raw)||{}; }catch(e){ cfg={}; cfgFresh=true; }
+/* ═══ 단말 프리셋 ═══════════════════════════════════════════════
+   같은 HTML 한 장이 폰·태블릿·PC·레트로 핸드헬드에서 다 열린다. 그런데 손가락으로 하는 것과
+   마우스·패드로 하는 것은 필요한 버튼 크기가 다르다. **처음 켤 때 한 번만** 자동으로 맞춘다.
+   그 뒤로는 사용자가 만진 값이 항상 이긴다(저장된 설정이 있으면 건드리지 않는다). */
+function deviceKind(){
+  const coarse = matchMedia("(pointer:coarse)").matches || (navigator.maxTouchPoints||0)>0;
+  const shortSide = Math.min(screen.width||innerWidth, screen.height||innerHeight);
+  if(!coarse) return "pc";                 /* 마우스·키보드 */
+  if(shortSide>=600) return "tablet";      /* 태블릿 */
+  if(shortSide<=420 && (screen.height||innerHeight)<=720) return "handheld"; /* 작은 게임기 화면 */
+  return "phone";
+}
+const DEV_PRESET={
+  phone:    {pad:100, btn:100, alpha:100},
+  tablet:   {pad: 88, btn: 86, alpha: 92},
+  handheld: {pad: 92, btn: 92, alpha: 100},
+  pc:       {pad: 78, btn: 72, alpha: 55},   /* 키보드로 하니 화면 버튼은 옅게 */
+};
 cfg.char=cfg.char||"asura"; cfg.style=cfg.style||"s";
 delete cfg.slots; delete cfg.mode; delete cfg.spCount;  /* v1.1: 클래식 슬롯 체계 제거 */
 cfg.layout=cfg.layout||{};       /* {elId:{x,y}} */
@@ -656,11 +841,14 @@ cfg.spSlots=cfg.spSlots||{};   /* 캐릭터·유파별 SP 방향 배치 사용�
    기술은 SP 자리에 다 걸려 있으니 기본기는 [A]로 직접 치는 편이 낫다. */
 delete cfg.comboEnder; delete cfg.comboMove; delete cfg.comboOpener;
 cfg.scale=cfg.scale||{pad:100,btn:100};
+if(cfgFresh){ const dp=DEV_PRESET[deviceKind()]; if(dp){ cfg.scale={pad:dp.pad,btn:dp.btn}; cfg.alpha=dp.alpha; } }
 if(cfg.scale.pad>130) cfg.scale.pad=130;  /* 오터치로 커진 값 자동 복구 */
 if(cfg.scale.btn>150) cfg.scale.btn=150;  /* 동상 (UI 최대치와 일치) */
 delete cfg.lite;   /* v1.1: 가벼운 화면 옵션 제거 */
 cfg.shader=cfg.shader||"off";  /* 화면 필터(쉐이더) */
 cfg.hud=cfg.hud||0;            /* 진단 오버레이 */
+cfg.cap=cfg.cap||"off";        /* v0.5.8 촬영 모드 자막 — 기본 끔(플레이용이 아니다) */
+if(cfg.dummy===undefined) cfg.dummy=false;   /* v0.5.8 더미 상대 — 기본 끔 */
 cfg.watch=0;                   /* v0.5.2: 발동 결과 표시 폐지 — 실용성이 없고 100ms 램 폴링만 남았다 */
 cfg.alpha=cfg.alpha||100;
 delete cfg.spChainMode;  /* 0.6: [SP 연속기] 제거 — 항상 자동 완주 */
@@ -674,8 +862,13 @@ if(cfg.commMode&&cfg.commMode!=="off") cfg.commMode="on";
 cfg.commMode=cfg.commMode||"on";   /* off | on — v0.3.1: 기본 켬 (사용자 지시). 끈 사람 선택은 저장값으로 유지 */
 delete cfg.commVoice; delete cfg.commVol; delete cfg.commVoiceName; delete cfg.commTone;
 cfg.commSpk=cfg.commSpk||"haohmaru";   /* 해설자: haohmaru | nakoruru | hanzo | galford */
-cfg.commNames=cfg.commNames===undefined?1:cfg.commNames;  /* 해설에 기술명 표시 */
-cfg.spToast=cfg.spToast===undefined?1:cfg.spToast;        /* v0.4.4: 화면 하단 기술명 알림(토스트) */
+/* v0.5.7c: [기술명] 설정 폐지 — **항상 켬**. 해설이 기술 이름을 부르는 게 이 도구의 재미고,
+   끄면 「적중이다!」처럼 밋밋해질 뿐이라 고를 이유가 없었다. */
+cfg.commNames=1;
+/* v0.5.7c: **기술명 하단 알림 자체를 폐지**했다(설정이 아니라 기능을).
+   해설 띠가 이미 "비오의냐! 좋다, 와라!!" 하고 말해 주는데, 화면 아래에서 같은 순간
+   「←+A+B  비오의」가 또 뜨는 건 겹치는 소리였다. 발동할 때마다 뜨니 제일 시끄럽기도 했다.
+   토스트 함수 자체는 남는다 — 카드 없음·저장·아트웍 전환 같은 **시스템 안내**는 그대로다. */
 cfg.chainAuto=0;                      /* v0.5.1: 연계 자동입력 폐지 (설정 항목 삭제) */
 cfg.lang=cfg.lang||"auto";            /* 게임 언어: auto | japanese | english (NGP 본체 언어) */
 const KR_HASHES=new Set([
@@ -844,7 +1037,7 @@ function gm(){ try{ return window.EJS_emulator&&EJS_emulator.gameManager; }catch
 
 function onGameStart(){
   try{ if(window.EJS_emulator&&EJS_emulator.config.buttonOpts) EJS_emulator.config.buttonOpts.rightClick=false; }catch(e){}
-  applyShader(); setHud(!!cfg.hud);   /* 저장된 화면 설정 복원 */
+  applyShader(); setHud(!!cfg.hud); capApply(); dummyApply();   /* 저장된 화면 설정 복원 */
   try{ EJS_emulator.menu.close(); }catch(e){}
   /* EJS 자체 키보드/게임패드 매핑 무력화 — 매크로 중 방향 끼어들기로 커맨드가 깨지는 것 방지
      (물리 입력은 아래 물리 컨트롤러 레이어가 러너 기능으로 라우팅) */
@@ -1077,7 +1270,7 @@ function compileMove(mv,facing,opts){
   /* 직전(0.25s 이내)에 기본기를 쳤다면 6f 지연 후 시작 — 공격 초반 프레임에선 캔슬이 안 받고,
      약간 지나서 넣으면 버퍼로 성립함 (실기 검증: 약공격+6f 후 커맨드 = 발동) */
   /* 공중/점프 스타트업 중 지상기: 착지까지 대기 후 발동 (그냥 쏘면 씹힘 — 실측 0/3 → 대기 시 3/3) */
-  if(opts.waitGround){ steps.push({d:"5",f:4},{d:"5",wg:1,f:40}); }   /* v0.5.6d: 72f(1.2초) → 40f(0.67초) */ /* 4f 리드: 점프 스쿼트가 액션ID에 잡히길 기다림 */
+  if(opts.waitGround){ steps.push({d:"5",f:4},{d:"5",wg:1,f:40}); }   /* v0.5.7c: 72f(1.2초) → 40f(0.67초) */ /* 4f 리드: 점프 스쿼트가 액션ID에 잡히길 기다림 */
   /* 공중기 고속 모션: 체공 중엔 수용 창이 짧아 표준 4f가 간헐 실패 — 3f 스텝 + 3f 버튼이 최적(실측) */
   const airFast=mv.air&&opts.skipJump;
   /* ═══ 방향 오염 보정 (실측 기반, 2가지 경로) ═══
@@ -1124,15 +1317,16 @@ function compileMove(mv,facing,opts){
   }
   if(opts.afterBasic){ steps.push({d:"5",f:6}); }
   /* 점프 프리앰블은 순수 위(8): 전진점프(9)의 앞 성분이 공중 커맨드 매칭을 오염시켜 점프공격 오발 (실측 9=1/3, 8=5/5) */
-  if(mv.air&&!opts.skipJump){ steps.push({d:"8",f:5},{d:"5",f:8}); }
+  if(mv.air&&!opts.skipJump){ steps.push({d:"8",f:5,cg:-1},{d:"5",f:8}); }
   /* 마지막 방향은 버튼과 "동시에" 누른다 (네이티브 검증 패턴과 동일 — 틈 제거)
      주의: 필살기는 버튼 릴리즈 트리거 + 짧은 버퍼 — 버튼을 6f 이상 쥐면 오히려 불발(실측).
      그래서 홀드/서스테인 방식은 폐기, 항상 짧은 프레스로 발동한다. */
-  for(const ch of mv.m.slice(0,-1)) steps.push({d:F(ch),f:airFast?3:DIRF});
+  /* cg: 촬영 모드 자막의 몇 번째 글자에 불을 켤지 — 스텝이 실제 적용될 때 점등한다 */
+  [...mv.m].slice(0,-1).forEach((ch,gi)=>steps.push({d:F(ch),f:airFast?3:DIRF,cg:gi}));
   const last=F(mv.m[mv.m.length-1]);
   /* sus: 버튼을 계속 쥐고 있으면 홀드를 최대 14f까지 연장 → 8f 임계로 강판 필살기
      (v10.5 재검증: 홀드해도 불발 아님 — 삼련살 0x1B0→0x1B4 등 약/강 변형이 실존) */
-  steps.push({d:last,b:mv.b,f:airFast?3:Math.min(5,Math.max(BTNF,DIRF+1)),sus:opts.sustain?1:0});
+  steps.push({d:last,b:mv.b,f:airFast?3:Math.min(5,Math.max(BTNF,DIRF+1)),sus:opts.sustain?1:0,cg:mv.m.length-1});
   /* v0.5.1: 연계 자동입력(후속 A) **제거**. 갈포드 플라즈마 블레이드처럼 뒤에 A가 더 들어가면
      기술이 깨져 버린다는 제보가 계속 있었다. 연계는 손으로 넣는 게 맞다. */
   steps.push({d:"5",f:2});
@@ -1164,6 +1358,7 @@ function runSteps(steps,el,kind,faceRef){
     for(const id of MACRO.held) if(!want.includes(id)) sim(id,0);
     for(const id of want) sim(id,1);
     MACRO.held=want;
+    if(st.cg!==undefined) capStep(st.cg);
   };
   applyStep(steps[0]);
   /* 에뮬레이터 실제 프레임 카운터에 잠금 — 기기 랙으로 게임이 60fps 밑으로 떨어져도
@@ -1192,7 +1387,7 @@ function runSteps(steps,el,kind,faceRef){
       /* wg 스텝: 착지(지상에서 행동 가능한 상태)를 감지하면 즉시 다음 스텝으로 — f는 최대 대기 프레임.
          지상 = Y 복귀 + 액션이 idle/앉기/걷기 (공격·경직·점프스쿼트 0x50+ 제외, 걷기턴 0x10C 허용) */
       if(steps[i].wg){
-        /* v0.5.6d: 착지 대기 중 사용자가 다른 걸 누르면 그 기술은 버린다.
+        /* v0.5.7c: 착지 대기 중 사용자가 다른 걸 누르면 그 기술은 버린다.
            안 그러면 한참 뒤에 저절로 나오는 것처럼 보인다(귀신터치). */
         if(MACRO.seq!==undefined&&MACRO.seq!==inputSeq){ endMacro(); return; }
         const a=readGame();
@@ -1217,7 +1412,6 @@ function runSteps(steps,el,kind,faceRef){
         if(prev.sus){
           runSteps.lastSus={el:prev._el||0,rel:MACRO.release};
           /* v0.2.1: [발동 결과 표시] 꺼짐이면 침묵, [기술명 숨김]이면 이름 없이 강약만 */
-          if(MACRO.name&&cfg.watch&&cfg.spToast&&cfg.commNames) toast((cfg.commNames?MACRO.name:"발동")+((prev._el||0)>=8?"  — 강":"  — 약"));
         }
         if(i>=steps.length){ endMacro(); return; }
         applyStep(steps[i]); left=steps[i].f;
@@ -1250,7 +1444,7 @@ function ss2Actable(){
   return act<0x100||act===0x10C;
 }
 let spGate=null;
-/* v0.5.6d: **사용자가 다음 동작을 한 순간 지난 선입력은 무효**로 만든다.
+/* v0.5.7c: **사용자가 다음 동작을 한 순간 지난 선입력은 무효**로 만든다.
    사용자 제보: "라운드 중에도 1.5초쯤 뒤에 SP가 저절로 눌린다".
    선입력 창을 짧게 줄이는 것만으로는 부족했다 — 그 사이 사용자가 다른 걸 하면
    뒤늦게 나오는 기술은 전부 '귀신터치'로 느껴진다. 그래서 두 겹으로 막는다:
@@ -1274,6 +1468,7 @@ function runMove(mv,el,opts){
   const facing=readFacing();
   MACRO.name=mv.n;
   runMove.lastAt=performance.now(); runMove.lastName=mv.n; runMove.lastMv=mv;   /* 해설용 */
+  capShow(mv,opts&&opts.capPress);                                              /* 촬영 모드 자막 */
   opts=Object.assign({},opts,{bufferReset:clearCommandBuffer()});
   runSteps(compileMove(mv,facing,opts),el,undefined,facing);
 }
@@ -1284,6 +1479,7 @@ function endMacro(){
   applyDir(userDir);
   if(MACRO.el){ MACRO.el.classList.remove("busy","armed"); }
   MACRO.active=false; MACRO.el=null; MACRO.name=null;
+  capEnd();
 }
 /* 발동 결과 표시: 실제로 나온 액션ID를 기술명으로 변환해 알려준다(불발이면 "불발"). */
 /* 선입력(예약) 시한 — 짧게 유지한다. 길면 '저절로 눌린 것'이 된다. */
@@ -1431,35 +1627,22 @@ function curSpMap(){
   if(us) for(const k in us){ if(us[k]!==undefined&&us[k]!==null) map[k]=us[k]; }
   return map;
 }
-/* v0.5.6d: 어느 버튼이 눌린 것으로 보일지는 **부른 쪽이 정한다.**
+/* v0.5.7c: 어느 버튼이 눌린 것으로 보일지는 **부른 쪽이 정한다.**
    제보: "뒤+A+B 로 비오의를 내면 SP 버튼이 같이 눌린 것처럼 보여 거슬린다".
    비오의는 A+B 로 내는데 불빛은 SP 에 들어오고, 하단 알림도 「←+SP」로 떴다. */
 function fireSp(mv,rel,airborne,waitGround,src){
   const btn=(src&&src.el)||$("#spBig");        /* 불빛이 들어올 버튼 */
-  const btnName=(src&&src.label)||"SP";        /* 하단 알림에 찍을 이름 */
-  let warn="";
   if(mv.card){
     const rdy=cardMoveReady(mv,cardState());
+    /* 카드가 없어 못 내는 것은 **실패**라서 알려 준다 — 이건 기술명 알림이 아니라 안내다 */
     if(!rdy.ok){ toast("🃏 카드 미장착 — 전투 전 '능력 추가'에서 [지정] 필요"); return; }
-    if(rdy.warn) warn="  🃏"+rdy.warn;
+    if(rdy.warn) toast("🃏"+rdy.warn);
   }
-  /* v0.2.1: [기술명 숨김]이면 SP 토스트에서도 이름을 뺀다 (사용자 제보: 숨김이 안 먹히던 곳) */
-  let msg=(DIR_LABEL[rel]?DIR_LABEL[rel]+"+":"")+btnName+(cfg.commNames?"  "+mv.n:"");
-  if(mv.near){
-    /* 실측: 커맨드 잡기는 거리 32 이하에서만 성립하고 그 밖에선 헛잡기 경직만 남는다.
-       사용자 확정 사양: **헛잡기도 그대로 발동**시키고 사거리 안내만 표시한다(막지 않는다). */
-    const gd=readGame();
-    /* 헛잡기도 그대로 발동시킨다(사용자 요청) — 사거리 안내만 표시 */
-    const far=gd.ok&&gd.dist!==undefined&&gd.dist>GRAB_RANGE;
-    msg+= far ? (mv.grab?"  (잡기 사거리 밖)":"  (근접 필요 — 멉니다)") : "  (근접)";
-  }
-  const o={noChain:!cfg.chainAuto, skipJump:airborne, afterBasic:fireSp._midAttack, waitGround:waitGround, sustain:true};
+  const o={noChain:!cfg.chainAuto, skipJump:airborne, afterBasic:fireSp._midAttack, waitGround:waitGround, sustain:true,
+           capPress:capPress((src&&src.label)||"SP")};
   runMove(mv,btn,o);
   if(mv.air&&airborne) armAirRetry(mv,btn);
-  watchFire(mv.n);   /* 비오의는 분노 미충족 시 재시도 무의미 */
-  if(waitGround) msg+="  (착지 후)";
-  else if(compileMove.poisonFlush) msg+="  (입력 보정)";
-  if(cfg.spToast&&cfg.commNames) toast(msg+warn);   /* v0.4.6: 기술명 숨김이면 하단 알림도 통째로 침묵 */
+  watchFire(mv.n);
 }
 /* v0.5.6: SP를 누른 뒤 **예약**(선입력 게이트·공중 재시도·착지 대기)이 살아 있을 수 있는 시한.
    사용자 제보 "SP가 귀신터치마냥 눌릴 때가 있다" — 라운드가 끝나는 순간 누른 입력이
@@ -1508,6 +1691,9 @@ function ctlEls(){ return [...document.querySelectorAll("#controls .ctl")]; }
 function baseLayout(){
   const c=$("#controls");
   const W=c.clientWidth||innerWidth, H=c.clientHeight||360;
+  /* 가로 모드에선 컨트롤이 화면 전체를 덮는다 — 그대로 두면 팔 길이(0.70u)가 화면 높이보다 커져
+     SP가 해설 띠까지 올라간다. 세로 기본 배치는 건드리지 않고 가로에서만 높이에 맞춰 줄인다. */
+  const land=innerWidth>innerHeight&&innerHeight<=600;
   const u=Math.min(W,470);
   /* 어떤 화면 비율에서도 버튼이 잘리지 않도록 컨트롤 영역 안으로 물린다 */
   const place=(el,cx,cy,size)=>{
@@ -1518,11 +1704,20 @@ function baseLayout(){
     }
     else{ el.style.left=cx+"px"; el.style.top=cy+"px"; }
   };
-  /* 상단 유틸 줄 */
-  $("#ffBtn").style.left="10px"; $("#ffBtn").style.top="8px";
+  /* 상단 유틸 줄 — 가로에선 컨트롤이 화면 전체를 덮으므로 8px에 두면 **상단 줄 뒤에 깔려** 못 누른다.
+     해설 띠 아래 왼쪽 빈자리(게임 왼편)로 내린다. 오른쪽은 SP가 차지한다. */
   const opt=$("#optBtn"), pal=$("#palBtn");
-  opt.style.left=""; opt.style.right="10px"; opt.style.top="8px";
-  pal.style.left=""; pal.style.right="96px"; pal.style.top="8px";
+  if(land){
+    const cr=$("#commRow").getBoundingClientRect(), cb0=c.getBoundingClientRect();
+    const ty=Math.round(Math.max(0,cr.bottom-cb0.top)+8)+"px";
+    $("#ffBtn").style.left="10px";  $("#ffBtn").style.top=ty;
+    pal.style.right=""; pal.style.left="68px";  pal.style.top=ty;
+    opt.style.right=""; opt.style.left="131px"; opt.style.top=ty;
+  }else{
+    $("#ffBtn").style.left="10px"; $("#ffBtn").style.top="8px";
+    opt.style.left=""; opt.style.right="10px"; opt.style.top="8px";
+    pal.style.left=""; pal.style.right="96px"; pal.style.top="8px";
+  }
   /* 좌측 원형 패드 */
   const ds=Math.min(0.42*W,215)*(cfg.scale.pad/100);
   const dp=$("#dpad");
@@ -1546,12 +1741,30 @@ function baseLayout(){
   const rad=t=>t*Math.PI/180;
   const at=(th,r)=>({x:corner.x-r*Math.cos(rad(th)), y:corner.y-r*Math.sin(rad(th))});
   const su=u*0.170*bs;          /* 다섯 버튼 공통 지름 */
-  const pA=at(26,u*0.30*bs), pB=at(70,u*0.30*bs);
-  place($("#btnA"),pA.x,pA.y,su);            /* A = 짧게 누르면 약, 8프레임 넘기면 강 */
-  place($("#btnB"),pB.x,pB.y,su);
-  place($("#spBig"),   at(46,u*0.50*bs).x, at(46,u*0.50*bs).y, su);
-  place($("#btnAB"),   at(60,u*0.70*bs).x, at(60,u*0.70*bs).y, su);   /* 분노폭발 — 바깥 위쪽.
-                                                 아래로 내리면 디패드와 겹친다(실측) */
+  if(land){
+    /* ═══ 가로 전용: 조밀한 마름모 ═══════════════════════════════════
+       제보: "가로모드 버튼배치 레알이냐 / 조밀, 안 겹침 / 내가 올린 거 보고 배워서 해."
+       세로용 부채꼴(팔 0.30·0.62·0.70u)을 가로에 그대로 쓰면 네 버튼이 화면 오른쪽에
+       흩어져 손이 계속 움직여야 한다. 가로에선 화면이 넓어 코너를 축으로 삼을 이유가 없다 —
+       **한 자리에서 엄지만 까딱하는 조밀한 마름모**로 모은다.
+         이웃 간 중심거리 = s·√2 = 1.19·지름 (지름의 19%가 틈)  → 겹치지 않으면서 가장 붙는 값 */
+    const s=su*0.84, m=Math.max(14,su*0.18);
+    const cx=W-m-s-su/2, cy=H-m-s-su/2;
+    place($("#spBig"), cx,   cy-s, su);      /* 위   */
+    place($("#btnAB"), cx-s, cy,   su);      /* 왼   */
+    place($("#btnB"),  cx+s, cy,   su);      /* 오른 */
+    place($("#btnA"),  cx,   cy+s, su);      /* 아래 */
+  }else{
+    const pA=at(26,u*0.30*bs), pB=at(70,u*0.30*bs);
+    place($("#btnA"),pA.x,pA.y,su);            /* A = 짧게 누르면 약, 8프레임 넘기면 강 */
+    place($("#btnB"),pB.x,pB.y,su);
+    /* v0.5.7c: 기본 배치를 **사용자 실사용 배치**로 맞춘다.
+       SP 가 가장 바깥 위(엄지가 가장 멀리 뻗는 자리), A+B 는 그 왼쪽 아래.
+       A·B 는 그대로 두어 손 기준점이 흔들리지 않게 했다.
+       결과는 SP(위) · A+B(왼) · B(오른) · A(아래) 의 마름모. */
+    place($("#spBig"),   at(60,u*0.70*bs).x, at(60,u*0.70*bs).y, su);
+    place($("#btnAB"),   at(40,u*0.62*bs).x, at(40,u*0.62*bs).y, su);
+  }
 }
 /* ═══ 프레임 보정(자동 프레임스킵) — v1.2에서 **완전 삭제** ═══
    코어에 frameskip 옵션이 없어 vsync를 끄는 방식으로 대신했었다(setVSync(false)).
@@ -1652,18 +1865,62 @@ function applyLayout(){
   });
   const c=$("#controls");
   c.style.setProperty("--ctlA",(cfg.alpha/100).toFixed(2));
+  /* 촬영 자막도 같은 배치 체계를 탄다 — 화면 아래 가운데가 늘 비어 있는 건 아니라서
+     (세로에선 버튼 위에 얹힌다) 끌어서 옮길 수 있어야 한다. 기준 위치가 translateX(-50%)라
+     거기에 사용자 오프셋을 더한다. [배치·크기 초기화]로 같이 돌아온다. */
+  const cb=$("#capBar");
+  if(cb){
+    const o=cfg.layout.capBar||{};
+    cb.style.transform="translate(calc(-50% + "+(o.x||0)+"px),"+(o.y||0)+"px)";
+    /* 화면 밖으로 끌고 나가면 다시 못 잡는다 — 자막 상자를 화면 안으로 물린다 */
+    const r=cb.getBoundingClientRect(), st=$("#stage").getBoundingClientRect(), M=6;
+    let dx=0, dy=0;
+    if(r.width&&r.height){
+      if(r.left<st.left+M) dx=st.left+M-r.left; else if(r.right>st.right-M) dx=st.right-M-r.right;
+      if(r.top<st.top+M) dy=st.top+M-r.top;     else if(r.bottom>st.bottom-M) dy=st.bottom-M-r.bottom;
+    }
+    if(dx||dy){
+      const n={x:Math.round((o.x||0)+dx), y:Math.round((o.y||0)+dy)};
+      cfg.layout.capBar=n;
+      cb.style.transform="translate(calc(-50% + "+n.x+"px),"+n.y+"px)";
+    }
+  }
 }
-$("#artBtn")&&$("#artBtn").addEventListener("click",()=>{
-  /* 카드 아트 1 → 2 → … → 스테이지만 → 끔 → 다시 카드 아트 */
+/* v0.5.7c: 짧게 = 돌리기, **길게(0.6초) = 지금 화면을 아트로 담기**.
+   제보: "아트 캡처가 안 될 때가 많다" — 카드 화면을 안 지나는 모드도 있으니
+   원할 때 직접 담을 길을 둔다. 담은 것은 카드와 같은 자리에 쌓인다(이름판은 없다). */
+function artCycle(){
   if(cfg.art==="art"&&(cfg.artIdx|0)<artList.length-1) cfg.artIdx=(cfg.artIdx|0)+1;
   else if(cfg.art==="art") cfg.art="stage";
   else if(cfg.art==="stage") cfg.art="off";
   else { cfg.art="art"; cfg.artIdx=0; }
   saveCfg(); sideArtCur=""; sideArtRefresh();
   toast("양옆 아트웍 — "+(cfg.art==="art"
-        ? (artList.length?("카드 아트 "+((cfg.artIdx|0)+1)+"/"+artList.length):"카드 아트 (아직 없음 — 카드 화면에서 모은다)")
+        ? (artList.length?("담은 그림 "+((cfg.artIdx|0)+1)+"/"+artList.length):"이번 판 스테이지")
         : ART_LABEL[cfg.art]));
-});
+}
+async function artGrabNow(){
+  const c=await capFrame();
+  if(!c){ toast("게임이 떠 있어야 담을 수 있어요"); return; }
+  const a=cropURL(c,[0,0,160,152]);
+  if(artList.indexOf(a)>=0){ toast("이미 담은 화면이에요"); return; }
+  artList.unshift(a); nameList.unshift(null); styleList.unshift(null);
+  artList=artList.slice(0,4); nameList=nameList.slice(0,4); styleList=styleList.slice(0,4);
+  cfg.art="art"; cfg.artIdx=0; artSave(); saveCfg(); sideArtCur=""; sideArtRefresh();
+  toast("📷 지금 화면을 담았어요 — "+artList.length+"/4");
+}
+(function bindArtBtn(){
+  const b=$("#artBtn"); if(!b) return;
+  let t=null, held=false;
+  const start=e=>{ e.preventDefault(); held=false;
+    clearTimeout(t); t=setTimeout(()=>{ held=true; artGrabNow(); },600); };
+  const end=e=>{ e.preventDefault(); clearTimeout(t); if(!held) artCycle(); };
+  b.addEventListener("pointerdown",start);
+  b.addEventListener("pointerup",end);
+  b.addEventListener("pointercancel",()=>{ clearTimeout(t); });
+  b.addEventListener("pointerleave",()=>{ clearTimeout(t); });
+  b.addEventListener("contextmenu",e=>e.preventDefault());
+})();
 window.addEventListener("resize",()=>{ if(!$("#stage").hidden){ applyLayout(); setTimeout(alignCommPanel,120); sideArtCur=""; setTimeout(sideArtRefresh,160); } });
 window.addEventListener("orientationchange",()=>{ if(dpadRemeasure) dpadRemeasure(); });
 
@@ -1875,7 +2132,11 @@ function refreshSpButtons(){
   const spb=$("#spBig");
   spb.hidden=false;
   const map=curSpMap();
-  $("#charBtn").textContent=c.n+" · "+(cfg.style==="b"?"나찰":"수라");
+  /* 좁은 화면에선 유파를 떼고 이름만 — 「카즈키 · 나찰」은 폰 상단 줄을 혼자 다 먹는다.
+     유파는 [캐릭터] 시트를 열면 바로 보인다. */
+  const stn=(cfg.style==="b"?"나찰":"수라");
+  $("#charBtn").textContent=(innerWidth<=470)?c.n:(c.n+" · "+stn);
+  $("#charBtn").title=c.n+" · "+stn;
   applyLayout();
 }
 
@@ -2079,6 +2340,11 @@ const CHAR_LORE={
    기술명은 cfg.commNames 로 끄고 켠다 — NM()이 빈 문자열을 돌려주면 이름 없는 문형을 쓴다.
    관계 설정은 시리즈 공식 설정 범위(라이벌·자매·동경·닌자 선후배)만 — 창작 단정 금지. */
 function NM(d){ return (cfg.commNames&&d.name&&d.name!=="필살기")?d.name:""; }
+/* v0.5.7c: **나코루루는 유파를 타고 인격이 갈린다.**
+   수라 = 우리가 아는 상냥한 나코루루. 나찰 = 시쿠루를 탄 쪽 — 서늘하고 말이 짧다.
+   같은 사건이라도 다른 사람이 말하는 것처럼 들려야 한다. NR(수라문안, 나찰문안) 로 쓴다. */
+const RSTS=()=>cfg.style==="b";
+function NR(a,b){ return RSTS()?b:a; }
 /* 조사 「(으)로」 — 받침 없거나 ㄹ 받침이면 「로」. 「츠바메 가에시으로」 같은 오류를 막는다. */
 function RO(n){
   const c=(n||"").charCodeAt((n||"").length-1);
@@ -2267,22 +2533,22 @@ const SPEAKERS={
  },
  nakoruru:{ /* 상냥한 자연의 수호자 — 존댓말 */
   hello:"나코루루예요. 다치지 않게… 힘내세요!",
-  move:d=>d.sup?["비오의…! 큰 게 옵니다!",1,3]:null,
+  move:d=>d.sup?[NR("비오의…! 큰 게 옵니다!","…비오의. 자연이 노한다"),1,3]:null,
   moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+"크게 들어갔어요!",1,2]:[(nm?nm+" ":"")+"맞았어요!",0,1.8];},
   moveDown:d=>{const nm=NM(d); return [nm?nm+"… 눕혔어요!":"눕혔어요!",1,2];},
   moveKo:d=>{const nm=NM(d); return [(nm?nm+"! ":"")+"이걸로 끝이에요!",1,4];},
-  hit:d=>d.dmg>=12?["굉장한 일격이에요!",1,1.2]:null,
-  taken:d=>d.dmg>=12?["괜찮으세요…?!",0,1.2]:null,
-  down:d=>["지금이 기회예요!",0,1.5],
-  downed:d=>["얼른 일어나세요…!",0,1.5],
-  low1:d=>["위험해요… 조심하세요!",1,2],
-  low2:d=>["조금만 더예요!",1,2],
-  reversal:d=>["흐름이 바뀌었어요!",1,2],
-  ko:d=>["…승부가 났네요. 수고하셨어요",1,4],
-  koed:d=>["아… 다음엔 꼭 이겨요",1,4],
-  dko:d=>["둘 다…!? 이런 일도 있네요",1,4],
-  round:d=>["힘내세요!",0,1],
-  start:d=>[d.who+"… 좋은 시합이 되길",1,2],
+  hit:d=>d.dmg>=12?[NR("굉장한 일격이에요!","…좋은 바람이었다"),1,1.2]:null,
+  taken:d=>d.dmg>=12?[NR("괜찮으세요…?!","…아프겠군. 참아라"),0,1.2]:null,
+  down:d=>[NR("지금이 기회예요!","…지금. 끝내라"),0,1.5],
+  downed:d=>[NR("얼른 일어나세요…!","…일어나. 땅은 차갑다"),0,1.5],
+  low1:d=>[NR("위험해요… 조심하세요!","…피 냄새가 난다. 네 것이다"),1,2],
+  low2:d=>[NR("마마하하도 보고 있어요, 조금만 더!","…숨통이 얕다. 베어라"),1,2],
+  reversal:d=>[NR("바람이 이쪽으로 불어요…!","…흐름이 돌았군"),1,2],
+  ko:d=>[NR("승부가 났네요. 수고하셨어요","…끝이다. 자연은 아무 말도 안 한다"),1,4],
+  koed:d=>[NR("아… 다음엔 꼭 이겨요","…졌다. 산으로 돌아갈 시간이군"),1,4],
+  dko:d=>[NR("둘 다…!? 이런 일도 있네요","…둘 다 쓰러졌다. 흔한 일이다"),1,4],
+  round:d=>[NR("힘내세요!","…가라"),0,1],
+  start:d=>[d.who+NR("… 좋은 시합이 되길","… 어느 쪽이든 자연은 편들지 않는다"),1,2],
   rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
   charsel:d=>["누구랑 싸우실 건가요?",0,1],
   stylesel:d=>["수라와 나찰… 어느 쪽이든 응원할게요",0,1],
@@ -2302,8 +2568,8 @@ const SPEAKERS={
   matchPoint:d=>["마지막 판이에요… 심장이 떨려요",1,2],
   doubleLow:d=>["둘 다 위험해요…! 못 보겠어요…!",1,2],
   longFight:d=>["긴 승부네요… 힘내세요",0,1],
-  perfect:d=>["완승이에요! 하나도 안 다쳤어요!",1,2.5],
-  comeback:d=>["포기하지 않아서… 이겼어요!! 감동이에요!",1,2.5],
+  perfect:d=>[NR("마마하하도 봤을 거예요! 하나도 안 다쳤어요!","…흠 하나 없군. 시쿠루도 만족하겠다"),1,2.5],
+  comeback:d=>[NR("이겼다…! 아, 죄, 죄송해요. 저도 모르게…","…죽다 살아났군. 그것도 자연이다"),1,2.5],
   quickKo:d=>["벌써 끝났어요…! 굉장해요!",1,2],
   revenge:d=>["지난번 설욕이에요! 잘하셨어요!",1,2],
   streak:d=>[d.n+"연승이에요! …무리는 하지 마세요?",1,2],
@@ -2332,26 +2598,26 @@ const SPEAKERS={
   rush:d=>["연속으로 들어가요!",1,1.5],
   winScr:d=>[pick(["이름이 크게 나왔어요! 축하해요!","이겼어요…! 다치진 않으셨죠?"]),1,2],
   loseScr:d=>[pick(["아쉬워요… 그래도 좋은 승부였어요","다음엔 꼭… 꼭 이겨요!"]),0,2],
-  oppSp:d=>["조심하세요!",0,1],
+  oppSp:d=>[NR("조심하세요!","…온다. 물러서라"),0,1],
   REL:{rimururu:"리무루루…! 다치면 안 돼",galford:"갈포드 씨네요. 파피도 잘 있죠?",
        haohmaru:"하오마루 씨… 또 술 드시고 오신 거 아니죠?",nakoruru:"저…? 신기한 기분이에요",
        hanzo:"한조 씨는… 조금 무서워요",yuga:"저 사람에게선… 나쁜 기운이 느껴져요"},
  },
  hanzo:{ /* 과묵한 닌자 두목 — 단문 */
   hello:"핫토리 한조. …지켜보겠다",
-  move:d=>d.sup?["비오의. …볼만하겠군",1,3]:null,
+  move:d=>d.sup?["비오의. …이가의 이름을 걸어라",1,3]:null,
   moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+". ":"")+"…훌륭하다",1,2]:[(nm?nm+" ":"")+"명중.",0,1.8];},
   moveDown:d=>{const nm=NM(d); return [nm?nm+". 눕혔다":"눕혔다.",1,2];},
   moveKo:d=>{const nm=NM(d); return [(nm?nm+". ":"")+"…끝이다",1,4];},
-  hit:d=>d.dmg>=12?["좋은 일격이다",1,1.2]:null,
-  taken:d=>d.dmg>=12?["빈틈이 있었다",0,1.2]:null,
-  down:d=>["지금이다",0,1.5],
+  hit:d=>d.dmg>=12?[pick(["좋은 일격이다","…그 정도면 신조도 고개를 끄덕였겠지"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?["빈틈이 있었다. 그림자는 빈틈에서 죽는다",0,1.2]:null,
+  down:d=>null,                      /* v0.5.7c: 잔사건은 침묵 — 한조는 말수가 무기다 */
   downed:d=>["…일어나라",0,1.5],
-  low1:d=>["물러설 곳은 없다",1,2],
+  low1:d=>["물러설 곳은 없다. 주군께 등을 보일 셈이냐",1,2],
   low2:d=>["끝내라",1,2],
-  reversal:d=>["…형세 역전",1,2],
-  ko:d=>["…승부가 났다",1,4],
-  koed:d=>["…패배도 수행이다",1,4],
+  reversal:d=>["…그림자는 서두르지 않는다. 이렇게 뒤집는 것이다",1,2],
+  ko:d=>[pick(["…끝이다. 시체는 밤이 치운다","…승부가 났다. 도쿠가와의 이름에 흠은 없다"]),1,4],
+  koed:d=>[pick(["…패배도 수행이다","…이대로는 신조를 볼 낯이 없다"]),1,4],
   dko:d=>["동귀어진인가",1,4],
   round:d=>["…간다",0,1],
   start:d=>[d.who+". 시작하지",1,2],
@@ -2374,8 +2640,8 @@ const SPEAKERS={
   matchPoint:d=>["…최종국. 사념을 버려라",1,2],
   doubleLow:d=>["…서로 목숨이 한 줄. 다음 일격이 전부다",1,2],
   longFight:d=>["…긴 싸움. 인내도 무기다",0,1],
-  perfect:d=>["…완승. 흠잡을 데가 없다",1,2.5],
-  comeback:d=>["…사지에서 살아 돌아왔군. 훌륭하다",1,2.5],
+  perfect:d=>["…흠 하나 없군. ……호오",1,2.5],
+  comeback:d=>["…사지에서 돌아왔군. 그것이 닌자다",1,2.5],
   quickKo:d=>["…일섬. 이상적인 승부다",1,2],
   revenge:d=>["…빚을 갚았군. 그것으로 됐다",1,2],
   streak:d=>["…"+d.n+"연승. 인정하마",1,2],
@@ -2391,7 +2657,7 @@ const SPEAKERS={
     return ["…"+d.n+"연전째. 간다",0,1.3]; },
   quoteScr:d=>[pick(["…말은 검으로 하는 것이다","…각오를 말하는군","……들을 필요는 없다"]),0,1.2],
   ending:d=>["…완주. 수행의 끝을 보았군. 훌륭하다",1,3],
-  winTalk:d=>[pick(["…이겼다고 멈추지 마라","…다음 적은 더 강하다","…좋은 검이었다. 기억해 둬라","…승리는 수행의 중간 지점일 뿐"]),0,1.5],
+  winTalk:d=>[pick(["…이겼다고 멈추지 마라","…다음 적은 더 강하다","…좋은 검이었다. 기억해 둬라","…나는 아직 아들을 되찾지 못했다. 너는 멈추지 마라"]),0,1.5],
   muse:d=>{ if(d.ctx==="battle") return [pick(["……","…호흡을 죽여라","…기다림도 술법이다"]),0,1];
     if(d.ctx==="quote") return [pick(["……","…쓸데없는 말이다"]),0,1];
     return [pick(["……","…수련을 게을리하지 마라","…조용하군. 나쁘지 않다","…그림자는 서두르지 않는다","…밤이 길다"]),0,1]; },
@@ -2402,7 +2668,7 @@ const SPEAKERS={
   halfHp2:d=>["…적, 절반. 순조롭다",0,1.2],
   halfHp1:d=>["…피해가 크다. 호흡을 가다듬어라",0,1.2],
   rush:d=>["…연격. 훌륭하다",1,1.5],
-  winScr:d=>[pick(["…승자의 이름이다. 새겨 둬라","…이겼다. 그러나 자만은 금물"]),1,2],
+  winScr:d=>[pick(["…승자의 이름이다. 새겨 둬라","…이겼다. 그러나 자만은 금물","…이 이름, 신조에게도 들려주고 싶군"]),1,2],
   loseScr:d=>[pick(["…패배를 새겨라. 다음은 이긴다","…저 이름을 기억해라. 수행이 부족했다"]),0,2],
   oppSp:d=>["……온다",0,1],
   REL:{galford:"갈포드… 닌자의 길, 지켜보겠다",kazuki:"카자마의 불꽃인가",
@@ -2564,7 +2830,7 @@ async function grabStage(){
   stageArt=cropURL(c,[0,0,160,152]); sideArtCur=""; sideArtRefresh();
 }
 /* 카드 화면에서 그림과 이름판을 뜬다 — 이 게임 최고의 캐릭터 아트가 여기 있다.
-   v0.5.6d: 사용자 제보 "캡쳐가 옳게 잘 안 된다".
+   v0.5.7c: 사용자 제보 "캡쳐가 옳게 잘 안 된다".
    원인은 **화면이 서는 중에 찍는 것**이었다. 페이드 도중이거나 타일이 반만 올라온 프레임을
    담으면 액자 판별은 통과해도 그림이 반쪽이다. 그래서 두 겹으로 막는다:
      ① 액자 위아래 두 줄이 새까만지 (기존)
@@ -2612,8 +2878,11 @@ function sideArt(){
     const disp=Math.min(r.width,r.height*160/152);
     const side=Math.floor((r.width-disp)/2)-1;
     const ai=(cfg.art==="art")?artCur():-1;
-    const useArt=ai>=0;
-    const key=[cfg.art,ai,side,Math.round(r.height),stageArt?stageArt.length:0,artList.length].join("|");
+    /* v0.5.7c: 카드를 아직 못 모았어도 액자가 비지 않게 — 그 판 스테이지를 **흐림 없이** 건다.
+       제보: "아트 캡처가 안 될 때가 많고, 기본 아트라도 뭔가 있어야 한다" */
+    const artSrc=ai>=0?artList[ai]:((cfg.art==="art"&&stageArt)?stageArt:null);
+    const useArt=!!artSrc;
+    const key=[cfg.art,ai,side,Math.round(r.height),stageArt?stageArt.length:0,artList.length,artSrc?artSrc.length:0].join("|");
     if(key===sideArtCur) return;
     sideArtCur=key;
     const show=side>=56&&cfg.art!=="off"&&(!!stageArt||useArt);
@@ -2629,8 +2898,8 @@ function sideArt(){
       if(useArt){
         card.style.display="block";
         card.style.width=w+"px"; card.style.height=w+"px"; card.style.top=ytop+"px";
-        card.style.background="url("+artList[ai]+") center/contain no-repeat";
-        const pl=(i===0?nameList:styleList)[ai];
+        card.style.background="url("+artSrc+") center/contain no-repeat";
+        const pl=ai>=0?(i===0?nameList:styleList)[ai]:null;
         if(pl){
           plate.style.display="block";
           plate.style.width=pw+"px"; plate.style.height=ph+"px"; plate.style.top=(ytop+w+10)+"px";
@@ -2681,7 +2950,7 @@ function commStep(sn){
   const mode=sn.mode, p1=sn.p1, p2=sn.p2, a1=sn.a1, a2=sn.a2, fresh=sn.fresh;
   if(mode!==0xF1&&st.mode===0xF1){
     st.offAt=performance.now();
-    /* v0.5.6d: 전투를 벗어나는 순간 **메뉴 잡담 타이머를 다시 센다.**
+    /* v0.5.7c: 전투를 벗어나는 순간 **메뉴 잡담 타이머를 다시 센다.**
        제보: "한 판 끝나도 준비할 때마다 항상 '빨리 고를 필요 없다' 같은 소리가 나온다".
        원인: 결과 화면은 아직 mode 0xF1 이라 화면 전환 리셋(scr 변화)이 안 걸리고,
        그 뒤 mode만 조용히 바뀌면서 **전투 전에 세워 둔 낡은 타이머가 이미 만료돼 있었다.**
@@ -2930,6 +3199,56 @@ setInterval(()=>{
             stage:H[heapBase+STAGE_OFF],
             fresh:Date.now()-lastStateLoad<300});
 },100);
+
+/* ═══════════════ 더미 상대 (v0.5.8 / v0.5.8d에서 정정) ═════════════════
+   "앞에 더미를 둘 수 있나?" — 시연 클립을 찍는데 COM이 계속 반격하면 한 기술을 온전히
+   담을 수가 없다. 연습에도 그대로 쓸모가 있다.
+
+   ── 채택: COM 판단 바이트를 막는다 ──
+   상대 구조체를 전수로 훑어(224자리 × 0x00/0xFF, 각 15초) **0xE88** 을 찾았다.
+   하위 2비트를 세워 두면 COM의 공격이 나에게 닿지 않는다. 값 256개를 전부 재 본 결과
+   **비트0·비트1이 둘 다 선 값 16개**가 전부 같은 결과였다 → 두 비트가 원인이다.
+   P1 쪽 같은 자리(0xE48)는 항상 0 — 사람이 조종하는 쪽은 안 쓰는, AI 전용 자리로 보인다.
+
+   실측: 7개 전투 상태 25초씩 — 더미 끔 피해 9~33 / 더미 켬 **전부 0**.
+   150초를 돌려 라운드 국면(0x11A)이 1→3→1 로 정상 순환하는 것까지 확인.
+
+   ── 폐기 ①: 상대 액션ID를 서 있기로 되돌리기 ──
+   반격은 사라졌지만 **라운드가 끝날 때 게임이 멈췄다.** 시간 초과 시 상대가 취해야 할 자세까지
+   덮어써서 종료 연출이 진행되지 못했다. 종료 15초 전에 손을 떼도 똑같았다.
+   **결정을 막아야지 결과를 덮어쓰면 안 된다.**
+
+   ── 폐기 ②: 가로 좌표를 물어 '제자리 고정' (v0.5.8b~c에 잘못 들어가 있었다) ──
+   제보: "더미가 이상하게 멀어진다."
+   원인은 **0xE38·0xE78 이 월드 좌표가 아니라 카메라(화면) 상대 좌표**라는 것이었다.
+   근거: 아무 입력도 안 준 채 두면 P1의 0xE38 이 저 혼자 99→79→62→45→25 로 흘러간다.
+   P1은 가만히 있는데 값이 변한다 = 카메라가 움직인 것이다.
+   그래서 그 값을 고정하면 **상대를 화면의 한 점에 묶어 두는 꼴**이 되고, 카메라가 스크롤할 때마다
+   상대가 스테이지를 가로질러 끌려가며 이쪽을 밀어붙인다. 사용자가 본 "이상하게 멀어짐"이 그것이다.
+   실측으로도 고정은 성립하지 않았다 — 매 프레임 써 넣어도 231→215→199 로 흘렀고,
+   그 폭이 P1 쪽 이동폭과 정확히 같았다(둘 다 -16). 카메라가 다시 계산해 넣는다는 뜻이다.
+   **좌표 고정은 통째로 들어냈다.**
+
+   지금 실제 동작: **판단을 막으면 상대가 한 번 뒤로 물러나 구석에 서고, 그 뒤로는 안 움직인다.**
+   (거리 80 → 144에서 멈춤, 13.5초 관측 내내 144 유지.) 다가가서 찍으면 된다.
+
+   잰 조건: 한글판 rom.ngc · 아수라(수라) 대 샤를로트 · st_battle/nav_fight 상태.
+   16ms 간격은 **더미가 켜졌을 때만** 돈다 — 평시 타이머 0개. */
+const DUMMY_AI_OFF=0xE88;   /* COM 판단 바이트 — P2 구조체 +10. P1쪽(0xE48)은 늘 0이라 AI 전용 자리다 */
+const ROUND_PHASE_OFF=0x11A;/* 라운드 국면 — 1 전투 / 3 라운드 종료 연출 */
+let dummyIv=null;
+function dummyTick(){
+  const g=gm(); if(!g||heapBase<0||!g.Module||!g.Module.HEAPU8) return;
+  const H=g.Module.HEAPU8;
+  if(H[heapBase+CTX_OFF]!==0xF1) return;                    /* 전투 중에만 */
+  if(H[heapBase+ROUND_PHASE_OFF]!==1) return;               /* 라운드 종료 연출 중엔 손대지 않는다 */
+  H[heapBase+DUMMY_AI_OFF]|=3;                              /* 판단을 막는다 → 반격이 없다 */
+  if(H[heapBase+P2HP_OFF]<24) H[heapBase+P2HP_OFF]=128;     /* 쓰러지기 직전에만 채운다 */
+}
+function dummyApply(){
+  clearInterval(dummyIv); dummyIv=null;
+  if(cfg.dummy) dummyIv=setInterval(dummyTick,16);
+}
 
 /* ═══ 컨텍스트 컨트롤 (포팅판식 메뉴/전투 버튼 전환) — 실기 리버싱: 0x00A7 비트0 = 전투 중 ═══
    전투: 즉시 전환 / 메뉴: 3연속(1.8s) 확인 후 전환 — 라운드 사이 1.9s 간막이에 흔들리지 않음 */
@@ -3239,10 +3558,10 @@ function renderSettings(){
   $("#langSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.l===cfg.lang));
   $("#commSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.cm===(cfg.commMode||"off")));
   $("#commSpkSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.spk===(cfg.commSpk||"haohmaru")));
-  $("#commNamesSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.nm===(cfg.commNames?1:0)));
   $("#hudSeg")&&$("#hudSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.h===(cfg.hud?1:0)));
+  $("#capSeg")&&$("#capSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.cap===(cfg.cap||"off")));
+  $("#dummySeg")&&$("#dummySeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.dum===(cfg.dummy?1:0)));
   $("#shaderSeg")&&$("#shaderSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.shader===(cfg.shader||"off")));
-  $("#spToastSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.t===(cfg.spToast?1:0)));
   $("#autoCharSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.a===(cfg.autoChar?"1":"0")));
   $("#padScale").value=cfg.scale.pad; $("#padScaleOut").textContent=cfg.scale.pad+"%";
   $("#btnScale").value=cfg.scale.btn; $("#btnScaleOut").textContent=cfg.scale.btn+"%";
@@ -3252,6 +3571,43 @@ $("#hudSeg")&&$("#hudSeg").addEventListener("click",e=>{
   const v=e.target.dataset.h;
   if(v!==undefined){ setHud(+v); renderSettings(); saveCfg(); }
 });
+$("#capSeg")&&$("#capSeg").addEventListener("click",e=>{
+  const v=e.target.dataset.cap;
+  if(!v) return;
+  cfg.cap=v; capApply(); renderSettings(); saveCfg();
+  if(v==="off"){ capPreview.want=false; toast("촬영 모드 끔"); }
+  else{
+    /* 설정창이 자막을 가리므로 **창을 닫는 순간** 한 번 시연한다 — 크기를 눈으로 고르라고 */
+    capPreview.want=true;
+    toast(v==="big"?"촬영 모드 [크게] — 닫으면 미리보기":"촬영 모드 켬 — 닫으면 미리보기");
+  }
+});
+/* 설정을 닫을 때 한 번만 보여 주는 미리보기 */
+function capPreview(){
+  if(!capPreview.want||!capOn()) return;
+  capPreview.want=false;
+  const mv=capSampleMove(); if(!mv) return;
+  capShow(mv,"← + A+B");
+  [...mv.m].forEach((c,i)=>setTimeout(()=>capStep(i),150*(i+1)));
+  setTimeout(capEnd,150*(mv.m.length+1));
+}
+function capSampleMove(){ const mvs=curMoves(); return mvs&&mvs[mvs.length-1]; }  /* 목록 끝 = 비오의, 커맨드가 길어 견본으로 좋다 */
+/* 배치 편집 중 견본 — 안 사라지고 전부 점등된 상태로 남는다 */
+function capSample(){
+  const mv=capSampleMove(); if(!mv) return;
+  capShow(mv,"← + A+B");
+  const b=$("#capBar");
+  b.querySelectorAll(".g").forEach(e=>e.classList.add("on"));
+  b.querySelector(".capName").insertAdjacentHTML("beforebegin",
+    '<span class="capGrab">✥ 촬영 자막 — 여기를 끌어서 옮기세요</span>');
+  clearTimeout(capT); capT=null;
+}
+$("#dummySeg")&&$("#dummySeg").addEventListener("click",e=>{
+  const v=e.target.dataset.dum;
+  if(v===undefined) return;
+  cfg.dummy=(v==="1"); dummyApply(); renderSettings(); saveCfg();
+  toast(cfg.dummy?"더미 켬 — 상대가 반격하지 않습니다 (한 번 물러나 구석에 섭니다)":"더미 끔 — 상대가 평소대로 싸웁니다");
+});
 $("#shaderSeg")&&$("#shaderSeg").addEventListener("click",e=>{
   const v=e.target.dataset.shader;
   if(v){ cfg.shader=v; applyShader(); renderSettings(); saveCfg();
@@ -3259,14 +3615,9 @@ $("#shaderSeg")&&$("#shaderSeg").addEventListener("click",e=>{
 });
 
 $("#cfgBtn").onclick=()=>{ renderSettings(); $("#settings").hidden=false; };
-$("#cfgClose").onclick=()=>{ saveCfg(); $("#settings").hidden=true; };
-$("#settings").addEventListener("click",e=>{ if(e.target===$("#settings")){ saveCfg(); $("#settings").hidden=true; } });
-$("#spToastSeg").addEventListener("click",e=>{
-  const v=e.target.dataset.t;
-  if(v!==undefined){ cfg.spToast=+v; renderSettings(); saveCfg();
-    if(cfg.spToast) toast("하단 알림 켬");
-    else{ const t=$("#toast"); clearTimeout(toastT); t.classList.remove("show"); t.textContent=""; } }
-});
+$("#cfgClose").onclick=()=>{ saveCfg(); $("#settings").hidden=true; capPreview(); };
+$("#settings").addEventListener("click",e=>{ if(e.target===$("#settings")){ saveCfg(); $("#settings").hidden=true; capPreview(); } });
+
 $("#autoCharSeg").addEventListener("click",e=>{
   const a=e.target.dataset.a;
   if(a!==undefined&&a!=="") setAutoChar(a==="1");
@@ -3281,12 +3632,6 @@ $("#commSpkSeg").addEventListener("click",e=>{
   const v=e.target.dataset.spk;
   if(v){ cfg.commSpk=v; renderSettings(); saveCfg(); annClear(); commPanelVis();
          const sp=SPEAKERS[v]; annPush(sp.hello,0,2); }
-});
-$("#commNamesSeg").addEventListener("click",e=>{
-  const v=e.target.dataset.nm;
-  if(v!==undefined){ cfg.commNames=+v; renderSettings(); saveCfg();
-    if(!cfg.commNames){ const tt=$("#toast"); clearTimeout(toastT); tt.classList.remove("show"); tt.textContent=""; }
-    annPush(+v?"기술 이름도 부르겠습니다":"기술 이름은 생략합니다",0,2); }
 });
 $("#langSeg").addEventListener("click",e=>{
   const l=e.target.dataset.l;
@@ -3328,6 +3673,13 @@ function setEditing(on){
   editing=on;
   bindDrag(on);   /* 편집 중에만 document 포인터 리스너를 붙인다 */
   ctlEls().forEach(el=>el.classList.toggle("editTarget",on));
+  /* 촬영 모드가 켜져 있으면 자막도 같이 끌 수 있게 — 편집 중엔 견본을 띄워 둔다 */
+  /* v0.5.8c: **촬영 자막도 버튼과 같은 배치 편집에서 옮긴다.**
+     제보 "드래그가 잘 안 됨 / 그냥 정식에 넣어도 되겠다" — 촬영 모드가 꺼져 있어도
+     편집에 들어가면 견본이 뜬다. 미리 자리를 잡아 두고 나중에 켜면 그 자리에 나온다. */
+  const cb=$("#capBar");
+  cb.classList.toggle("editTarget", on&&capOn());
+  if(on&&capOn()) capSample(); else cb.classList.remove("show");
   $("#editBanner").hidden=!on;
   if(on){ ctxState="battle"; $("#controls").dataset.ctx="battle"; } /* 편집 중엔 전 버튼 표시 */
   if(!on) saveCfg();
@@ -3343,8 +3695,16 @@ $("#editDone").onclick=()=>setEditing(false);
 let dragBound=false;
 const DRAG={target:null,key:null,sx:0,sy:0,ox:0,oy:0};
 function dragDown(e){
-  const el=e.target.closest&&e.target.closest(".editTarget");
+  let el=e.target.closest&&e.target.closest(".editTarget");
   if(!el) return;
+  /* v0.5.8c: 촬영 자막 손잡이는 기본 자리가 A·B 버튼과 겹친다.
+     겹친 지점에서는 **버튼이 이긴다** — 자막은 손잡이의 안 겹친 자리를 잡으면 된다.
+     (겹침을 없애려고 손잡이를 옮기면 배치마다 또 겹친다. 우선순위로 푸는 게 맞다.) */
+  if(el.id==="capBar"&&document.elementsFromPoint){
+    const btn=document.elementsFromPoint(e.clientX,e.clientY)
+      .find(n=>n!==el&&n.classList&&n.classList.contains("editTarget"));
+    if(btn) el=btn;
+  }
   e.preventDefault();
   DRAG.target=el; DRAG.key=el.id;
   const o=cfg.layout[el.id]||{};
@@ -3443,8 +3803,10 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
 
 (async function init(){
   if(Q.get("debug")==="1"){
-    window.__ss2={sideArt,sideArtRefresh,grabStage,grabCard,artList:()=>artList,get sideArtCur(){return sideArtCur;},set sideArtCur(v){sideArtCur=v;},readFacing,readGame,cardState,readLangByte,enforceLang,effLang,runMove,runSuper,gm,curMoves,cfg,applyLayout,spPress,spRelease,curSpMap,fireAB,resolveSpSlot,slotKey,lastSteps:()=>runSteps.lastSteps,
+    window.__ss2={sideArt,sideArtRefresh,grabStage,grabCard,artList:()=>artList,get sideArtCur(){return sideArtCur;},set sideArtCur(v){sideArtCur=v;},readFacing,readGame,cardState,readLangByte,enforceLang,effLang,runMove,runSuper,gm,curMoves,cfg,applyLayout,spPress,spRelease,curSpMap,fireAB,resolveSpSlot,slotKey,
       ver:APP_VER, prof:PROF,
+      capApply, capShow, capStep, capEnd, capPress, capDirArrow, refreshSpButtons,
+      dummyApply, dummyTick, get dummyOn(){return !!dummyIv;},
       get romKey(){return romKey;},
       findHeap:()=>{heapBase=findHeapBase();return heapBase;},
       get heapBase(){return heapBase;},
@@ -3528,6 +3890,27 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
 /* ═══════════════ PWA — 홈 화면 설치 · 오프라인 ═══════════════
    http(s)로 열렸을 때만 등록한다. 단독 HTML(file://)로 열면 조용히 건너뛴다.
    롬은 캐시에 넣지 않는다 — 롬은 IndexedDB 에만 있다. */
+/* v0.5.7c: 갤럭시에서 크롬보다 삼성 인터넷이 눈에 띄게 부드럽다(사용자 실사용 보고).
+   둘 다 크로미움이지만 안드로이드 크롬은 합성기·전력 정책이 더 보수적이라
+   캔버스 합성 한 겹이 에뮬 루프를 굶기는 일이 잦다. 한 줄로만 알려 준다. */
+(function browserTip(){
+  try{
+    const el=$("#brTip"); if(!el) return;
+    const ua=navigator.userAgent||"";
+    const android=/Android/i.test(ua), samsung=/SamsungBrowser/i.test(ua);
+    const standalone=matchMedia("(display-mode: standalone)").matches;
+    const kind=deviceKind();
+    let msg="";
+    if(android && !samsung && !standalone)
+      msg="갤럭시라면 <b>삼성 인터넷</b>으로 여는 쪽이 더 부드럽습니다 — 같은 크로미움인데 안드로이드 크롬은 화면 합성이 더 무겁습니다.";
+    else if(kind==="pc")
+      msg="PC로 여셨네요. <b>키보드</b>로도 됩니다 — 방향키 · <b>1</b>=SP · <b>Z</b>=A · <b>X</b>=B · <b>C</b>=A+B · <b>Space</b>=SP.";
+    else if(samsung)
+      msg="삼성 인터넷이네요 — 갤럭시에서는 이게 가장 부드럽습니다.<br>아래 <b>[홈 화면에 설치]</b>를 누르면 주소창 없이 전체화면으로 씁니다.";
+    if(!msg) return;
+    el.innerHTML=msg; el.hidden=false;
+  }catch(e){}
+})();
 (function pwa(){
   const http = location.protocol === "http:" || location.protocol === "https:";
   const standalone = matchMedia("(display-mode: standalone)").matches
@@ -3546,18 +3929,44 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
       }).catch(()=>{});
     });
   }
+  /* v0.5.7c: **[설치] 버튼을 항상 띄운다.**
+     beforeinstallprompt 는 브라우저가 제 판단으로 안 보낼 때가 많고(한 번 무시했거나, 아이폰이거나,
+     휴리스틱에 안 걸리거나), 그러면 버튼이 아예 안 보여 "설치를 어떻게 하냐"가 된다.
+     프롬프트가 잡혀 있으면 그걸 띄우고, 없으면 **그 브라우저에서 손으로 하는 법**을 알려 준다. */
   let prompt=null;
-  const btn=$("#installBtn");
-  window.addEventListener("beforeinstallprompt",e=>{
-    e.preventDefault(); prompt=e;
-    if(btn && !standalone) btn.hidden=false;
-  });
-  window.addEventListener("appinstalled",()=>{ if(btn) btn.hidden=true; prompt=null; toast("홈 화면에 설치됐다"); });
-  btn && btn.addEventListener("click",async()=>{
-    if(!prompt) return;
-    btn.hidden=true; const p=prompt; prompt=null;
-    try{ await p.prompt(); await p.userChoice; }catch(e){}
-  });
+  const btns=[$("#installBtn"),$("#installBtn2")].filter(Boolean);
+  const btn=btns[0];
+  if(!standalone) btns.forEach(b=>b.hidden=false);
+  window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); prompt=e; });
+  window.addEventListener("appinstalled",()=>{ btns.forEach(b=>b.hidden=true); prompt=null; toast("홈 화면에 설치됐다"); });
+  function howToInstall(){
+    const ua=navigator.userAgent||"";
+    const ios=/iPhone|iPad|iPod/i.test(ua);
+    const samsung=/SamsungBrowser/i.test(ua);
+    const android=/Android/i.test(ua);
+    const coarse=matchMedia("(pointer:coarse)").matches;
+    if(!http) return "지금은 <b>내려받은 파일을 직접 연 상태</b>라 설치가 안 됩니다.<br><br>"+
+      "이 파일은 <b>인터넷 없이 혼자 도는 용도</b>고, 홈 화면 설치는 <b>웹 주소로 열었을 때만</b> 됩니다.<br>"+
+      "<b>https://rmdkdkr-png.github.io/ss2-sp-runner/</b> 로 들어가서 [설치]를 누르세요.<br>"+
+      "설치하고 나면 그 뒤로는 인터넷 없이도 돕니다.";
+    if(ios)     return "사파리 아래쪽 <b>공유</b> 아이콘 → <b>홈 화면에 추가</b>.<br>아이폰은 브라우저가 설치를 대신 걸어 주지 않아 이 방법뿐입니다.";
+    if(samsung) return "아래쪽 <b>≡ 메뉴</b> → <b>현재 페이지 추가</b> → <b>홈 화면</b>.<br>또는 주소창의 <b>다운로드 아이콘</b>을 눌러도 됩니다.";
+    if(android) return "오른쪽 위 <b>⋮ 메뉴</b> → <b>홈 화면에 추가</b> (또는 <b>앱 설치</b>).<br>갤럭시라면 <b>삼성 인터넷</b>으로 여는 쪽이 더 부드럽습니다.";
+    if(!coarse) return "주소창 오른쪽 끝의 <b>설치 아이콘</b>(⊕ 또는 모니터 모양)을 누르세요.<br>안 보이면 <b>⋮ 메뉴 → 저장 후 공유 → 페이지를 앱으로 설치</b>.";
+    return "브라우저 메뉴에서 <b>홈 화면에 추가</b> 를 찾으세요.";
+  }
+  const onInstall=async()=>{
+    if(prompt){
+      const p=prompt; prompt=null;
+      try{ await p.prompt(); const r=await p.userChoice;
+           if(r&&r.outcome==="accepted"){ btns.forEach(b=>b.hidden=true); return; } }catch(e){}
+      return;
+    }
+    $("#howBody").innerHTML=howToInstall();
+    $("#howWrap").hidden=false;
+  };
+  btns.forEach(b=>b.addEventListener("click",onInstall));
+  $("#howClose")&&$("#howClose").addEventListener("click",()=>{ $("#howWrap").hidden=true; });
   if(standalone) document.documentElement.classList.add("standalone");
 })();
 
@@ -3616,7 +4025,7 @@ async function benchRun(){
   const b=await seg("② 조작 중","디패드를 좌우로 계속 문지르세요",8);
   cancelAnimationFrame(raf);
   const row=(nm,r)=>nm+"  fps "+r.fps.toFixed(1)+"  간격 "+r.p50.toFixed(0)+"/"+r.p95.toFixed(0)+"/"+r.max.toFixed(0)+"ms  끊김 "+r.hitch;
-  const txt=["SS2 SP 성능 측정 · v0.5.6d (app "+APP_VER+")",...benchEnv(),"",
+  const txt=["SS2 SP 성능 측정 · v0.5.9 (app "+APP_VER+")",...benchEnv(),"",
              row("무입력",a),row("조작중",b),
              "","(간격 = 중앙값/p95/최대, 끊김 = 33ms 초과 횟수)"].join("\n");
   phase.textContent="측정 끝"; big.textContent=b.fps.toFixed(0); hint.textContent="조작 중 fps";

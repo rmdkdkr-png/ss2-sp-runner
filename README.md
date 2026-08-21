@@ -6,7 +6,7 @@
 
 # 버튼 하나 = 필살기
 
-<img src="docs/shots/demo.gif" width="320" alt="SP 버튼 하나로 필살기가 나가는 장면">
+<img src="docs/clips/play_landscape.webp" width="560" alt="SP 버튼 하나로 필살기가 나가는 장면">
 
 **네오지오 포켓 컬러 『사무라이 스피리츠! 2』를 브라우저에서.
 ↓↘→＋A 같은 커맨드는 몰라도 됩니다.**
@@ -15,13 +15,28 @@
 
 [사용설명서](https://rmdkdkr-png.github.io/ss2-sp-runner/docs/manual.html) &nbsp;·&nbsp; [📱 안드로이드 앱판](https://rmdkdkr-png.github.io/ss2-sp-runner/app.html) &nbsp;·&nbsp; [변경 이력](CHANGELOG.md)
 
-`HTML 한 장` · `설치 없음` · `롬 미포함` · `홈 화면 설치 가능` · `v0.5.6`
+`HTML 한 장` · `설치 없음` · `롬 미포함` · `홈 화면 설치 가능` · `v0.5.9`
 
-<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/play_1.webp"><img src="docs/shots/play_1_still.webp" width="180" alt="실기 플레이 1 (클릭하면 영상)"></a>
-<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/play_2.webp"><img src="docs/shots/play_2_still.webp" width="180" alt="실기 플레이 2 (클릭하면 영상)"></a>
-<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/play_3.webp"><img src="docs/shots/play_3_still.webp" width="180" alt="실기 플레이 3 (클릭하면 영상)"></a>
+<img src="docs/clips/sp_fire.webp" width="300" alt="SP 한 번에 필살기가 나간다">
+<img src="docs/clips/ko.webp" width="300" alt="KO">
 
-*↑ 실기 터치 화면 — 클릭하면 플레이 영상이 열립니다*
+**해설이 붙습니다 — 화자마다 다른 말을 합니다**
+
+<img src="docs/clips/line_nakoruru.webp" width="420" alt="나코루루(나찰) — …좋은 바람이었다">
+<img src="docs/clips/line_hanzo.webp" width="420" alt="한조 — 빈틈이 있었다. 그림자는 빈틈에서 죽는다">
+<img src="docs/clips/line_haoh_sake.webp" width="420" alt="하오마루 — 한 잔 내렸군… 자, 여기부터">
+<img src="docs/clips/line_haoh_win.webp" width="420" alt="하오마루 — 핫핫하!! 승부 났다!!">
+
+<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/sideart.webp"><img src="docs/shots/sideart_still.webp" width="300" alt="양옆 카드 아트 (클릭하면 영상)"></a>
+<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/combo.webp"><img src="docs/shots/combo_still.webp" width="150" alt="세로 화면 실기 플레이 (클릭하면 영상)"></a>
+
+*↑ 전부 실기 화면입니다. 클릭하면 영상이 열립니다*
+
+<img src="docs/shots/10_landscape.webp" width="520" alt="가로 화면 — 게임이 가운데, 디패드 왼쪽, 버튼 오른쪽">
+<img src="docs/shots/11_portrait.webp" width="200" alt="세로 기본 배치">
+<img src="docs/shots/12_settings.webp" width="200" alt="설정">
+
+*↑ 가로 · 세로 기본 배치와 설정 — 전부 기본값 그대로입니다*
 
 </div>
 
@@ -79,6 +94,11 @@ SP를 눌렀는데 그 자리가 비어 있으면 그냥 베기가 나가고, �
 - **홈 화면 설치 (PWA)** — 상단 [설치] 버튼. 주소창 없이 전체화면으로 뜨고 **오프라인으로도 돕니다**
 - **양옆 아트웍** — 세로 화면이 남기는 빈 자리를 스테이지 배경과 **카드 그림**으로 채웁니다.
   이름판은 게임이 그린 글자를 그대로 떠 옵니다. 🎴 버튼으로 후보를 돌립니다
+- **더미 상대** — 반격하지 않는 연습 상대. 한 번 뒤로 물러나 구석에 선 뒤로는 움직이지 않고, 쓰러지지도 않습니다.
+  시연 클립을 찍거나 커맨드를 익힐 때 씁니다. 기본은 끔
+- **촬영 모드** — 녹화·스샷용 자막. 기술이 나갈 때 화면 아래에
+  「← + SP ▶ ↓ ↘ → ＋ A · 나바이베루」처럼 **한 버튼이 무슨 커맨드로 풀리는지**를 큼직하게 깝니다.
+  글자에 불이 들어오는 시점이 실제 입력 시점이고, 자막 위치는 [버튼 배치] 편집에서 버튼과 같이 끌어서 옮깁니다. 기본은 끔
 - **성능 측정** — 설정 맨 아래 [측정 시작]. 16초 동안 에뮬 fps·프레임 간격·끊김을 재서
   브라우저끼리 숫자로 비교할 수 있습니다
 
