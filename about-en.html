@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SamSho!2 One-Button</title>
+<meta name="description" content="Samurai Shodown! 2 (Neo Geo Pocket Color) specials on a single button. Runs in the browser.">
+<meta property="og:title" content="SamSho!2 One-Button">
+<meta property="og:description" content="One button instead of a motion input. No install.">
+<meta name="theme-color" content="#0e0c0a">
+<style>
+:root{
+  --bg:#0e0c0a; --bg2:#161311; --card:#1a1715; --line:#2b2521;
+  --fg:#f5f1ec; --dim:#9a9089; --faint:#655d57;
+  --hi:#ff9f2e; --hi2:#ffc46b; --deep:#2a1a00;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(900px 520px at 50% -160px, rgba(255,159,46,.16), transparent 70%),
+    var(--bg);
+  color:var(--fg);
+  font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:680px;margin:0 auto;padding:44px 22px 90px}
+
+.badge{display:inline-flex;align-items:center;gap:7px;
+  border:1px solid rgba(255,159,46,.4);color:var(--hi);
+  border-radius:999px;padding:5px 14px;font-size:12.5px;font-weight:700;letter-spacing:.04em}
+.badge i{width:6px;height:6px;border-radius:50%;background:var(--hi);font-style:normal;
+  box-shadow:0 0 10px var(--hi)}
+
+h1{font-size:clamp(38px,10vw,54px);line-height:1.14;margin:20px 0 0;letter-spacing:-.035em;font-weight:800}
+h1 em{font-style:normal;color:var(--hi)}
+.sub{color:var(--dim);margin:14px 0 0;font-size:15.5px}
+
+.motion{display:flex;align-items:center;gap:14px;margin:30px 0 0;flex-wrap:wrap}
+.old{position:relative;color:var(--faint);font-size:30px;font-weight:800;letter-spacing:.12em}
+.old:after{content:"";position:absolute;left:-6px;right:-6px;top:52%;height:3px;
+  background:#c0392b;border-radius:2px;transform:rotate(-4deg)}
+.arrow{color:var(--faint);font-size:22px}
+
+.spwrap{display:flex;align-items:center;gap:16px}
+.sp{width:86px;height:86px;border-radius:50%;flex:none;position:relative;
+  background:radial-gradient(circle at 50% 30%, #ffd08f 0%, #ff9f2e 38%, #c96b06 74%, #7d3f02 100%);
+  box-shadow:0 0 0 2px rgba(255,215,160,.55),0 0 34px rgba(255,159,46,.42),
+    inset 0 -8px 18px rgba(0,0,0,.42),inset 0 6px 14px rgba(255,255,255,.28);
+  display:grid;place-items:center;animation:breathe 3.2s ease-in-out infinite}
+.sp span{font-weight:900;font-size:30px;letter-spacing:-.02em;color:var(--deep)}
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 0 2px rgba(255,215,160,.55),0 0 30px rgba(255,159,46,.36),
+    inset 0 -8px 18px rgba(0,0,0,.42),inset 0 6px 14px rgba(255,255,255,.28)}
+  50%{box-shadow:0 0 0 2px rgba(255,215,160,.75),0 0 52px rgba(255,159,46,.60),
+    inset 0 -8px 18px rgba(0,0,0,.42),inset 0 6px 14px rgba(255,255,255,.28)}
+}
+@media (prefers-reduced-motion:reduce){ .sp{animation:none} }
+.spnote{color:var(--dim);font-size:15px;line-height:1.6}
+
+.cta{display:block;margin:34px 0 12px;text-decoration:none;border-radius:16px;
+  background:linear-gradient(180deg,var(--hi2),var(--hi) 52%,#ef8c14);
+  color:var(--deep);padding:19px 22px;text-align:center;
+  box-shadow:0 10px 28px rgba(255,159,46,.30),0 2px 0 rgba(255,255,255,.35) inset;
+  transition:transform .12s ease, box-shadow .12s ease}
+.cta b{display:block;font-size:19px;font-weight:800;letter-spacing:-.01em}
+.cta b:after{content:" →"}
+.cta small{display:block;font-size:12.5px;font-weight:600;opacity:.72;margin-top:4px}
+.cta:active{transform:translateY(2px);box-shadow:0 4px 14px rgba(255,159,46,.28),0 2px 0 rgba(255,255,255,.35) inset}
+.ctanote{text-align:center;color:var(--faint);font-size:13px;margin:0}
+
+h2{font-size:21px;margin:52px 0 14px;letter-spacing:-.02em;font-weight:800}
+p{margin:0 0 14px}
+code{background:#221e1b;border:1px solid var(--line);border-radius:6px;padding:1px 6px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px}
+.quote{margin:32px 0;padding:18px 20px;border-radius:14px;
+  background:linear-gradient(90deg,rgba(255,159,46,.10),transparent);
+  border-left:3px solid var(--hi);font-size:16.5px;line-height:1.8}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0}
+.card strong{display:block;font-size:17px;margin-bottom:6px}
+.card p{color:var(--dim);font-size:14.5px;line-height:1.7;margin:0}
+.card ul{color:var(--dim);font-size:14.5px;line-height:1.9;margin:0;padding-left:18px}
+.card.warm{background:linear-gradient(180deg,rgba(255,159,46,.10),rgba(255,159,46,.03));
+  border-color:rgba(255,159,46,.30)}
+.card.warm strong{color:var(--hi)}
+
+.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 22px;margin:18px 0}
+.stat .lab{color:var(--faint);font-size:12.5px;font-weight:700;letter-spacing:.06em;text-align:center}
+.statrow{display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0 4px}
+.num{font-size:clamp(30px,8.4vw,42px);font-weight:900;letter-spacing:-.03em;line-height:1}
+.num.off{color:#6d6560}
+.num.on{color:var(--hi);text-shadow:0 0 26px rgba(255,159,46,.45)}
+.bar{height:8px;border-radius:99px;background:#241f1c;overflow:hidden;margin-top:16px}
+.bar i{display:block;height:100%;width:97.6%;border-radius:99px;
+  background:linear-gradient(90deg,var(--hi),var(--hi2))}
+.barlab{display:flex;justify-content:space-between;color:var(--faint);font-size:11.5px;margin-top:7px}
+
+.ops{border:1px solid var(--line);border-radius:16px;overflow:hidden;margin:16px 0}
+.op{display:flex;justify-content:space-between;align-items:center;gap:14px;
+  padding:13px 18px;border-bottom:1px solid var(--line)}
+.op:last-child{border-bottom:0}
+.op:nth-child(odd){background:var(--bg2)}
+.op b{color:var(--hi);font-weight:700;font-size:15px;white-space:nowrap}
+.op span{color:var(--fg);font-size:15px}
+
+.pick{display:flex;gap:14px;align-items:flex-start;background:var(--card);
+  border:1px solid var(--line);border-radius:16px;padding:17px 19px;margin:12px 0;
+  text-decoration:none;color:inherit}
+.pick .n{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:rgba(255,159,46,.14);color:var(--hi);font-weight:800;font-size:14px}
+.pick b{display:block;font-size:16px}
+.pick span{display:block;color:var(--dim);font-size:13.5px;line-height:1.6;margin-top:2px}
+.pick u{display:block;color:var(--hi);font-size:12.5px;text-decoration:none;margin-top:6px;
+  word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+a{color:var(--hi)}
+.note{color:var(--dim);font-size:14px;line-height:1.7}
+footer{color:var(--faint);font-size:12.5px;line-height:1.9;margin-top:38px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="badge"><i></i>SamSho!2 · NGPC</span>
+  <h1>One <em>button</em>.<br>Every special.</h1>
+  <p class="sub">Samurai Shodown! 2 · Neo Geo Pocket Color</p>
+
+  <div class="motion">
+    <span class="old">↓ ↘ →</span>
+    <span class="arrow">becomes</span>
+  </div>
+
+  <div class="spwrap" style="margin-top:22px">
+    <div class="sp"><span>SP</span></div>
+    <div class="spnote">Hold a direction<br>to pick which move comes out.</div>
+  </div>
+
+  <a class="cta" href="https://rmdkdkr-png.github.io/ss2-sp-runner/">
+    <b>Run it in the browser</b>
+    <small>No install · works on phones</small>
+  </a>
+  <p class="ctanote">Bring your own ROM</p>
+
+  <blockquote class="quote">
+    A flailing attempt at a modern-controls mode — for the game's own<br>
+    input flaws, and for the flaws in my hands.
+  </blockquote>
+
+  <h2>Why</h2>
+  <p>Specials don't come out. But the worse failure is the other one:
+  <strong>you input it correctly and a different move fires.</strong></p>
+  <p class="note">I disassembled the ROM. The command matcher (<code>0x202E8B</code>) walks the
+  input ring <strong style="color:var(--fg)">backwards and skips samples that don't match</strong> —
+  it wants a subsequence, not a contiguous run. Leftovers from your previous input let a short
+  command satisfy itself first and eat the longer one.</p>
+
+  <div class="stat">
+    <div class="lab">LONG COMMAND · 42 ATTEMPTS</div>
+    <div class="statrow">
+      <span class="num off">0</span>
+      <span class="arrow">→</span>
+      <span class="num on">41</span>
+    </div>
+    <div class="bar"><i></i></div>
+    <div class="barlab"><span>unassisted</span><span>with this</span></div>
+  </div>
+
+  <p style="text-align:center;font-size:20px;font-weight:800;margin:26px 0 0">
+    It isn't slow hands.</p>
+
+  <p class="note" style="margin-top:18px">The fix turned out to be one byte. Writing
+  <code>1</code> to <code>0x1DCD</code> runs the game's
+  <strong style="color:var(--fg)">own ring-reset routine</strong> — an existing code path,
+  zero extra frames.</p>
+
+  <h2>Controls</h2>
+  <div class="ops">
+    <div class="op"><b>SP</b><span>neutral special</span></div>
+    <div class="op"><b>→ + SP</b><span>forward</span></div>
+    <div class="op"><b>← + SP</b><span>back</span></div>
+    <div class="op"><b>↓ + SP</b><span>down</span></div>
+    <div class="op"><b>SP in the air</b><span>air special</span></div>
+    <div class="op"><b>hold SP</b><span>strong</span></div>
+  </div>
+
+  <div class="card">
+    <strong>You never think about facing</strong>
+    <p>The facing flag is read from RAM (<code>0x0E54</code>) and the command is mirrored for you.
+    Same button on either side. That's why there is no flip switch.</p>
+  </div>
+
+  <div class="card warm">
+    <strong>Not a cheat</strong>
+    <ul>
+      <li>creates no moves that don't exist</li>
+      <li>modifies no game data</li>
+      <li>hitstop still blocks it</li>
+      <li>air-state gating still applies</li>
+      <li>a whiffed throw still whiffs</li>
+    </ul>
+    <p style="margin-top:10px">All it does is supply inputs.</p>
+  </div>
+
+  <hr>
+
+  <h2>Three of them</h2>
+  <p class="note" style="margin-bottom:16px">Same engine file. Only the attachment point differs.</p>
+
+  <a class="pick" href="https://rmdkdkr-png.github.io/ss2-sp-runner/">
+    <div class="n">1</div>
+    <div><b>Browser</b><span>Single HTML file, no install. Drag the buttons to fit your hand.</span>
+    <u>rmdkdkr-png.github.io/ss2-sp-runner</u></div>
+  </a>
+  <a class="pick" href="https://github.com/rmdkdkr-png/ss2-sp-core">
+    <div class="n">2</div>
+    <div><b>libretro core</b><span>Beetle NeoPop fork with the engine inside the core.
+    RetroArch on Android, PC, handhelds. Spare pad buttons wire straight to individual specials.</span>
+    <u>github.com/rmdkdkr-png/ss2-sp-core</u></div>
+  </a>
+  <a class="pick" href="https://github.com/rmdkdkr-png/emu-ex-plus-alpha">
+    <div class="n">3</div>
+    <div><b>Android app</b><span>NGP.emu fork. Best touch feel of the three.</span>
+    <u>github.com/rmdkdkr-png/emu-ex-plus-alpha</u></div>
+  </a>
+
+  <h2>Side finding</h2>
+  <p class="note">The browser build stuttered while a finger was on the screen. It wasn't my code.
+  EmulatorJS hands emscripten a canvas with <code>alpha:true</code>, so the compositor blends it
+  against the page on every composite, starving the emulator loop exactly when the compositor is
+  already busy.</p>
+
+  <div class="stat">
+    <div class="lab">DRAGGING ACROSS THE D-PAD</div>
+    <div class="statrow">
+      <span class="num off">51.8</span>
+      <span class="arrow">→</span>
+      <span class="num on">59.6</span>
+    </div>
+    <div class="barlab" style="justify-content:center;gap:10px;margin-top:10px">
+      <span>fps · hitches 65 → 3</span>
+    </div>
+  </div>
+
+  <p class="note">Emulator frames actually executed, not painted frames. Nothing to do with this
+  game — it hits anything on the same component, so it's
+  <a href="https://github.com/EmulatorJS/EmulatorJS/issues/1255">reported upstream</a>
+  with measurements and a control experiment.</p>
+
+  <footer>
+    <hr>
+    No ROM is included anywhere. Use a file you own.<br>
+    In the browser build the ROM is opened locally and never uploaded.<br><br>
+    SAMURAI SPIRITS™ / SAMURAI SHODOWN™ are copyright SNK CORPORATION.<br>
+    Unofficial fan project, not affiliated with SNK.
+  </footer>
+
+</div>
+</body>
+</html>

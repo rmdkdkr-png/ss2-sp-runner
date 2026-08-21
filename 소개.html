@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>사쇼!2 원버튼 — 버튼 하나로 필살기</title>
+<meta name="description" content="사무라이 스피리츠! 2 (NGPC) 의 필살기를 버튼 하나로. 브라우저에서 바로 실행.">
+<meta property="og:title" content="사쇼!2 원버튼 — 버튼 하나로 필살기">
+<meta property="og:description" content="커맨드 대신 버튼 하나. 설치 없이 브라우저에서.">
+<meta name="theme-color" content="#0e0c0a">
+<style>
+:root{
+  --bg:#0e0c0a; --bg2:#161311; --card:#1a1715; --line:#2b2521;
+  --fg:#f5f1ec; --dim:#9a9089; --faint:#655d57;
+  --hi:#ff9f2e; --hi2:#ffc46b; --deep:#2a1a00;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(900px 520px at 50% -160px, rgba(255,159,46,.16), transparent 70%),
+    var(--bg);
+  color:var(--fg);
+  font:16px/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:680px;margin:0 auto;padding:44px 22px 90px}
+
+.badge{display:inline-flex;align-items:center;gap:7px;
+  border:1px solid rgba(255,159,46,.4);color:var(--hi);
+  border-radius:999px;padding:5px 14px;font-size:12.5px;font-weight:700;letter-spacing:.04em}
+.badge i{width:6px;height:6px;border-radius:50%;background:var(--hi);font-style:normal;
+  box-shadow:0 0 10px var(--hi)}
+
+h1{font-size:clamp(38px,10vw,54px);line-height:1.14;margin:20px 0 0;letter-spacing:-.035em;font-weight:800}
+h1 em{font-style:normal;color:var(--hi)}
+.sub{color:var(--dim);margin:14px 0 0;font-size:15.5px}
+
+.motion{display:flex;align-items:center;gap:14px;margin:30px 0 0;flex-wrap:wrap}
+.old{position:relative;color:var(--faint);font-size:30px;font-weight:800;letter-spacing:.12em}
+.old:after{content:"";position:absolute;left:-6px;right:-6px;top:52%;height:3px;
+  background:#c0392b;border-radius:2px;transform:rotate(-4deg)}
+.arrow{color:var(--faint);font-size:22px}
+
+.spwrap{display:flex;align-items:center;gap:16px}
+.sp{width:86px;height:86px;border-radius:50%;flex:none;position:relative;
+  background:radial-gradient(circle at 50% 30%, #ffd08f 0%, #ff9f2e 38%, #c96b06 74%, #7d3f02 100%);
+  box-shadow:0 0 0 2px rgba(255,215,160,.55),0 0 34px rgba(255,159,46,.42),
+    inset 0 -8px 18px rgba(0,0,0,.42),inset 0 6px 14px rgba(255,255,255,.28);
+  display:grid;place-items:center;animation:breathe 3.2s ease-in-out infinite}
+.sp span{font-weight:900;font-size:30px;letter-spacing:-.02em;color:var(--deep)}
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 0 2px rgba(255,215,160,.55),0 0 30px rgba(255,159,46,.36),
+    inset 0 -8px 18px rgba(0,0,0,.42),inset 0 6px 14px rgba(255,255,255,.28)}
+  50%{box-shadow:0 0 0 2px rgba(255,215,160,.75),0 0 52px rgba(255,159,46,.60),
+    inset 0 -8px 18px rgba(0,0,0,.42),inset 0 6px 14px rgba(255,255,255,.28)}
+}
+@media (prefers-reduced-motion:reduce){ .sp{animation:none} }
+.spnote{color:var(--dim);font-size:15px;line-height:1.6}
+
+.cta{display:block;margin:34px 0 12px;text-decoration:none;border-radius:16px;
+  background:linear-gradient(180deg,var(--hi2),var(--hi) 52%,#ef8c14);
+  color:var(--deep);padding:19px 22px;text-align:center;
+  box-shadow:0 10px 28px rgba(255,159,46,.30),0 2px 0 rgba(255,255,255,.35) inset;
+  transition:transform .12s ease, box-shadow .12s ease}
+.cta b{display:block;font-size:19px;font-weight:800;letter-spacing:-.01em}
+.cta b:after{content:" →"}
+.cta small{display:block;font-size:12.5px;font-weight:600;opacity:.72;margin-top:4px}
+.cta:active{transform:translateY(2px);box-shadow:0 4px 14px rgba(255,159,46,.28),0 2px 0 rgba(255,255,255,.35) inset}
+.ctanote{text-align:center;color:var(--faint);font-size:13px;margin:0}
+
+h2{font-size:21px;margin:52px 0 14px;letter-spacing:-.02em;font-weight:800}
+p{margin:0 0 14px}
+code{background:#221e1b;border:1px solid var(--line);border-radius:6px;padding:1px 6px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px}
+.quote{margin:32px 0;padding:18px 20px;border-radius:14px;
+  background:linear-gradient(90deg,rgba(255,159,46,.10),transparent);
+  border-left:3px solid var(--hi);font-size:16.5px;line-height:1.8}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0}
+.card strong{display:block;font-size:17px;margin-bottom:6px}
+.card p{color:var(--dim);font-size:14.5px;line-height:1.7;margin:0}
+.card ul{color:var(--dim);font-size:14.5px;line-height:1.9;margin:0;padding-left:18px}
+.card.warm{background:linear-gradient(180deg,rgba(255,159,46,.10),rgba(255,159,46,.03));
+  border-color:rgba(255,159,46,.30)}
+.card.warm strong{color:var(--hi)}
+
+.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 22px;margin:18px 0}
+.stat .lab{color:var(--faint);font-size:12.5px;font-weight:700;letter-spacing:.06em;text-align:center}
+.statrow{display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0 4px}
+.num{font-size:clamp(30px,8.4vw,42px);font-weight:900;letter-spacing:-.03em;line-height:1}
+.num.off{color:#6d6560}
+.num.on{color:var(--hi);text-shadow:0 0 26px rgba(255,159,46,.45)}
+.bar{height:8px;border-radius:99px;background:#241f1c;overflow:hidden;margin-top:16px}
+.bar i{display:block;height:100%;width:97.6%;border-radius:99px;
+  background:linear-gradient(90deg,var(--hi),var(--hi2))}
+.barlab{display:flex;justify-content:space-between;color:var(--faint);font-size:11.5px;margin-top:7px}
+
+.ops{border:1px solid var(--line);border-radius:16px;overflow:hidden;margin:16px 0}
+.op{display:flex;justify-content:space-between;align-items:center;gap:14px;
+  padding:13px 18px;border-bottom:1px solid var(--line)}
+.op:last-child{border-bottom:0}
+.op:nth-child(odd){background:var(--bg2)}
+.op b{color:var(--hi);font-weight:700;font-size:15px;white-space:nowrap}
+.op span{color:var(--fg);font-size:15px}
+
+.pick{display:flex;gap:14px;align-items:flex-start;background:var(--card);
+  border:1px solid var(--line);border-radius:16px;padding:17px 19px;margin:12px 0;
+  text-decoration:none;color:inherit}
+.pick .n{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:rgba(255,159,46,.14);color:var(--hi);font-weight:800;font-size:14px}
+.pick b{display:block;font-size:16px}
+.pick span{display:block;color:var(--dim);font-size:13.5px;line-height:1.6;margin-top:2px}
+.pick u{display:block;color:var(--hi);font-size:12.5px;text-decoration:none;margin-top:6px;
+  word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+a{color:var(--hi)}
+.note{color:var(--dim);font-size:14px;line-height:1.7}
+footer{color:var(--faint);font-size:12.5px;line-height:1.9;margin-top:38px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="badge"><i></i>사쇼!2 · NGPC</span>
+  <h1>버튼 <em>하나</em>로<br>필살기</h1>
+  <p class="sub">『사무라이 스피리츠! 2』 · 네오지오 포켓 컬러</p>
+
+  <div class="motion">
+    <span class="old">↓ ↘ →</span>
+    <span class="arrow">대신</span>
+  </div>
+
+  <div class="spwrap" style="margin-top:22px">
+    <div class="sp"><span>SP</span></div>
+    <div class="spnote">방향을 같이 눌러서<br>어느 기술을 낼지 고른다.</div>
+  </div>
+
+  <a class="cta" href="https://rmdkdkr-png.github.io/ss2-sp-runner/">
+    <b>브라우저에서 실행</b>
+    <small>설치 없음 · 폰에서도 됨</small>
+  </a>
+  <p class="ctanote">롬은 본인 것을 직접 넣는다</p>
+
+  <blockquote class="quote">
+    게임 자체의 입력 결함과 플레이어인 저의 손 결함에 대해<br>
+    모던 모드를 만들어보고자 하였던 몸부림입니다.
+  </blockquote>
+
+  <h2>왜 만들었나</h2>
+  <p>사쇼!2는 커맨드가 안 나간다. 그런데 더 성가신 쪽은 따로 있다.
+  <strong>제대로 넣었는데 다른 기술이 나가는 것.</strong></p>
+  <p class="note">롬을 뜯어봤더니 커맨드 판정 루틴(<code>0x202E8B</code>)이 입력 기록을
+  <strong style="color:var(--fg)">뒤에서부터 훑으면서 안 맞는 입력은 건너뛴다.</strong>
+  연속으로 들어올 필요가 없다는 뜻이다. 직전 입력 찌꺼기가 남아 있으면
+  짧은 커맨드가 먼저 성립해서 긴 커맨드를 잡아먹는다.</p>
+
+  <div class="stat">
+    <div class="lab">긴 커맨드 · 42회 시도</div>
+    <div class="statrow">
+      <span class="num off">0</span>
+      <span class="arrow">→</span>
+      <span class="num on">41</span>
+    </div>
+    <div class="bar"><i></i></div>
+    <div class="barlab"><span>그냥 넣었을 때</span><span>이 실행기로</span></div>
+  </div>
+
+  <p style="text-align:center;font-size:20px;font-weight:800;margin:26px 0 0">
+    손이 느린 게 아니다.</p>
+
+  <p class="note" style="margin-top:18px">고치는 데 필요한 건 1바이트였다.
+  <code>0x1DCD</code>에 <code>1</code>을 쓰면
+  <strong style="color:var(--fg)">게임이 원래 갖고 있는 리셋 루틴</strong>이 돌아서
+  입력 기록을 정리한다. 프레임을 더 먹지도 않는다.</p>
+
+  <h2>쓰는 법</h2>
+  <div class="ops">
+    <div class="op"><b>SP</b><span>중립 필살기</span></div>
+    <div class="op"><b>→ + SP</b><span>앞</span></div>
+    <div class="op"><b>← + SP</b><span>뒤</span></div>
+    <div class="op"><b>↓ + SP</b><span>아래</span></div>
+    <div class="op"><b>점프 중 SP</b><span>공중기</span></div>
+    <div class="op"><b>SP 를 지그시</b><span>강</span></div>
+  </div>
+
+  <div class="card">
+    <strong>좌우는 신경 쓸 필요 없다</strong>
+    <p>캐릭터가 보는 쪽을 램(<code>0x0E54</code>)에서 읽어 커맨드를 뒤집는다.
+    왼쪽이든 오른쪽이든 같은 버튼이다. 그래서 반전 스위치가 아예 없다.</p>
+  </div>
+
+  <div class="card warm">
+    <strong>치트는 아니다</strong>
+    <ul>
+      <li>없는 기술을 만들지 않는다</li>
+      <li>게임 데이터를 고치지 않는다</li>
+      <li>맞는 중에는 안 나간다</li>
+      <li>공중 판정 그대로</li>
+      <li>헛손질한 잡기는 그대로 헛손질</li>
+    </ul>
+    <p style="margin-top:10px">하는 일은 입력을 대신 넣는 것뿐이다.</p>
+  </div>
+
+  <hr>
+
+  <h2>세 가지가 있다</h2>
+  <p class="note" style="margin-bottom:16px">엔진은 같은 파일이다. 붙인 자리만 다르다.</p>
+
+  <a class="pick" href="https://rmdkdkr-png.github.io/ss2-sp-runner/">
+    <div class="n">1</div>
+    <div><b>브라우저</b><span>설치 없이 주소만 열면 된다. 버튼을 끌어서 손에 맞게 옮긴다.</span>
+    <u>rmdkdkr-png.github.io/ss2-sp-runner</u></div>
+  </a>
+  <a class="pick" href="https://github.com/rmdkdkr-png/ss2-sp-core">
+    <div class="n">2</div>
+    <div><b>레트로아크 코어</b><span>코어 자체에 넣었다. 안드로이드·PC·휴대게임기.
+    패드의 노는 버튼에 필살기를 직결할 수 있다.</span>
+    <u>github.com/rmdkdkr-png/ss2-sp-core</u></div>
+  </a>
+  <a class="pick" href="https://github.com/rmdkdkr-png/emu-ex-plus-alpha">
+    <div class="n">3</div>
+    <div><b>안드로이드 앱</b><span>NGP.emu 개조판. 조작감은 이쪽이 제일 낫다.</span>
+    <u>github.com/rmdkdkr-png/emu-ex-plus-alpha</u></div>
+  </a>
+
+  <h2>덤</h2>
+  <p class="note">화면을 만지는 동안 게임이 느려지는 걸 오래 쫓았는데, 내 코드가 아니었다.
+  브라우저 에뮬레이터 부품이 화면 캔버스를 <code>alpha:true</code>로 만들고 있었다.
+  뒤가 비쳐 보이는 설정이라, 브라우저가 매번 겹쳐 그리느라 에뮬레이터를 굶겼다.</p>
+
+  <div class="stat">
+    <div class="lab">십자키 문지르는 동안</div>
+    <div class="statrow">
+      <span class="num off">51.8</span>
+      <span class="arrow">→</span>
+      <span class="num on">59.6</span>
+    </div>
+    <div class="barlab" style="justify-content:center;gap:10px;margin-top:10px">
+      <span>fps · 끊김 65 → 3</span>
+    </div>
+  </div>
+
+  <p class="note">사쇼!2와 상관없이 같은 부품 쓰는 데는 다 해당돼서
+  <a href="https://github.com/EmulatorJS/EmulatorJS/issues/1255">만든 쪽에 제보해 뒀다</a>.</p>
+
+  <footer>
+    <hr>
+    롬은 어디에도 들어 있지 않다. 본인이 소유한 파일을 쓸 것.<br>
+    브라우저 실행기에서 롬은 브라우저 안에서만 열리고 전송되지 않는다.<br><br>
+    SAMURAI SPIRITS™ / SAMURAI SHODOWN™ 저작권은 SNK CORPORATION.<br>
+    SNK와 무관한 비공식 팬 제작물.
+  </footer>
+
+</div>
+</body>
+</html>

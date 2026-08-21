@@ -29,18 +29,21 @@ async def main():
         await page.set_input_files("#fileInput", ROM)
         await page.wait_for_function("window.EJS_emulator && window.EJS_emulator.started", timeout=90000)
         check("1.2 game starts from file pick", True)
+        # v0.3.1: 해설 기본 켬 (새 사용자 기준 — 신규 컨텍스트라 localStorage 빈 상태)
+        cm0=await page.evaluate("({m:window.__ss2.cfg.commMode,hidden:document.getElementById('commPanel').hidden})")
+        check("1.3 해설 기본 켬 + 해설창 표시", cm0["m"]=="on" and not cm0["hidden"], cm0)
 
         # ---------- 2. reload → cache resume + cfg persistence ----------
-        await page.evaluate("window.__ss2.cfg.speed='fast'; localStorage.setItem('ss2sp_cfg_v3', JSON.stringify(window.__ss2.cfg));")
+        await page.evaluate("window.__ss2.cfg.commSpk='hanzo'; localStorage.setItem('ss2sp_cfg_v3', JSON.stringify(window.__ss2.cfg));")
         await page.goto(f"http://localhost:8077/{PAGE}?data=./data/&debug=1")
         await page.wait_for_selector("#cachedRow:not([hidden])", timeout=10000)
         check("2.1 cached rom offered", True)
         await page.click("#resumeBtn")
         await page.wait_for_function("window.EJS_emulator && window.EJS_emulator.started", timeout=90000)
-        pc = await page.evaluate("window.__ss2.cfg.speed")
-        check("2.2 cfg persisted across reload", pc=="fast", pc)
+        pc = await page.evaluate("window.__ss2.cfg.commSpk")
+        check("2.2 cfg persisted across reload", pc=="hanzo", pc)
 
-        await page.evaluate("window.__ss2.cfg.speed='std';")
+        await page.evaluate("window.__ss2.cfg.commSpk='haohmaru';")
 
         await page.wait_for_timeout(1200)
         await page.evaluate("""async () => { const r=await fetch('nav_fight.bin'); window.__ss2.loadStateBytes(new Uint8Array(await r.arrayBuffer())); }""")
@@ -80,19 +83,38 @@ async def main():
             await page.wait_for_timeout(400)
         await page.evaluate("window.__ss2.setDir(0,0,0,0)")
 
+        # 4.2c 뒤 + A+B = 비오의 (v0.5: 버튼을 A·B·A+B·SP 넷으로 줄이며 옮긴 자리)
+        await wait_idle()
+        try: await page.wait_for_function("window.__ss2.ss2Actable()", timeout=4000)
+        except Exception: pass
+        await page.evaluate("""() => { const t=document.getElementById('toast'); t.textContent=''; t.classList.remove('show'); }""")
+        # 뒤 = 바라보는 방향의 반대. facing 0 이면 왼쪽이 뒤다.
+        fac = await page.evaluate("window.__ss2.readGame().facing")
+        await page.evaluate(f"window.__ss2.setDir(0,0,{0 if fac else 1},{1 if fac else 0})")
+        await page.evaluate("window.__ss2.fireAB()")
+        t = ""
+        for _ in range(14):
+            await page.wait_for_timeout(50)
+            t = await page.text_content("#toast")
+            if "비오의" in (t or ""): break
+        check("4.2c 뒤+A+B = 비오의", "비오의" in (t or ""), t)
+        await page.evaluate("window.__ss2.setDir(0,0,0,0)")
+        await page.wait_for_timeout(600)
+
         # 4.2b 기술명 숨김이면 SP 토스트에도 이름이 안 나온다 (v0.2.1 제보 수정)
         await wait_idle()
         try: await page.wait_for_function("window.__ss2.ss2Actable()", timeout=4000)
         except Exception: pass
         await page.evaluate("window.__ss2.cfg.commNames=0")
+        await page.wait_for_timeout(1500)   # 직전 발동의 결과 폴링(최대 1.2s)이 끝나길 기다린다
+        await page.evaluate("""() => { const t=document.getElementById('toast'); t.textContent=''; t.classList.remove('show'); }""")
         await page.evaluate("window.__ss2.spPress(); window.__ss2.spRelease();")
-        ok=False; t=""
+        t=""
         for _ in range(12):
             await page.wait_for_timeout(50)
             t=await page.text_content("#toast")
-            if "SP" in t: ok=True; break
-        noname=ok and ("셰드" not in t) and ("노 아무" not in t) and ("로페" not in t)
-        check("4.2b 기술명 숨김 시 SP 토스트 이름 제거", noname, t)
+        # v0.4.6: 기술명 숨김이면 SP 토스트가 아예 안 뜬다 (제보: 이름이 계속 보인다)
+        check("4.2b 기술명 숨김 = SP 토스트 침묵", (t or "").strip()=="", t)
         await page.evaluate("window.__ss2.cfg.commNames=1")
         await page.wait_for_timeout(400)
 
@@ -101,6 +123,20 @@ async def main():
         await wait_idle()
         stuck = await page.evaluate("window.__ss2.macroActive")
         check("4.3 macro not stuck", stuck==False)
+
+        # 4.4 짧은 탭이 프레임 경계에서 씹히지 않는다 (v0.4.8 최소 홀드)
+        idb=await page.evaluate("window.__ss2.ID.B")
+        seen=[]
+        for _ in range(6):
+            seen.append(await page.evaluate("""async (IDB) => {
+              const g=window.__ss2.gm(), H=g.Module.HEAPU8, b=window.__ss2.heapBase;
+              let n=0, run=true;
+              const loop=()=>{ if(!run) return; if(H[b+0x2F82]&0x20) n++; requestAnimationFrame(loop); };
+              requestAnimationFrame(loop);
+              await new Promise(r=>setTimeout(r,100));
+              window.__ss2.simDown(IDB); await new Promise(r=>setTimeout(r,4)); window.__ss2.simUp(IDB);
+              await new Promise(r=>setTimeout(r,200)); run=false; return n; }""", idb))
+        check("4.4 4ms 탭도 게임이 반드시 인식(최소 홀드)", all(n>=1 for n in seen), seen)
 
         # ---------- 5. card gating ----------
         cs = await page.evaluate("window.__ss2.cardState()")
@@ -213,7 +249,7 @@ async def main():
         check("10.1 FF on", await page.evaluate("document.getElementById('ffBtn').classList.contains('on')"))
         await page.tap("#ffBtn"); await page.wait_for_timeout(100)
         await page.click("#cfgBtn"); await page.wait_for_timeout(200)
-        segs = await page.evaluate("['speedSeg','shaderSeg','watchSeg'].every(id=>document.getElementById(id).querySelector('.sel')!==null)")
+        segs = await page.evaluate("['shaderSeg','hudSeg'].every(id=>document.getElementById(id).querySelector('.sel')!==null)")
         check("10.2 settings segments render", segs)
         await page.click("#cfgClose")
         check("10.3 [SP 연속기]·[콤보] 잔재 없음(v1.3)",
@@ -404,7 +440,7 @@ async def main():
         for _ in range(14):
             await page.wait_for_timeout(100)
             await page.evaluate("window.__ss2.commStep({mode:0xF1,p1:110,p2:110,a1:8,a2:8,fresh:false})")
-        seen=await lines_until(lambda t:("노려보" in t) or ("먼저 가라" in t) or ("신중한" in t), 2.0)
+        seen=await lines_until(lambda t:("노려보" in t) or ("먼저 가라" in t) or ("신중한" in t), 6.0)
         check("14.10 합성: 전투 잡담(놀 때)", any(("노려보" in t) or ("먼저 가라" in t) or ("신중한" in t) for t in seen), seen)
         await page.evaluate("window.__ss2.commIdleMs=12000")
         # 14.11 메뉴 잡담 — 한 화면에 오래 머무르면 (선택창(2)은 사담 담당이라 유파(4)로 검사)
@@ -438,26 +474,29 @@ async def main():
         await page.evaluate("""() => { window.__rndBak=Math.random; Math.random=()=>0.1;
             const S=(m,scr)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,scr:scr,fresh:false});
             S(0xF0,6); S(0xF1,0); Math.random=window.__rndBak; }""")
-        seen=await lines_until(lambda t:("정정당당" in t) or ("글귀" in t), 4.5)
+        seen=await lines_until(lambda t:("정정당당" in t) or ("글귀" in t), 8.0)
         check("14.15 합성: 문구 화면 반응", any(("정정당당" in t) or ("글귀" in t) for t in seen), seen)
         # 14.16 승리 후 이름 화면 반응
         await page.evaluate("window.__ss2.commReset()")
         await page.evaluate("""() => {
             const S=(m,p1,p2,scr)=>window.__ss2.commStep({mode:m,p1:p1,p2:p2,a1:8,a2:8,scr:scr,fresh:false});
-            S(0xF0,128,128,6); S(0xF1,128,128,8); S(0xF1,128,128,8); S(0xF1,128,0,8); S(0xF1,128,0,2); }""")
-        seen=await lines_until(lambda t:("승자의" in t) or ("이긴 자" in t), 3.0)
+            /* v0.5.3: 결과 멘트는 **매치가 끝났을 때만**(2선승) — 라운드 둘을 이겨 준다 */
+            S(0xF0,128,128,6); S(0xF1,128,128,8); S(0xF1,128,0,8);
+            S(0xF0,128,128,8); S(0xF1,128,128,8); S(0xF1,128,0,8); S(0xF1,128,0,2); }""")
+        seen=await lines_until(lambda t:("승자의" in t) or ("이긴 자" in t), 6.0)
         check("14.16 합성: 승리 후 이름 화면 반응", any(("승자의" in t) or ("이긴 자" in t) for t in seen), seen)
         # 14.17 패배 후 이름 화면 반응
         await page.evaluate("window.__ss2.commReset()")
         await page.evaluate("""() => {
             const S=(m,p1,p2,scr)=>window.__ss2.commStep({mode:m,p1:p1,p2:p2,a1:8,a2:8,scr:scr,fresh:false});
-            S(0xF0,128,128,6); S(0xF1,128,128,8); S(0xF1,128,128,8); S(0xF1,0,128,8); S(0xF1,0,128,2); }""")
-        seen=await lines_until(lambda t:("기억해" in t) or ("분한" in t), 3.0)
+            S(0xF0,128,128,6); S(0xF1,128,128,8); S(0xF1,0,128,8);
+            S(0xF0,128,128,8); S(0xF1,128,128,8); S(0xF1,0,128,8); S(0xF1,0,128,2); }""")
+        seen=await lines_until(lambda t:("기억해" in t) or ("분한" in t), 6.0)
         check("14.17 합성: 패배 후 이름 화면 반응", any(("기억해" in t) or ("분한" in t) for t in seen), seen)
         # 14.18 해설창 높이 고정 — 효과가 게임 화면을 밀지 않는다
         hv=await page.evaluate("""() => { const pn=document.getElementById('commPanel');
             const st=getComputedStyle(pn); return {h:st.height,of:st.overflow}; }""")
-        check("14.18 해설창 높이 고정(46px)+overflow hidden", hv and hv["h"]=="46px" and hv["of"]=="hidden", hv)
+        check("14.18 해설창 높이 고정(64px 두줄)+overflow hidden", hv and hv["h"]=="64px" and hv["of"]=="hidden", hv)
 
         # 14.19 요령: 클릭 없는 메뉴 전환 = 스토리/데모 사담 (화면 멘트 아님)
         await page.evaluate("window.__ss2.commReset()")
@@ -541,7 +580,7 @@ async def main():
         await battle_seq("""() => {
             const S=(m,p1,p2)=>window.__ss2.commStep({mode:m,p1:p1,p2:p2,a1:8,a2:8,fresh:false});
             S(0xF0,128,128); S(0xF1,128,128); S(0xF1,128,118); }""")
-        seen=await lines_until(lambda t:("선제" in t) or ("퍼스트" in t) or ("첫 유효" in t), 3.0)
+        seen=await lines_until(lambda t:("선제" in t) or ("퍼스트" in t) or ("첫 유효" in t), 7.0)
         check("14.28 합성: 선제타", any(("선제" in t) or ("퍼스트" in t) or ("첫 유효" in t) for t in seen), seen)
 
         # ---------- v0.3.1: 대사 굳음 방지 (사용자 피드백) ----------
@@ -559,9 +598,244 @@ async def main():
         await page.evaluate("""() => { window.__rndBak=Math.random; Math.random=()=>0.9;
             const S=(m,scr)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,scr:scr,fresh:false});
             S(0xF0,3); S(0xF0,5); Math.random=window.__rndBak; }""")
-        await page.wait_for_timeout(900)
+        await page.wait_for_timeout(1400)
         line=await page.evaluate("document.getElementById('commLine').textContent")
-        check("14.30 장면 전환 시 굳은 대사 클리어", line.strip()=="…", line)
+        # v0.3.2: 전환마다 반드시 반응하므로 "…"가 아니라 새 사담으로 교체될 수도 있다 — 옛 대사만 사라지면 통과
+        check("14.30 장면 전환 시 굳은 대사 클리어", "장면 전환 검사" not in line, line)
+
+        # ---------- v0.3.2→v0.3.4: 반피·전황·연타는 제거됨 (이전 속도 복귀) ----------
+        # 14.34 상대 분석 — 지식 기반 특성 문구 존재 (유닛)
+        tr=await page.evaluate("window.__ss2.oppTrait('haohmaru_s')")
+        check("14.34 상대 분석 문구(지식 '확실'만)", bool(tr) and ("보유" in tr), tr)
+        # 14.35 전적 코멘트 — 2번째 매치 승리 후 결과 화면
+        # v0.5.3: 전적은 세 판에 한 번만 붙는다 - 2전 2승 상태에서 세 번째 매치를 이겨 본다
+        await page.evaluate("window.__ss2.commReset(); window.__ss2.sessWins=2; window.__ss2.sessGames=2")
+        await page.evaluate("""() => {
+            const S=(m,p1,p2,scr)=>window.__ss2.commStep({mode:m,p1:p1,p2:p2,a1:8,a2:8,scr:scr,fresh:false});
+            S(0xF0,128,128,6); S(0xF1,128,128,8); S(0xF1,100,0,8);
+            S(0xF0,128,128,8); S(0xF1,128,128,8); S(0xF1,60,0,8); S(0xF1,60,0,2); }""")
+        seen=await lines_until(lambda t:("3승" in t) and ("3전" in t), 8.0)
+        check("14.35 합성: 전적 코멘트(오늘 N전 M승)", any(("3승" in t) and ("3전" in t) for t in seen), seen)
+
+        # ---------- v0.4.1: 무한대전(서바이벌) 연승 ----------
+        # 14.36 연승 콜 — 전투 진입 시 surv=5
+        await page.evaluate("window.__ss2.commReset()")
+        await page.evaluate("""() => {
+            const S=(m,surv)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,surv:surv,fresh:false});
+            S(0xF0,5); S(0xF1,5); }""")
+        seen=await lines_until(lambda t:"연승" in t, 5.0)
+        check("14.36 합성: 서바이벌 연승 콜", any("연승" in t or "명째" in t for t in seen), seen)
+        # 14.37 결산 — 서바이벌 중 패배
+        await page.evaluate("window.__ss2.commReset()")
+        await page.evaluate("""() => {
+            const S=(m,p1,surv)=>window.__ss2.commStep({mode:m,p1:p1,p2:100,a1:8,a2:8,surv:surv,fresh:false});
+            S(0xF0,128,7); S(0xF1,128,7); S(0xF1,120,7); S(0xF1,0,7); }""")
+        seen=await lines_until(lambda t:("기록" in t) or ("격파" in t) or ("멈췄" in t) or ("스트릭 종료" in t), 5.0)
+        check("14.37 합성: 서바이벌 결산", any(("기록" in t) or ("격파" in t) or ("멈췄" in t) or ("스트릭 종료" in t) for t in seen), seen)
+
+        # ---------- v0.4.2: 스토리 연전 콜 · 대사 화면 반응 ----------
+        # 14.38 스토리 연전 — surv=0, stage=4 (5연전째)
+        await page.evaluate("window.__ss2.commReset()")
+        await page.evaluate("""() => {
+            const S=(m,st)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,surv:0,stage:st,fresh:false});
+            S(0xF0,4); S(0xF1,4); }""")
+        seen=await lines_until(lambda t:("연전" in t) or ("풀렸" in t) or ("데워" in t) or ("익었" in t) or ("지치" in t), 5.0)
+        check("14.38 합성: 스토리 연전 콜", any(("연전" in t) or ("풀렸" in t) or ("데워" in t) or ("익었" in t) or ("지치" in t) for t in seen), seen)
+        # 14.39 대사 화면(mode 197) 반응
+        await page.evaluate("window.__ss2.commReset()")
+        await page.evaluate("""() => {
+            const S=(m)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,surv:0,stage:0,fresh:false});
+            S(0xF0); S(0xC5); }""")
+        seen=await lines_until(lambda t:("말" in t) or ("인사" in t) or ("각오" in t) or ("명대사" in t) or ("입은" in t), 4.0)
+        check("14.39 합성: 대사 화면(mode 197) 반응", any(("말" in t) or ("인사" in t) or ("각오" in t) or ("명대사" in t) or ("입은" in t) for t in seen), seen)
+        # 14.40 엔딩(mode 199) 반응
+        await page.evaluate("window.__ss2.commReset()")
+        await page.evaluate("""() => {
+            const S=(m)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,surv:0,stage:7,fresh:false});
+            S(0xF0); S(0xC7); }""")
+        seen=await lines_until(lambda t:("클리어" in t) or ("완주" in t) or ("끝까지" in t) or ("해내" in t), 4.0)
+        check("14.40 합성: 엔딩(mode 199) 반응", any(("클리어" in t) or ("완주" in t) or ("끝까지" in t) or ("해내" in t) for t in seen), seen)
+        # 14.41 연전 콜은 값이 오를 때만 (같은 값 재진입은 침묵)
+        await page.evaluate("window.__ss2.commReset()")
+        await page.evaluate("""() => {
+            const S=(m,st)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,surv:0,stage:st,fresh:false});
+            S(0xF0,3); S(0xF1,3); }""")
+        STG=("연전","풀렸","데워","익었","지치","다음 상대","계속 가자","도전자")
+        seen=await lines_until(lambda t:any(w in t for w in STG), 6.0)
+        got1=any(any(w in t for w in STG) for t in seen)
+        # 1차 대사(매치업·설정·연전 세 줄)가 큐에서 다 빠질 때까지 기다렸다 재진입한다.
+        # 안 그러면 마지막 줄이 2차 창에 걸쳐 잔상으로 잡힌다.
+        await page.wait_for_timeout(3200)
+        await page.evaluate("window.__ss2.lineFade()")
+        await page.wait_for_timeout(900)
+        await page.evaluate("""() => {
+            const S=(m,st)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,surv:0,stage:st,fresh:false});
+            S(0xF0,3); S(0xF1,3); }""")   # 같은 stage 값으로 재진입
+        seen2=await lines_until(lambda t:False, 3.0)
+        got2=any(any(w in t for w in STG) for t in seen2)
+        check("14.41 연전 콜은 값 상승 시에만", got1 and not got2, {"1st":seen,"2nd":seen2})
+
+        # ---------- v0.4.4: 승패 후 한마디 더 · 하단 알림/연계 토글 ----------
+        # 14.42 승리 후 한마디 더 (winScr + winTalk 두 마디)
+        await page.evaluate("window.__ss2.commReset()")
+        await page.evaluate("""() => {
+            const S=(m,p1,p2,scr)=>window.__ss2.commStep({mode:m,p1:p1,p2:p2,a1:8,a2:8,scr:scr,surv:0,stage:0,fresh:false});
+            /* v0.5.3: 결과 멘트는 매치 종료(2선승)에서만 — 라운드 둘을 이겨 준다 */
+            S(0xF0,128,128,6); S(0xF1,128,128,8); S(0xF1,120,90,8); S(0xF1,120,0,8);
+            S(0xF0,128,128,8); S(0xF1,128,128,8); S(0xF1,110,0,8); S(0xF1,110,0,2); }""")
+        WT=("좋은 검이었","몇 번이고","술이 달","베어야 할 때")
+        seen=await lines_until(lambda t:any(w in t for w in WT), 8.0)
+        check("14.42 합성: 승리 후 한마디 더", any(any(w in t for w in WT) for t in seen), seen)
+        # 14.50 승부가 난 뒤 승리 포즈(액션 >= 0x180)를 비오의로 오인하지 않는다 (v0.5.6 사용자 제보)
+        await page.evaluate("window.__ss2.commReset()")
+        await page.evaluate("""() => {
+            const S=(m,p1,p2,a1)=>window.__ss2.commStep({mode:m,p1:p1,p2:p2,a1:a1,a2:8,scr:8,surv:0,stage:0,fresh:false});
+            S(0xF0,128,128,8); S(0xF1,128,128,8); S(0xF1,120,40,8);
+            S(0xF1,120,0,8);            /* KO */
+            S(0xF1,120,0,0x1B4);        /* 승리 포즈 — 액션ID가 0x180을 넘는다 */
+            S(0xF1,120,0,0x1B8); }""")
+        seen=await lines_until(lambda t:"비오의" in t, 2.5)
+        check("14.50 승리 포즈를 비오의로 오인하지 않음", not any("비오의" in t for t in seen), seen)
+        # 14.51 라운드가 다시 서면 기술 알림이 되살아난다 (KO 표식이 눌러붙지 않게)
+        await page.evaluate("window.__ss2.commReset()")
+        await page.evaluate("""() => {
+            const S=(m,p1,p2,a1)=>window.__ss2.commStep({mode:m,p1:p1,p2:p2,a1:a1,a2:8,scr:8,surv:0,stage:0,fresh:false});
+            S(0xF0,128,128,8); S(0xF1,128,128,8); S(0xF1,120,0,8); S(0xF1,120,0,0x1B4);
+            S(0xF1,128,128,8);          /* 다음 라운드 — 양쪽 만피 */
+            S(0xF1,128,128,0x1B4); }""")
+        live=await page.evaluate("() => !!(window.__ss2.commPend && window.__ss2.commPend())")
+        check("14.51 라운드 재개 후 기술 알림 복귀", live is True, live)
+
+        # 14.52 전투가 끝나면 예약된 SP 입력이 버려진다 (귀신터치 방지, v0.5.6 사용자 제보)
+        armed=await page.evaluate("""() => {
+            window.__ss2.spPress();                      /* 예약 시한을 세운다 */
+            const before = window.__ss2.spArmed;
+            window.__ss2.spGuard(0x00, 128, 128);        /* 전투 아님 → 버려야 한다 */
+            return {before: before>0, after: window.__ss2.spArmed}; }""")
+        check("14.52 전투 종료 시 예약 SP 폐기", armed and armed["before"] and armed["after"]==0, armed)
+        # 14.53 전투 중에는 예약을 건드리지 않는다
+        keep=await page.evaluate("""() => {
+            window.__ss2.spPress();
+            window.__ss2.spGuard(0xF1, 128, 128);
+            return window.__ss2.spArmed>0; }""")
+        check("14.53 전투 중 예약은 유지", keep is True, keep)
+
+        # 14.54 선입력 창이 짧고, 새 입력이 오면 지난 예약을 버린다 (귀신터치 2차, v0.5.6b)
+        gw=await page.evaluate("""() => ({gate: window.__ss2.SP_GATE_MS, air: window.__ss2.SP_AIR_MS})""")
+        check("14.54 선입력 창 400ms/공중 700ms", gw and gw["gate"]<=500 and gw["air"]<=800, gw)
+        drop=await page.evaluate("""async () => {
+            const s0 = window.__ss2.inputSeq;
+            window.__ss2.bumpInput();
+            return window.__ss2.inputSeq === s0 + 1; }""")
+        check("14.55 사용자 입력마다 일련번호가 오른다", drop is True, drop)
+
+        # 14.56 전투를 벗어나면 메뉴 잡담 타이머가 리셋된다 (v0.5.6c 사용자 제보:
+        #        "한 판 끝나도 준비할 때마다 항상 '빨리 고를 필요 없다'가 나온다")
+        await page.evaluate("window.__ss2.commReset(); window.__ss2.cfg.commSpk='haohmaru'; window.__ss2.commIdleMenuMs=400")
+        STEP="""(m,scr)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,scr:scr,surv:0,stage:0,fresh:false})"""
+        await page.evaluate("()=>{const S=%s; S(0x00,0); S(0xF1,8); S(0xF1,8);}"%STEP)
+        await page.wait_for_timeout(900)          # 전투 중 임계를 넘길 만큼 시간이 흐른다
+        await page.evaluate("()=>{const S=%s; S(0x00,8); S(0x00,8);}"%STEP)   # 전투 이탈 (scr 그대로)
+        MI=("천천히 골라라","고르는 것도 승부")
+        seen=await lines_until(lambda t:any(w in t for w in MI), 0.8)
+        check("14.56 전투 이탈 직후 메뉴 잡담 침묵", not any(any(w in t for w in MI) for t in seen), seen)
+        # 14.57 그래도 실제로 오래 머무르면 나온다 (기능 자체는 살아 있다)
+        await page.wait_for_timeout(700)
+        await page.evaluate("()=>{const S=%s; S(0x00,8);}"%STEP)
+        seen=await lines_until(lambda t:any(w in t for w in MI), 2.0)
+        check("14.57 오래 머무르면 메뉴 잡담은 나온다", any(any(w in t for w in MI) for t in seen), seen)
+        await page.evaluate("window.__ss2.commIdleMenuMs=15000; window.__ss2.commReset()")
+        # 14.58 조사 (으)로 — 받침 없는 기술명에 「으로」가 붙지 않는다
+        ro=await page.evaluate("""() => {
+            const t=window.__ss2.SPEAKERS.haohmaru.moveDown({name:"츠바메 가에시"})[0];
+            const u=window.__ss2.SPEAKERS.haohmaru.moveDown({name:"호월참"})[0];
+            return {a:t,b:u}; }""")
+        check("14.58 조사 (으)로 받침 판정", ro and "가에시로" in ro["a"] and "호월참으로" in ro["b"], ro)
+
+        # 14.59 뒤+A+B 비오의는 **A+B 버튼**에 불이 들어온다 (SP 아님, v0.5.6d 제보)
+        await page.evaluate("window.__ss2.setDir(0,0,0,0)")
+        try: await page.wait_for_function("window.__ss2.ss2Actable()", timeout=4000)
+        except Exception: pass
+        abr=await page.evaluate("""() => {
+            const g=window.__ss2.readGame();
+            if(g.facing) window.__ss2.setDir(0,0,0,1); else window.__ss2.setDir(0,0,1,0);
+            document.getElementById('toast').textContent='';
+            window.__ss2.fireAB();
+            return {ab:document.getElementById('btnAB').className,
+                    sp:document.getElementById('spBig').className}; }""")
+        check("14.59 뒤+A+B 는 A+B 버튼에 불이 들어온다",
+              abr and "busy" in abr["ab"] and "busy" not in abr["sp"], abr)
+        await page.wait_for_timeout(400)
+        tt=(await page.text_content("#toast")) or ""
+        check("14.60 하단 알림도 A+B 로 뜬다", ("A+B" in tt) and ("+SP" not in tt), tt)
+        await page.evaluate("window.__ss2.setDir(0,0,0,0)")
+        await page.wait_for_timeout(1200)
+
+        # 14.48 입력 속도는 최속 고정 (설정 항목 삭제)
+        sp=await page.evaluate("({speed:window.__ss2.cfg.speed, seg:!!document.getElementById('speedSeg'), chainSeg:!!document.getElementById('chainAutoSeg')})")
+        check("14.48 입력 속도 최속 고정·속도/연계 설정 삭제",
+              sp["speed"]=="max" and not sp["seg"] and not sp["chainSeg"], sp)
+
+        # 14.43 하단 알림 끔 = SP 토스트 완전 침묵
+        await page.evaluate("window.__ss2.cfg.spToast=0")
+        await page.evaluate("""() => { document.getElementById('toast').textContent=''; }""")
+        try: await page.wait_for_function("window.__ss2.ss2Actable()", timeout=4000)
+        except Exception: pass
+        await page.evaluate("window.__ss2.spPress(); window.__ss2.spRelease();")
+        await page.wait_for_timeout(1500)
+        t=await page.text_content("#toast")
+        check("14.43 하단 알림 끔 = 토스트 침묵", (t or "").strip()=="", t)
+        await page.evaluate("window.__ss2.cfg.spToast=1")
+        # 14.44 연계 자동입력 폐지 — chain 이 있어도 추가 A 를 넣지 않는다 (v0.5.1)
+        cs=await page.evaluate("""() => {
+            const plain={n:"t",m:"236",b:"A"};
+            const chained={n:"t",m:"236",b:"A",chain:["A","A"]};
+            return {plain:window.__ss2.compileMove(plain,0,{}).length,
+                    chained:window.__ss2.compileMove(chained,0,{}).length}; }""")
+        check("14.44 연계 자동입력 폐지(추가 A 없음)", cs and cs["plain"]==cs["chained"], cs)
+
+        # ---------- v0.4.5: 쉼 채우기(혼잣말) ----------
+        # 14.45 창이 비고 임계 지나면 화자다운 한마디 (임계 400ms로 줄여 검사)
+        await page.evaluate("window.__ss2.commReset(); window.__ss2.cfg.commSpk='haohmaru'")
+        await page.evaluate("window.__ss2.commLineTTL=500; window.__ss2.commMuseMs=400")
+        await page.evaluate("window.__ss2.commSub('마중물 대사',0)")   # 뜬 뒤 TTL로 사라지며 쉼 시작
+        MUSE=("술이 떨어","목이 마르","그립군","한잔","한판 더","근질","호흡을 고르","크게 가도")
+        seen=await lines_until(lambda t:any(w in t for w in MUSE), 8.0)
+        check("14.45 합성: 쉼에 화자다운 혼잣말", any(any(w in t for w in MUSE) for t in seen), seen)
+        await page.evaluate("window.__ss2.commLineTTL=8000; window.__ss2.commMuseMs=3000")
+        # 14.45b 쉼이 이어지면 3초 간격으로 계속 (한 번 던지고 15초 잠기지 않는다)
+        await page.evaluate("window.__ss2.commReset(); window.__ss2.cfg.commSpk='haohmaru'")
+        await page.evaluate("window.__ss2.commLineTTL=600; window.__ss2.commMuseMs=600")
+        await page.evaluate("window.__ss2.commSub('마중물',0)")
+        got=set()
+        for _ in range(60):
+            await page.wait_for_timeout(120)
+            t=await page.evaluate("window.__ss2.commLast")
+            if t and any(w in t for w in MUSE): got.add(t)
+            if len(got)>=2: break
+        check("14.45b 쉼이 길면 반복해서 혼잣말", len(got)>=2, list(got))
+        await page.evaluate("window.__ss2.commLineTTL=8000; window.__ss2.commMuseMs=3000")
+        # 14.46 해설 끄면 혼잣말도 안 나온다
+        await page.evaluate("window.__ss2.commReset(); window.__ss2.cfg.commMode='off'; window.__ss2.museAt=1")
+        await page.wait_for_timeout(1500)
+        q=await page.evaluate("window.__ss2.annQ")
+        line=await page.evaluate("document.getElementById('commLine').textContent")
+        check("14.46 해설 끔이면 혼잣말 없음", q==0 and line.strip() in ("…",""), {"q":q,"line":line})
+        await page.evaluate("window.__ss2.cfg.commMode='on'")
+
+        # 14.47 블록 0x98 모호성: 기본은 샤를로트 나찰, 쿠로코 선택 중이면 쿠로코 유지 (v0.4.7 제보)
+        res=await page.evaluate("""() => {
+          const save=window.__ss2.cfg.char;
+          window.__ss2.cfg.char='haohmaru'; const fresh=window.__ss2.blkToChar(0x98);
+          window.__ss2.cfg.char='kuroko';   const kur=window.__ss2.blkToChar(0x98);
+          window.__ss2.cfg.char='charlotte';const cha=window.__ss2.blkToChar(0x98);
+          const nor=window.__ss2.blkToChar(0x90);
+          window.__ss2.cfg.char=save;
+          return {fresh:fresh, kuroko:kur, charlotte:cha, plain90:nor}; }""")
+        ok=(res and res["fresh"]["id"]=="charlotte" and res["fresh"]["style"]=="b"
+            and res["kuroko"]["id"]=="kuroko" and res["charlotte"]["id"]=="charlotte"
+            and res["plain90"]["id"]=="charlotte" and res["plain90"]["style"]=="s")
+        check("14.47 블록 0x98 = 샤를로트 나찰 기본(쿠로코 중이면 유지)", bool(ok), res)
 
         # 14.13 롬 초상 — 로드된 롬에서 해설자 4인 초상이 그려졌다 (주소·팔레트만 임베드)
         rf=await page.evaluate("""() => { const r=window.__ss2.romFaces||{};

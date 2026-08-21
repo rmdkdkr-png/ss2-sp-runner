@@ -16,7 +16,8 @@
 <meta property="og:description" content="필살기 커맨드를 버튼 하나로. 방향은 게임 메모리를 읽어 자동으로 뒤집습니다. HTML 한 장.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
-<title>HTML NGP SS2 runner — SP button · Character chat · v0.3</title>
+<link rel="manifest" href="manifest.webmanifest">
+<title>HTML NGP SS2 runner — SP button · Character chat · v0.5.6</title>
 <style>
   :root{
     color-scheme: dark;
@@ -39,6 +40,33 @@
   button{font:inherit;color:inherit;}
   [hidden]{display:none!important;}
 
+
+  /* ---------- 시작 화면: 옛 콘솔 부팅 화면 ---------- */
+  #landing{background:#070605;}
+  #landing .panel{border:2px solid rgba(217,185,104,.45);border-radius:6px;background:#0a0807;
+    box-shadow:0 0 0 3px #070605, 0 0 60px rgba(217,185,104,.10) inset;}
+  #landing .panel::after{height:2px;background:linear-gradient(90deg,var(--red),var(--gold),var(--violet));}
+  #landing .panel::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+    background:repeating-linear-gradient(180deg,rgba(255,255,255,.045) 0 1px,rgba(0,0,0,0) 1px 3px);}
+  #landing .hero{padding:clamp(22px,5vw,44px);text-align:center;font-family:'Galmuri7',ui-monospace,monospace;}
+  #landing .eyebrow{color:rgba(217,185,104,.75);font-family:'Galmuri7',ui-monospace,monospace;font-size:11px;}
+  #landing h1{font-family:'SS2Brush','Galmuri7',serif;font-size:clamp(34px,8vw,64px);letter-spacing:.06em;
+    color:#f4e7c8;text-shadow:0 3px 0 #7a1f16, 0 0 24px rgba(217,185,104,.25);}
+  #landing h1 span{font-family:'Galmuri7',ui-monospace,monospace;font-size:.26em;letter-spacing:.18em;
+    color:rgba(217,185,104,.8);margin-top:14px;}
+  .startPlate{margin:26px auto 6px;display:grid;place-items:center;gap:14px;}
+  .spStart{width:104px;height:104px;border-radius:50%;border:2px solid rgba(217,185,104,.8);
+    background:radial-gradient(120% 120% at 50% 30%,#e0bd63,#8d6f2c);color:#241a06;
+    font:900 30px/1 'Galmuri7',ui-monospace,monospace;letter-spacing:.06em;cursor:pointer;
+    box-shadow:0 0 0 6px rgba(217,185,104,.10), 0 12px 30px rgba(0,0,0,.55);}
+  .spStart:active{transform:translateY(2px);}
+  .blink{font-family:'Galmuri7',ui-monospace,monospace;font-size:13px;letter-spacing:.22em;
+    color:rgba(244,231,200,.9);animation:blinkOn 1.1s steps(1,end) infinite;}
+  @keyframes blinkOn{0%,55%{opacity:1}56%,100%{opacity:.15}}
+  #landing .drop{border-style:dashed;border-radius:6px;background:rgba(0,0,0,.45);}
+  #landing .pick{border-radius:4px;font-family:'Galmuri7',ui-monospace,monospace;letter-spacing:.06em;}
+  #landing .cachedRow{justify-content:center;}
+  #landing .status{text-align:center;font-family:'Galmuri7',ui-monospace,monospace;font-size:12.5px;}
   /* ---------- landing ---------- */
   .page{width:min(880px,calc(100% - 28px));min-height:100vh;min-height:100dvh;margin:0 auto;display:grid;align-items:center;padding:28px 0;}
   .panel{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:0 26px 80px rgba(0,0,0,.5);}
@@ -71,8 +99,38 @@
   .tbtn.gold{border-color:rgba(217,185,104,.5);color:var(--gold);}
   #charBtn{margin-left:auto;overflow:hidden;text-overflow:ellipsis;max-width:34vw;}
   #gamewrap{flex:1 1 auto;position:relative;min-height:0;background:#000;}
-  #game{position:absolute;inset:0;}
-
+  #game{position:absolute;inset:0;z-index:1;}
+  /* 화면 양옆 빈 자리 — 스테이지가 화면 밖으로 번져 나가는 것처럼 채운다.
+     게임 그림을 그 자리에서 떠서 흐리게 깔 뿐이라 어느 게임에 이식해도 그대로 쓸 수 있다. */
+  .sideArt{position:absolute;top:0;bottom:0;width:0;z-index:2;pointer-events:none;overflow:hidden;
+    opacity:0;transition:opacity .8s ease;background:#000;}
+  .sideArt.on{opacity:1;}
+  #artL{left:0;} #artR{right:0;}
+  .sideArt .bg{position:absolute;inset:-14%;background-position:center;background-size:cover;
+    filter:blur(7px) brightness(.55) saturate(1.15);transform:scale(1.25);}
+  #artL .bg{transform:scale(1.25) scaleX(-1);}          /* 왼쪽은 거울처럼 뒤집어 이어지게 */
+  .sideArt .card{position:absolute;left:50%;transform:translateX(-50%);
+    image-rendering:pixelated;border:2px solid rgba(217,185,104,.55);border-radius:3px;
+    box-shadow:0 10px 30px rgba(0,0,0,.6);display:none;}
+  /* 이름판 — 게임이 세로로 그려 둔 그 판을 그대로 떠 온다. 글자는 우리가 그리지 않는다. */
+  .sideArt .plate{position:absolute;left:50%;transform:translateX(-50%);
+    image-rendering:pixelated;display:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.7));}
+  #benchWrap{position:fixed;inset:0;z-index:60;background:rgba(6,5,7,.9);display:flex;align-items:center;justify-content:center;}
+  #benchBox{width:min(92vw,460px);background:#141013;border:1px solid rgba(217,185,104,.35);border-radius:14px;
+    padding:22px 18px;text-align:center;color:#efe6d6;box-shadow:0 20px 60px rgba(0,0,0,.7);}
+  #benchPhase{font-size:15px;color:#d9b968;letter-spacing:.08em;}
+  #benchBig{font-size:56px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums;}
+  #benchHint{font-size:14px;color:#a99f92;margin-top:4px;min-height:20px;}
+  #benchOut{text-align:left;white-space:pre-wrap;word-break:break-all;font-size:12px;line-height:1.5;
+    background:#0b090b;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px;margin:14px 0 10px;
+    max-height:46vh;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .sideArt .glow{position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.05) 38%,rgba(0,0,0,.55));}
+  #artL .edge,#artR .edge{position:absolute;top:0;bottom:0;width:16px;}
+  #artL .edge{right:0;background:linear-gradient(90deg,rgba(0,0,0,0),rgba(0,0,0,.8));
+    box-shadow:inset -2px 0 0 rgba(217,185,104,.28);}
+  #artR .edge{left:0;background:linear-gradient(270deg,rgba(0,0,0,0),rgba(0,0,0,.8));
+    box-shadow:inset 2px 0 0 rgba(217,185,104,.28);}
   /* ---------- controls: 절대배치 (참조 레이아웃 + MOBA식 스킬 아크) ---------- */
   #controls{flex:0 0 auto;position:relative;height:clamp(300px,44vh,430px);
     padding-bottom:env(safe-area-inset-bottom);
@@ -177,6 +235,7 @@
   #hud b{color:#ffd76a;font-weight:700;}
   #controls[data-hud="1"] #toast{top:88px;}
   #hud i{color:#ff8b8b;font-style:normal;font-weight:700;}
+
   .setNote{margin:0 0 11px;padding:10px 12px;border-radius:10px;background:rgba(217,185,104,.07);border:1px solid rgba(217,185,104,.18);font-size:12px;line-height:1.6;color:var(--muted);}
   .setNote b{color:var(--gold);font-size:12px;}
   .setRow{display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:12px;margin-bottom:9px;background:rgba(255,255,255,.02);}
@@ -216,25 +275,32 @@
   /* v1.9.1: 높이 고정 + overflow 봉인 — 글자가 커져도 게임 화면을 밀지 않는다 (효과는 대화창에 국한)
      v0.2: 가로폭 = 게임 디스플레이 가로폭 (JS alignCommPanel이 width를 게임 캔버스에 맞춤, 중앙 정렬) */
   #commRow{flex:0 0 auto;background:#000;}   /* 패널 좌우 여백도 게임과 같은 검정으로 */
-  #commPanel{display:flex;align-items:center;gap:8px;height:46px;overflow:hidden;
+  #commPanel{display:flex;align-items:center;gap:8px;height:64px;overflow:hidden;
     padding:4px 10px;box-sizing:border-box;background:rgba(14,10,8,.96);border-bottom:1px solid rgba(217,185,104,.4);
     margin:0 auto;width:100%;
     font-family:'Galmuri7','DungGeunMo',ui-monospace,monospace;font-size:15px;color:#efe3d0;z-index:29;}
   #commFace{width:32px;height:32px;image-rendering:pixelated;flex:0 0 auto;
     border:1px solid rgba(217,185,104,.5);border-radius:4px;background:#241c14;}
   #commPanel b{color:var(--gold);font-weight:400;flex:0 0 auto;font-size:13px;}
-  #commPanel span{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  /* v0.3.3: 대사 두 줄 — 줄바꿈 허용 + 2줄 클램프 (긴 대사는 두 줄로 크게) */
+  #commPanel span{flex:1 1 auto;overflow:hidden;white-space:normal;line-height:1.15;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:keep-all;
+    overflow-wrap:break-word;text-overflow:ellipsis;
     transition:color .15s,font-size .12s,opacity .42s;}
   #commLine.fadeout{opacity:0;}
+  @keyframes commBeat{0%{transform:scale(1.25)}100%{transform:scale(1)}}
+  #commFace.beat{animation:commBeat .22s ease-out;}
+  @keyframes commBeatLine{0%{border-bottom-color:rgba(255,209,102,.95)}100%{border-bottom-color:rgba(217,185,104,.4)}}
+  #commPanel.beatline{animation:commBeatLine .5s ease-out;}
   #commPanel.big span{color:#ffd166;font-size:17px;}
   /* ── 글자 연출 (TTS 대신 글자가 연기한다) ── */
   @keyframes commPop{0%{transform:scale(1.3)}100%{transform:scale(1)}}
   @keyframes commShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-3px)}30%{transform:translateX(3px)}45%{transform:translateX(-2px)}60%{transform:translateX(2px)}75%{transform:translateX(-1px)}}
   @keyframes commTremble{0%,100%{transform:translate(0,0)}25%{transform:translate(-1px,1px)}50%{transform:translate(1px,-1px)}75%{transform:translate(-1px,-1px)}}
   @keyframes commFlash{0%{background:rgba(255,170,60,.5)}100%{background:rgba(14,10,8,.96)}}
-  #commLine.pop{animation:commPop .18s ease-out;display:inline-block;transform-origin:left center;}
-  #commLine.shake{animation:commShake .4s;display:inline-block;}
-  #commLine.tremble{animation:commTremble .14s 6;display:inline-block;}
+  #commLine.pop{animation:commPop .18s ease-out;transform-origin:left center;}
+  #commLine.shake{animation:commShake .4s;}
+  #commLine.tremble{animation:commTremble .14s 6;}
   #commLine.impact{font-size:19px;color:#ffd166;font-weight:900;}
   #commLine.brush{font-family:'SS2Brush','Galmuri7',ui-monospace,monospace;font-weight:900;letter-spacing:1px;}
   #commPanel.flash{animation:commFlash .5s ease-out;}
@@ -252,10 +318,12 @@
 <!-- ═══════════ 랜딩 ═══════════ -->
 <div class="page" id="landing">
   <div class="panel"><div class="hero">
-    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v0.3</p>
+    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v0.5.6</p>
     <h1>사무라이 스피리츠! 2 <span>한글판 · SP 버튼 실행기</span></h1>
-    <p class="lead">브라우저에서 바로 실행됩니다. 모바일 격투게임처럼 <b>SP 버튼</b> 한 번으로 필살기가 나가고,
-      캐릭터가 바라보는 방향을 <b>자동으로 감지</b>해 커맨드를 뒤집어 줍니다. 스킬 아크 배치 · 전 요소 드래그 커스텀 · 빨리감기 지원.</p>
+    <div class="startPlate">
+      <button class="spStart" id="spStartBtn">SP</button>
+      <div class="blink" id="startHint">PRESS  SP  TO  START</div>
+    </div>
 
     <div id="cachedRow" class="cachedRow" hidden>
       <button class="pick" id="resumeBtn">▶ 바로 시작</button>
@@ -272,12 +340,6 @@
     </div>
     <p class="status" id="status"></p>
 
-    <div class="info-grid">
-      <div class="info"><b>SP 버튼 · 자동 방향</b><small>게임 메모리에서 캐릭터 방향을 읽어 커맨드를 자동 미러링. 실기 검증된 입력 타이밍으로 발동합니다.</small></div>
-      <div class="info"><b>스킬 아크 배치</b><small>모바일 게임처럼 공격 버튼 주위로 SP 버튼이 부채꼴로 배치. 모든 버튼을 개별 드래그로 옮기고 크기 조절할 수 있습니다.</small></div>
-      <div class="info"><b>세이브 · 빨리감기</b><small>상태저장 퀵+3슬롯, 게임 내 카드 저장 자동 보관, ▶▶ 3배속 빨리감기.</small></div>
-    </div>
-
     <footer style="margin-top:26px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px;line-height:1.7;color:var(--muted);">
       비공식 팬 제작 도구입니다. 게임 롬을 포함하지 않으며, 본인이 소유한 롬 파일을 사용하세요.<br>
       에뮬레이션: <a href="https://emulatorjs.org" style="color:var(--gold);text-decoration:none;">EmulatorJS</a> (GPL-3.0) · 코어: Beetle NeoPop/Mednafen (GPL)<br>
@@ -292,12 +354,18 @@
     <button class="tbtn gold" id="qSaveBtn">세이브</button>
     <button class="tbtn" id="qLoadBtn">로드</button>
     <button class="tbtn" id="slotsBtn">슬롯</button>
+    <button class="tbtn" id="artBtn" title="화면 양옆 아트웍 바꾸기">🎴</button>
+    <button class="tbtn gold" id="installBtn" hidden title="홈 화면에 설치 — 전체화면 + 오프라인">설치</button>
     <button class="tbtn" id="charBtn">캐릭터</button>
     <button class="tbtn" id="cfgBtn">⚙</button>
     <button class="tbtn" id="fsBtn">⛶</button>
   </div>
   <div id="commRow"><div id="commPanel" hidden><img id="commFace" alt=""><b id="commSpk"></b><span id="commLine">…</span></div></div>
-  <div id="gamewrap"><div id="game"></div></div>
+  <div id="gamewrap">
+    <div class="sideArt" id="artL"><div class="bg"></div><div class="card"></div><div class="plate"></div><div class="glow"></div><div class="edge"></div></div>
+    <div class="sideArt" id="artR"><div class="bg"></div><div class="card"></div><div class="plate"></div><div class="glow"></div><div class="edge"></div></div>
+    <div id="game"></div>
+  </div>
   <div id="controls">
     <button class="ctl pill" id="ffBtn">▶▶</button>
     <button class="ctl pill" id="palBtn">기술</button>
@@ -361,11 +429,7 @@
 <div class="modal" id="settings" hidden>
   <div class="sheetBox">
     <h2>설정</h2>
-    <p class="setNote">기본값 그대로 써도 됩니다. 화면이 무겁게 느껴지면 <b>화면 필터 = 없음</b>,
-       기술이 잘 안 나가면 <b>입력 속도 = 표준</b>부터 확인해 보세요.</p>
-    <div class="setRow"><b>입력 속도<br><small style="color:var(--muted)">발동까지 걸리는 시간</small></b>
-      <div class="seg" id="speedSeg"><button data-s="std">표준</button><button data-s="fast">빠름</button><button data-s="max">최속</button></div>
-    </div>
+    <p class="setNote">기본값 그대로 써도 됩니다. 화면이 무겁게 느껴지면 <b>화면 필터 = 없음</b>.</p>
     <div class="setRow"><b>해설<br><small style="color:var(--muted)">분위기 자동 중계</small></b>
       <div class="seg" id="commSeg"><button data-cm="off">끔</button><button data-cm="on">켬</button></div>
     </div>
@@ -375,22 +439,17 @@
     <div class="setRow"><b>기술명<br><small style="color:var(--muted)">해설에 기술 이름 표시</small></b>
       <div class="seg" id="commNamesSeg"><button data-nm="1">표시</button><button data-nm="0">숨김</button></div>
     </div>
+    <div class="setRow"><b>하단 알림<br><small style="color:var(--muted)">화면 아래 기술명 표시</small></b>
+      <div class="seg" id="spToastSeg"><button data-t="1">켬</button><button data-t="0">끔</button></div>
+    </div>
     <div class="setRow"><b>게임 언어<br><small style="color:var(--muted)">본체 설정</small></b>
       <div class="seg" id="langSeg"><button data-l="auto">자동</button><button data-l="japanese">일본어</button><button data-l="english">영어</button></div>
     </div>
     <div class="setRow"><b>캐릭터 자동<br><small style="color:var(--muted)">전투 중 감지</small></b>
       <div class="seg" id="autoCharSeg"><button data-a="1">켬</button><button data-a="0">끔</button></div>
     </div>
-    <div class="setRow"><b>메뉴 간소화<br><small style="color:var(--muted)">메뉴에선 숨김</small></b>
-      <div class="seg" id="ctxSeg"><button data-c="1">켬</button><button data-c="0">끔</button></div>
-    </div>
     <div class="setRow"><b>패드 크기</b><input type="range" id="padScale" min="70" max="130" step="5"><output id="padScaleOut"></output></div>
     <div class="setRow"><b>버튼 크기</b><input type="range" id="btnScale" min="70" max="150" step="5"><output id="btnScaleOut"></output></div>
-    <div class="setRow"><b>발동 결과 표시<br><small style="color:var(--muted)">기술명 확인 (RAM 읽기)</small></b>
-      <div class="seg" id="watchSeg">
-        <button data-w="1">켬</button><button data-w="0">끔</button>
-      </div>
-    </div>
     <div class="setRow"><b>진단 표시<br><small style="color:var(--muted)">화면에 상태 표시</small></b>
       <div class="seg" id="hudSeg">
         <button data-h="0">끔</button><button data-h="1">켬</button>
@@ -408,12 +467,30 @@
         <button id="layoutReset">배치·크기 초기화</button>
       </div>
     </div>
+    <div class="setRow"><b>성능 측정<br><small style="color:var(--muted)">16초 · 브라우저끼리 비교용</small></b>
+      <div class="seg">
+        <button id="benchStart">측정 시작</button>
+      </div>
+    </div>
     <div class="setRow"><b>게임</b>
       <div class="seg">
         <button id="gameReset" style="color:#ff9d8d;border-color:rgba(207,70,56,.4);">게임 리셋 (타이틀로)</button>
       </div>
     </div>
     <div class="sheetFoot"><button class="ok" id="cfgClose">닫기</button></div>
+  </div>
+</div>
+
+<!-- 성능 측정 -->
+<div id="benchWrap" hidden>
+  <div id="benchBox">
+    <div id="benchPhase">준비</div>
+    <div id="benchBig">16</div>
+    <div id="benchHint">가만히 두세요</div>
+    <pre id="benchOut" hidden></pre>
+    <div class="seg" id="benchBtns" hidden>
+      <button id="benchCopy">결과 복사</button><button id="benchClose">닫기</button>
+    </div>
   </div>
 </div>
 
@@ -449,6 +526,10 @@ const P2CHAR_OFF = 0x1D51; /* P2 캐릭터/유파 — 0x1B51 + 0x200 대칭 (실
 const SCR_OFF = 0x1C0;     /* 화면 상태 — 실측: 타이틀메뉴 0 · 캐릭터선택 2 · 유파선택 4 · 카드 6.
                               한글판(rom)과 일어판(romJ) 양쪽에서 동일 확인. 전투 중 값은 8·10으로
                               유동 관측 — 그래서 아래서는 정확히 2/4만 보고 나머지는 쓰지 않는다 */
+const SURV_OFF = 0x180B;   /* 무한대전 연승 카운터 — 승리봇 11연승 실측(값==연승수), 1인대전·메뉴에선 0 */
+const STAGE_OFF = 0x17FE;  /* 스토리(1인 대전) 진행 스테이지 — 0-based(0=1연전). 승리봇 8연전 실측, 무한대전에선 0 유지 */
+const MD_QUOTE = 0xC5;     /* 캐릭터 대사 화면(초상+말풍선) — 승리봇 채집으로 발견한 mode 값 197 */
+const MD_ENDING = 0xC7;    /* 엔딩·스태프롤 (승리봇 스토리 완주 채집으로 발견한 mode 값 199) */
 /* 체공 판정 = Y좌표 (0xE3A, 지상=128 전 스테이지 불변, 공중=66~99 — 실기 검증).
    구 AIR_IDS 방식은 폐기: 0x14=앉기, 0x5C=앉아약공격이라 앉기가 공중으로 오판되는 버그 있었음 */
 const P1Y_OFF = 0xE3A, GROUND_Y = 128;
@@ -468,7 +549,8 @@ const RAM_TAG = [0x43,0x50,0x55,0x45,0x78,0x52,0x41,0x4D];
    표준 20/20·20/20 / 빠름 19/20·18/20 / 최속 20/20·20/20 → 셋 다 실용상 동등.
    발동까지: 표준 433ms / 빠름 350ms / 최속 267ms */
 const SPEEDS = {std:[4,6,8], fast:[3,4,6], max:[2,3,5]};
-function tf(){ return SPEEDS[cfg.speed]||SPEEDS.std; }
+/* v0.5.1: 입력 속도는 **최속 고정**. 표준·빠름은 발동만 느려서 고를 이유가 없었다(사용자 판단). */
+function tf(){ return SPEEDS.max; }
 
 /* ═══════════════ 기술표 (실기 검증 + GameFAQs 3종 교차) ═══════════════ */
 /* 실기 감사로 수집한 액션ID→기술명 (그 기술만의 고유 ID만 수록) — 실제 발동 기술 표시용 */
@@ -566,7 +648,7 @@ cfg.char=cfg.char||"asura"; cfg.style=cfg.style||"s";
 delete cfg.slots; delete cfg.mode; delete cfg.spCount;  /* v1.1: 클래식 슬롯 체계 제거 */
 cfg.layout=cfg.layout||{};       /* {elId:{x,y}} */
 /* 기본값: 메뉴에서도 조작창 유지(컨텍스트 숨김 끔), 캐릭터 감지는 [지금 감지]를 누를 때만 */
-if(cfg.autoChar===undefined) cfg.autoChar=false;
+if(cfg.autoChar===undefined) cfg.autoChar=true;   /* v0.5.2: 캐릭터 자동 감지 기본 켬 */
 if(cfg.ctxButtons===undefined) cfg.ctxButtons=false;
 cfg.spSlots=cfg.spSlots||{};   /* 캐릭터·유파별 SP 방향 배치 사용자 지정 {n,f,d,b,df,db,air} */
 /* v1.2: [콤보] 버튼 폐기. 약베기로 열고 히트컨펌되면 마무리 기술로 캔슬하는 버튼이었는데,
@@ -579,10 +661,10 @@ if(cfg.scale.btn>150) cfg.scale.btn=150;  /* 동상 (UI 최대치와 일치) */
 delete cfg.lite;   /* v1.1: 가벼운 화면 옵션 제거 */
 cfg.shader=cfg.shader||"off";  /* 화면 필터(쉐이더) */
 cfg.hud=cfg.hud||0;            /* 진단 오버레이 */
-cfg.watch=cfg.watch===undefined?1:cfg.watch;   /* 발동 결과 확인(RAM 폴링) */
+cfg.watch=0;                   /* v0.5.2: 발동 결과 표시 폐지 — 실용성이 없고 100ms 램 폴링만 남았다 */
 cfg.alpha=cfg.alpha||100;
 delete cfg.spChainMode;  /* 0.6: [SP 연속기] 제거 — 항상 자동 완주 */
-cfg.speed=cfg.speed||"std";           /* 입력 속도: std | fast | max */
+cfg.speed="max";                      /* v0.5.1: 최속 고정 (설정 항목 삭제) */
 /* 해설 v1.5: 모드(누구를 위한 해설인가) × 음성(자막만/음성도) 로 분리.
    기존 cfg.commentary("off"|"sub"|"tts")는 캐스터 모드로 이행한다. */
 if(cfg.commentary) cfg.commMode="on";
@@ -593,6 +675,8 @@ cfg.commMode=cfg.commMode||"on";   /* off | on — v0.3.1: 기본 켬 (사용자
 delete cfg.commVoice; delete cfg.commVol; delete cfg.commVoiceName; delete cfg.commTone;
 cfg.commSpk=cfg.commSpk||"haohmaru";   /* 해설자: haohmaru | nakoruru | hanzo | galford */
 cfg.commNames=cfg.commNames===undefined?1:cfg.commNames;  /* 해설에 기술명 표시 */
+cfg.spToast=cfg.spToast===undefined?1:cfg.spToast;        /* v0.4.4: 화면 하단 기술명 알림(토스트) */
+cfg.chainAuto=0;                      /* v0.5.1: 연계 자동입력 폐지 (설정 항목 삭제) */
 cfg.lang=cfg.lang||"auto";            /* 게임 언어: auto | japanese | english (NGP 본체 언어) */
 const KR_HASHES=new Set([
   "fc1427882131", /* v0.70 allcards (기존 사용자 호환) */
@@ -662,7 +746,7 @@ function startGame(bytes){
   $("#landing").hidden=true; $("#stage").hidden=false; commPanelVis();
   refreshSpButtons();
   /* 롬 해시(세이브 분리·언어 자동판정) 계산 후 부팅 */
-  romHash(bytes).then(h=>{ romKey=h; actLearnLoad(); faceLoad(); buildRomFaces(bytes); bootEJS(bytes); })
+  romHash(bytes).then(h=>{ romKey=h; actLearnLoad(); faceLoad(); artLoad(); buildRomFaces(bytes); bootEJS(bytes); })
     .catch(()=>{ try{ buildRomFaces(bytes); }catch(e){} bootEJS(bytes); });
 }
 /* ═══ EmulatorJS 가상 패드(nipplejs) 전역 터치 리스너 무력화 ═══
@@ -934,6 +1018,19 @@ function cardMoveReady(mv,cs){
 
 /* ═══════════════ 입력 · 매크로 엔진 ═══════════════ */
 function sim(id,v){ const g=gm(); if(g) try{ g.simulateInput(0,id,v); }catch(e){} }
+/* v0.4.8 최소 홀드 — 코어는 **프레임당 한 번만** 입력을 읽는다(실측: 입력→게임 반영 16.2ms = 1프레임).
+   그래서 누르고 16ms 안에 떼면 눌림이 한 번도 관측되지 않고 통째로 씹힌다.
+   버튼 탭은 최소 2프레임(34ms) 유지하고 뗀다. 강 판정 임계는 8프레임이라 약공격 성질은 그대로. */
+const MIN_HOLD_MS=34;
+const _pressAt={}, _relT={}, _down={};
+function simDown(id){ _down[id]=1; _pressAt[id]=performance.now(); clearTimeout(_relT[id]); sim(id,1); }
+function simUp(id){
+  _down[id]=0;
+  const held=performance.now()-(_pressAt[id]||0);
+  clearTimeout(_relT[id]);
+  if(held>=MIN_HOLD_MS){ sim(id,0); return; }
+  _relT[id]=setTimeout(()=>{ if(!_down[id]) sim(id,0); }, Math.ceil(MIN_HOLD_MS-held));
+}
 const DIRBITS={1:[0,1,1,0],2:[0,1,0,0],3:[0,1,0,1],4:[0,0,1,0],5:[0,0,0,0],6:[0,0,0,1],7:[1,0,1,0],8:[1,0,0,0],9:[1,0,0,1]};
 let userDir=[0,0,0,0];
 /* 입력 이력 추적: 순수 좌/우(↓ 없음)와 ↑의 최근 적용 시각 — 씹힘 보정용 (인계문서 §검수)
@@ -980,7 +1077,7 @@ function compileMove(mv,facing,opts){
   /* 직전(0.25s 이내)에 기본기를 쳤다면 6f 지연 후 시작 — 공격 초반 프레임에선 캔슬이 안 받고,
      약간 지나서 넣으면 버퍼로 성립함 (실기 검증: 약공격+6f 후 커맨드 = 발동) */
   /* 공중/점프 스타트업 중 지상기: 착지까지 대기 후 발동 (그냥 쏘면 씹힘 — 실측 0/3 → 대기 시 3/3) */
-  if(opts.waitGround){ steps.push({d:"5",f:4},{d:"5",wg:1,f:72}); } /* 4f 리드: 점프 스쿼트가 액션ID에 잡히길 기다림 */
+  if(opts.waitGround){ steps.push({d:"5",f:4},{d:"5",wg:1,f:40}); }   /* v0.5.6d: 72f(1.2초) → 40f(0.67초) */ /* 4f 리드: 점프 스쿼트가 액션ID에 잡히길 기다림 */
   /* 공중기 고속 모션: 체공 중엔 수용 창이 짧아 표준 4f가 간헐 실패 — 3f 스텝 + 3f 버튼이 최적(실측) */
   const airFast=mv.air&&opts.skipJump;
   /* ═══ 방향 오염 보정 (실측 기반, 2가지 경로) ═══
@@ -1036,8 +1133,8 @@ function compileMove(mv,facing,opts){
   /* sus: 버튼을 계속 쥐고 있으면 홀드를 최대 14f까지 연장 → 8f 임계로 강판 필살기
      (v10.5 재검증: 홀드해도 불발 아님 — 삼련살 0x1B0→0x1B4 등 약/강 변형이 실존) */
   steps.push({d:last,b:mv.b,f:airFast?3:Math.min(5,Math.max(BTNF,DIRF+1)),sus:opts.sustain?1:0});
-  /* 후속입력(followups): 모션 반복이 아니라 버튼 추가입력 (인계문서 §3-1) */
-  if(mv.chain&&!opts.noChain){ for(const c of mv.chain){ steps.push({d:"5",f:GAPF},{d:"5",b:c,f:5}); } }
+  /* v0.5.1: 연계 자동입력(후속 A) **제거**. 갈포드 플라즈마 블레이드처럼 뒤에 A가 더 들어가면
+     기술이 깨져 버린다는 제보가 계속 있었다. 연계는 손으로 넣는 게 맞다. */
   steps.push({d:"5",f:2});
   return steps;
 }
@@ -1049,6 +1146,7 @@ function runSteps(steps,el,kind,faceRef){
   runSteps.lastSteps=JSON.stringify(steps);
   runSteps.mirrorHits=0;   /* 이번 매크로에서 되미러링된 스텝 수(디버그) */
   MACRO.active=true; MACRO.el=el; MACRO.release=false; MACRO.kind=kind||"special";
+  MACRO.seq=inputSeq;   /* 이 매크로를 시작시킨 입력 번호 — 착지 대기 중 새 입력이 오면 버린다 */
   if(el) el.classList.add("busy");
   let i=0,left=steps[0].f;
   /* 게이지 링을 [A] 버튼처럼 '누른 순간부터' 연속으로 채운다 —
@@ -1094,6 +1192,9 @@ function runSteps(steps,el,kind,faceRef){
       /* wg 스텝: 착지(지상에서 행동 가능한 상태)를 감지하면 즉시 다음 스텝으로 — f는 최대 대기 프레임.
          지상 = Y 복귀 + 액션이 idle/앉기/걷기 (공격·경직·점프스쿼트 0x50+ 제외, 걷기턴 0x10C 허용) */
       if(steps[i].wg){
+        /* v0.5.6d: 착지 대기 중 사용자가 다른 걸 누르면 그 기술은 버린다.
+           안 그러면 한참 뒤에 저절로 나오는 것처럼 보인다(귀신터치). */
+        if(MACRO.seq!==undefined&&MACRO.seq!==inputSeq){ endMacro(); return; }
         const a=readGame();
         if(a.ok&&!isAirborne(a)&&(a.act<0x50||a.act===0x10C)) left=1;
       }
@@ -1116,7 +1217,7 @@ function runSteps(steps,el,kind,faceRef){
         if(prev.sus){
           runSteps.lastSus={el:prev._el||0,rel:MACRO.release};
           /* v0.2.1: [발동 결과 표시] 꺼짐이면 침묵, [기술명 숨김]이면 이름 없이 강약만 */
-          if(MACRO.name&&cfg.watch) toast((cfg.commNames?MACRO.name:"발동")+((prev._el||0)>=8?"  — 강":"  — 약"));
+          if(MACRO.name&&cfg.watch&&cfg.spToast&&cfg.commNames) toast((cfg.commNames?MACRO.name:"발동")+((prev._el||0)>=8?"  — 강":"  — 약"));
         }
         if(i>=steps.length){ endMacro(); return; }
         applyStep(steps[i]); left=steps[i].f;
@@ -1149,16 +1250,24 @@ function ss2Actable(){
   return act<0x100||act===0x10C;
 }
 let spGate=null;
+/* v0.5.6d: **사용자가 다음 동작을 한 순간 지난 선입력은 무효**로 만든다.
+   사용자 제보: "라운드 중에도 1.5초쯤 뒤에 SP가 저절로 눌린다".
+   선입력 창을 짧게 줄이는 것만으로는 부족했다 — 그 사이 사용자가 다른 걸 하면
+   뒤늦게 나오는 기술은 전부 '귀신터치'로 느껴진다. 그래서 두 겹으로 막는다:
+     ① 창을 1500ms → 400ms (약 24프레임, 격겜 선입력 관례 안쪽)
+     ② 그 사이 새 입력(A·B·A+B·SP·방향 바뀜)이 하나라도 들어오면 즉시 폐기 */
+let inputSeq=0;
+function bumpInput(){ inputSeq++; }
 function runMove(mv,el,opts){
   if(MACRO.active||editing) return;
   const g=gm(); if(!g||!window.EJS_emulator||!EJS_emulator.started){ toast("게임이 아직 준비되지 않았어요"); return; }
   clearInterval(spGate); spGate=null;      /* 새 입력이 이전 선입력을 대체한다 (코어와 동일) */
   if(!ss2Actable()){
-    const t0=performance.now();
+    const t0=performance.now(), seq0=inputSeq;
     spGate=setInterval(()=>{
-      if(MACRO.active||editing){ clearInterval(spGate); spGate=null; return; }
+      if(MACRO.active||editing||inputSeq!==seq0){ clearInterval(spGate); spGate=null; return; }
       if(ss2Actable()){ clearInterval(spGate); spGate=null; runMove(mv,el,opts); }
-      else if(performance.now()-t0>1500){ clearInterval(spGate); spGate=null; }
+      else if(performance.now()-t0>SP_GATE_MS){ clearInterval(spGate); spGate=null; }
     },25);
     return;
   }
@@ -1177,32 +1286,14 @@ function endMacro(){
   MACRO.active=false; MACRO.el=null; MACRO.name=null;
 }
 /* 발동 결과 표시: 실제로 나온 액션ID를 기술명으로 변환해 알려준다(불발이면 "불발"). */
+/* 선입력(예약) 시한 — 짧게 유지한다. 길면 '저절로 눌린 것'이 된다. */
+const SP_GATE_MS=400, SP_AIR_MS=700;
 let fireWatch=null;
 /* 발동 결과 보고. 특수기 액션ID가 잡히는 즉시 보고하고 폴링을 끝낸다.
    (구버전: 1.5초 내내 40ms = ~37회 읽음 → 보통 3~8회) */
-function watchFire(intended){
-  clearInterval(fireWatch);
-  /* [발동 결과 표시]를 끄면 폴링 자체를 하지 않는다 —
-     "RAM을 읽는 동작이 느려짐의 원인"인지 사용자가 직접 A/B 할 수 있게 한 스위치. */
-  if(!cfg.watch) return;
-  const t0=Date.now();
-  const a0=(readGame().act|0);      /* 호출 시점 액션 — 직전 기술을 새 발동으로 오인하지 않도록 */
-  fireWatch=setInterval(()=>{
-    PROF.watch++;
-    const g=readGame();
-    const el=Date.now()-t0;
-    /* 매크로가 커맨드를 다 넣는 데 ~250ms. 그 전 결과와 직전 액션은 무시한다. */
-    const hit=g.ok&&g.act>=0x180&&g.act!==a0&&el>=320;
-    if(!hit&&el<1200) return;
-    clearInterval(fireWatch);
-    if(!hit){ toast(cfg.commNames?("✖ 불발 — "+intended):"✖ 불발"); return; }
-    const tbl=(typeof ACTNAME!=="undefined")?ACTNAME[cfg.char+"_"+cfg.style]:null;
-    const nm=tbl?tbl["0x"+g.act.toString(16)]:null;
-    /* 이름을 못 찾으면 강 변형·파생타(0x1B4·0x1B8 등)일 가능성이 크므로 의도한 이름을 쓴다 */
-    if(!cfg.commNames){ toast("✔ 발동"); return; }   /* 기술명 숨김 — 이름 없이 결과만 */
-    toast(nm&&nm!==intended ? ("⚠ 실제: "+nm+"  (의도: "+intended+")") : ("✔ "+(nm||intended)));
-  },100);
-}
+/* v0.5.2: [발동 결과 표시] 폐지. 100ms 램 폴링으로 액션ID를 읽어 "✔ 실제: …" 를 띄우던 기능인데,
+   해설이 결과를 이미 말해 주고 폴링만 남아서 들어냈다. 호출부는 빈 함수로 남겨 둔다. */
+function watchFire(){}
 
 /* 지상기 자동 재시도는 v1.1에서 **제거**했다.
    커맨드 버퍼 RAM 리셋(0x1DCD) 도입 후 불발이 42/42로 사라져 역할이 없어졌는데,
@@ -1215,10 +1306,11 @@ let spRetry=null;
 let airWatch=null;
 function armAirRetry(mv,el){
   clearInterval(airWatch);
-  let tries=0; const t0=Date.now();
+  let tries=0; const t0=Date.now(), seq0=inputSeq;
   airWatch=setInterval(()=>{
     const g=readGame();
-    if(!g.ok||g.act>=0x180||Date.now()-t0>1200){ clearInterval(airWatch); return; }
+    if(inputSeq!==seq0){ clearInterval(airWatch); return; }          /* 새 입력이 들어왔다 — 폐기 */
+    if(!g.ok||g.act>=0x180||Date.now()-t0>SP_AIR_MS){ clearInterval(airWatch); return; }
     if(MACRO.active) return;
     if(isAirborne(g)){
       if(g.act>=0x50&&g.act<0x180){ clearInterval(airWatch); return; } /* 공중 기본기 커밋됨 */
@@ -1275,24 +1367,40 @@ function deriveSpMap(moves){
 /* SP 버튼 라벨: 지금 누르고 있는 방향의 기술 이름을 실시간 표시 (기존엔 중립 기술만 고정 표시) */
 /* 방향 입력 → SP 슬롯 해석. 라벨 표시와 실제 발동이 **같은 함수**를 쓴다
    (v1.0 이전엔 두 곳에 복제돼 있어 가드가 서로 달랐다). */
+/* 자리 고르기 — 방향을 잡았으면 **가까운 자리 순서**로 훑는다(코어 SLOT_ORDER 와 같은 표).
+   중립을 눌렀는데 중립 자리가 비면 다른 자리를 끌어오지 않고 그냥 베기로 간다(mv=null).
+   "쓸 수 있는"은 카드 기술이면 카드가 꽂혀 있는지까지 본다. */
+const SLOT_ORDER={
+  n  :["n"],
+  f  :["f","df","n","d","b","db","air"],
+  b  :["b","db","n","d","f","df","air"],
+  d  :["d","df","db","n","f","b","air"],
+  df :["df","d","f","n","db","b","air"],
+  db :["db","d","b","n","df","f","air"],
+  air:["air","n","f","d","b","df","db"]
+};
 function resolveSpSlot(g){
-  const map=curSpMap();
+  const map=curSpMap(), moves=curMoves();
   const airborne=isAirborne(g);
   const [u,d,l,r]=userDir;
   const fwd=g.facing?l:r, back=g.facing?r:l;
-  const has=k=>map[k]!==null&&map[k]!==undefined;
-  /* 우선순위: 실제 공중 > ↑(공중기 의도) > ↘/↙ > 아래 > 앞/뒤 > 중립 */
-  let rel="n";
-  if((airborne||u)&&has("air")) rel="air";
-  else if(d&&fwd&&has("df")) rel="df";
-  else if(d&&back&&has("db")) rel="db";
-  else if(d&&has("d")) rel="d";
-  else if(fwd&&has("f")) rel="f";
-  else if(back&&has("b")) rel="b";
-  if(!has(rel)) rel="n";
-  const idx=map[rel];
-  const mv=(idx!==null&&idx!==undefined)?curMoves()[idx]:null;
-  return {rel:rel, mv:mv, airborne:airborne};
+  let want="n";
+  if(airborne||u) want="air";
+  else if(d&&fwd) want="df";
+  else if(d&&back) want="db";
+  else if(d) want="d";
+  else if(fwd) want="f";
+  else if(back) want="b";
+  const cs=cardState(g);
+  for(const k of (SLOT_ORDER[want]||["n"])){
+    const idx=map[k];
+    if(idx===null||idx===undefined) continue;
+    const mv=moves[idx];
+    if(!mv) continue;
+    if(mv.card&&!cardMoveReady(mv,cs).ok) continue;    /* 카드가 없으면 건너뛴다 */
+    return {rel:k, mv:mv, airborne:airborne};
+  }
+  return {rel:want, mv:null, airborne:airborne};       /* 낼 게 없다 → 그냥 베기 */
 }
 /* SP 버튼 아래 기술명 표시는 0.6에서 제거했다.
    setDirs()에서 불려서 **디패드를 한 칸 움직일 때마다** readGame(힙 읽기) + curSpMap()이
@@ -1323,7 +1431,12 @@ function curSpMap(){
   if(us) for(const k in us){ if(us[k]!==undefined&&us[k]!==null) map[k]=us[k]; }
   return map;
 }
-function fireSp(mv,rel,airborne,waitGround){
+/* v0.5.6d: 어느 버튼이 눌린 것으로 보일지는 **부른 쪽이 정한다.**
+   제보: "뒤+A+B 로 비오의를 내면 SP 버튼이 같이 눌린 것처럼 보여 거슬린다".
+   비오의는 A+B 로 내는데 불빛은 SP 에 들어오고, 하단 알림도 「←+SP」로 떴다. */
+function fireSp(mv,rel,airborne,waitGround,src){
+  const btn=(src&&src.el)||$("#spBig");        /* 불빛이 들어올 버튼 */
+  const btnName=(src&&src.label)||"SP";        /* 하단 알림에 찍을 이름 */
   let warn="";
   if(mv.card){
     const rdy=cardMoveReady(mv,cardState());
@@ -1331,7 +1444,7 @@ function fireSp(mv,rel,airborne,waitGround){
     if(rdy.warn) warn="  🃏"+rdy.warn;
   }
   /* v0.2.1: [기술명 숨김]이면 SP 토스트에서도 이름을 뺀다 (사용자 제보: 숨김이 안 먹히던 곳) */
-  let msg=(DIR_LABEL[rel]?DIR_LABEL[rel]+"+":"")+"SP"+(cfg.commNames?"  "+mv.n:"");
+  let msg=(DIR_LABEL[rel]?DIR_LABEL[rel]+"+":"")+btnName+(cfg.commNames?"  "+mv.n:"");
   if(mv.near){
     /* 실측: 커맨드 잡기는 거리 32 이하에서만 성립하고 그 밖에선 헛잡기 경직만 남는다.
        사용자 확정 사양: **헛잡기도 그대로 발동**시키고 사거리 안내만 표시한다(막지 않는다). */
@@ -1340,16 +1453,22 @@ function fireSp(mv,rel,airborne,waitGround){
     const far=gd.ok&&gd.dist!==undefined&&gd.dist>GRAB_RANGE;
     msg+= far ? (mv.grab?"  (잡기 사거리 밖)":"  (근접 필요 — 멉니다)") : "  (근접)";
   }
-  const o={noChain:false, skipJump:airborne, afterBasic:fireSp._midAttack, waitGround:waitGround, sustain:true};
-  runMove(mv,$("#spBig"),o);
-  if(mv.air&&airborne) armAirRetry(mv,$("#spBig"));
+  const o={noChain:!cfg.chainAuto, skipJump:airborne, afterBasic:fireSp._midAttack, waitGround:waitGround, sustain:true};
+  runMove(mv,btn,o);
+  if(mv.air&&airborne) armAirRetry(mv,btn);
   watchFire(mv.n);   /* 비오의는 분노 미충족 시 재시도 무의미 */
   if(waitGround) msg+="  (착지 후)";
   else if(compileMove.poisonFlush) msg+="  (입력 보정)";
-  toast(msg+warn);
+  if(cfg.spToast&&cfg.commNames) toast(msg+warn);   /* v0.4.6: 기술명 숨김이면 하단 알림도 통째로 침묵 */
 }
+/* v0.5.6: SP를 누른 뒤 **예약**(선입력 게이트·공중 재시도·착지 대기)이 살아 있을 수 있는 시한.
+   사용자 제보 "SP가 귀신터치마냥 눌릴 때가 있다" — 라운드가 끝나는 순간 누른 입력이
+   대기하다가 다음 라운드/화면에서 뒤늦게 터지던 것. spGuard()가 이 시한 안에서만 감시한다. */
+let spArmedUntil=0;
 function spPress(){
   if(editing||ctxState==="menu") return;
+  bumpInput();
+  spArmedUntil=Date.now()+1200;
   clearInterval(spRetry); clearInterval(fireWatch);
   /* 기본기 매크로(A+B 등)는 SP가 선점 — 기본기→기술 연결 부드럽게 */
   if(MACRO.active){
@@ -1361,7 +1480,13 @@ function spPress(){
   const gme=readGame();
   const sel=resolveSpSlot(gme);
   const rel=sel.rel, mv=sel.mv, airborne=sel.airborne;
-  if(!mv){ toast("배정된 기술이 없습니다"); return; }
+  /* v0.5.2: 자리도 중립도 비었으면 — SP를 눌렀는데 아무 일도 안 나는 건 없앤다.
+     그냥 베기(A) 한 번. 잡고 있으면 홀드가 늘어 강베기가 된다. */
+  if(!mv){
+    lastBasicAt=Date.now();
+    runSteps([{d:dirCharFromUser(),b:"A",f:6,sus:1},{d:"5",f:2}],$("#spBig"),"basic");
+    return;
+  }
   /* 캔슬 지연: 실제 공격 모션 중이거나, 방금(0.15s) A를 릴리즈해 공격이 시작되는 참일 때만
      (약공격은 릴리즈 발동이라 직후엔 액션ID가 아직 idle — 시간 조건으로 보완). 평시 SP는 지연 0 */
   /* 캔슬 지연은 "방금 우리가 낸 기본기" 기준으로만 판단 — 액션ID 임계(0x50)는 캐릭터마다
@@ -1456,9 +1581,13 @@ try{
      · rAF 간격 샘플링은 **HUD를 켰을 때만** 돈다
      · DOM은 textContent 한 번만 쓴다 */
 let hudRaf=0, hudGaps=[], hudLast=0, hudPrev=null, hudFrame0=0, hudT0=0, hudFps=[], hudSkip=0;
+/* v0.4.4: 터치 직후(300ms 내) 프레임 간격만 따로 잰다 — "터치할 때마다 느림"의 유무를
+   숫자로 가르기 위한 계측기. 터치와 무관한 끊김과 구분된다. */
+let hudTjMax=0, hudTjN=0;
 function hudLoop(t){
   if(!cfg.hud){ hudRaf=0; return; }
-  if(hudLast) hudGaps.push(t-hudLast);
+  if(hudLast){ const g=t-hudLast; hudGaps.push(g);
+    if(t-lastTouchT<300){ if(g>hudTjMax) hudTjMax=g; if(g>25) hudTjN++; } }
   hudLast=t;
   if(hudGaps.length>240) hudGaps.shift();
   hudRaf=requestAnimationFrame(hudLoop);
@@ -1467,7 +1596,7 @@ function setHud(on){
   cfg.hud=on?1:0;
   const el=$("#hud"); if(el) el.hidden=!on;
   const c=$("#controls"); if(c) c.dataset.hud=on?"1":"0";   /* 토스트를 HUD 아래로 */
-  hudGaps=[]; hudLast=0; hudPrev=null; hudFrame0=0; hudFps=[]; hudSkip=0;
+  hudGaps=[]; hudLast=0; hudPrev=null; hudFrame0=0; hudFps=[]; hudSkip=0; hudTjMax=0; hudTjN=0;
   if(on&&!hudRaf) hudRaf=requestAnimationFrame(hudLoop);
 }
 function hudTick(){
@@ -1502,6 +1631,7 @@ function hudTick(){
   el.innerHTML =
     "fps "+fps.toFixed(1)+"  <b>최저10초 "+fMin.toFixed(1)+"</b>  간격 "+p95.toFixed(0)+"/"+mx.toFixed(0)+"ms\n"+
     "끊김 "+long+"/s   터치 "+((performance.now()-lastTouchT<800)?"중":"—")+"   매크로 "+(MACRO.active?"실행":"대기")+"\n"+
+    "<b>터치직후 최대 "+hudTjMax.toFixed(0)+"ms  누적끊김 "+hudTjN+"</b>\n"+
     "RAM "+d.rg+"/s   rAF "+d.raf+"   확인 "+d.watch+"\n"+
     "힙 "+(heapOk?("OK@"+heapBase):"<i>실패</i>")+"   gState "+PERF.getState+"   스캔 "+PERF.scans+"\n"+
     cfg.char+"_"+cfg.style+"  "+cfg.speed+"  "+cfg.shader+
@@ -1523,7 +1653,18 @@ function applyLayout(){
   const c=$("#controls");
   c.style.setProperty("--ctlA",(cfg.alpha/100).toFixed(2));
 }
-window.addEventListener("resize",()=>{ if(!$("#stage").hidden){ applyLayout(); setTimeout(alignCommPanel,120); } });
+$("#artBtn")&&$("#artBtn").addEventListener("click",()=>{
+  /* 카드 아트 1 → 2 → … → 스테이지만 → 끔 → 다시 카드 아트 */
+  if(cfg.art==="art"&&(cfg.artIdx|0)<artList.length-1) cfg.artIdx=(cfg.artIdx|0)+1;
+  else if(cfg.art==="art") cfg.art="stage";
+  else if(cfg.art==="stage") cfg.art="off";
+  else { cfg.art="art"; cfg.artIdx=0; }
+  saveCfg(); sideArtCur=""; sideArtRefresh();
+  toast("양옆 아트웍 — "+(cfg.art==="art"
+        ? (artList.length?("카드 아트 "+((cfg.artIdx|0)+1)+"/"+artList.length):"카드 아트 (아직 없음 — 카드 화면에서 모은다)")
+        : ART_LABEL[cfg.art]));
+});
+window.addEventListener("resize",()=>{ if(!$("#stage").hidden){ applyLayout(); setTimeout(alignCommPanel,120); sideArtCur=""; setTimeout(sideArtRefresh,160); } });
 window.addEventListener("orientationchange",()=>{ if(dpadRemeasure) dpadRemeasure(); });
 
 /* ═══════════════ 터치 컨트롤 ═══════════════ */
@@ -1535,8 +1676,8 @@ window.addEventListener("orientationchange",()=>{ if(dpadRemeasure) dpadRemeasur
 });
 
 function bindHold(el,id){
-  const down=e=>{ if(editing) return; e.preventDefault(); e.stopPropagation(); el.classList.add("pressed"); sim(id,1); };
-  const up=e=>{ if(editing) return; e.preventDefault(); e.stopPropagation(); el.classList.remove("pressed"); sim(id,0); };
+  const down=e=>{ if(editing) return; e.preventDefault(); e.stopPropagation(); bumpInput(); el.classList.add("pressed"); simDown(id); };
+  const up=e=>{ if(editing) return; e.preventDefault(); e.stopPropagation(); el.classList.remove("pressed"); simUp(id); };
   el.addEventListener("pointerdown",down);
   el.addEventListener("pointerup",up);
   el.addEventListener("pointercancel",up);
@@ -1569,11 +1710,12 @@ function chgStop(){
   cancelAnimationFrame(CHG.raf);
   const el=$("#btnA");
   el.classList.remove("armed","pressed");
-  sim(ID.A,0);
+  simUp(ID.A);                       /* 최소 2프레임 보장 후 떼기 */
   CHG.held=false;
   lastBasicAt=Date.now();
 }
 function chgPress(){
+  bumpInput();
   clearInterval(spRetry);
   if(CHG.held) return;
   const g=gm(); if(!g||!window.EJS_emulator||!EJS_emulator.started) return;
@@ -1583,7 +1725,7 @@ function chgPress(){
   try{ if(g.functions&&g.functions.getFrameNum){ CHG.getFn=()=>g.functions.getFrameNum(); CHG.f0=CHG.getFn(); } }catch(err){}
   const el=$("#btnA");
   el.classList.add("pressed");
-  sim(ID.A,1);
+  simDown(ID.A);
   const loop=()=>{
     if(!CHG.held) return;
     const f=chgFrames();
@@ -1605,10 +1747,26 @@ $("#btnA").addEventListener("pointerdown",e=>{
 }));
 $("#btnA").addEventListener("contextmenu",e=>e.preventDefault());
 document.addEventListener("visibilitychange",()=>{ if(document.hidden&&CHG.held) chgStop(); });
-/* A+B 동시입력 (분노폭발) */
+/* A+B 동시입력 (분노폭발) — v0.5: **뒤 + A+B = 비오의**.
+   버튼을 A·B·A+B·SP 넷으로 줄이면서, 따로 있던 비오의 자리를 여기로 옮겼다.
+   뒤를 잡지 않은 A+B 는 게임 원래 입력 그대로다. */
 function fireAB(){
   if(MACRO.active||ctxState==="menu") return;
+  bumpInput();
   const g=gm(); if(!g||!window.EJS_emulator||!EJS_emulator.started) return;
+  {
+    const gme=readGame(), [u,d,l,r]=userDir;
+    const back=gme.facing?r:l;
+    if(back&&!d&&!u){
+      const mvs=curMoves(), sup=mvs[mvs.length-1];      /* 목록 끝 = 비오의 */
+      if(sup&&sup.sup){
+        const airborne=isAirborne(gme);
+        /* 불빛과 알림은 **실제로 누른 A+B 버튼**에 붙인다 — SP 는 건드리지 않는다 */
+        fireSp(sup,"b",airborne,airborne,{el:$("#btnAB"),label:"A+B"});
+        return;
+      }
+    }
+  }
   const dc=dirCharFromUser();
   lastBasicAt=Date.now();
   runSteps([{d:dc,b:"AB",f:6},{d:dc,f:2}],$("#btnAB"),"basic");
@@ -1650,6 +1808,8 @@ let dpadRemeasure=null; /* 디패드 사각형 캐시 재측정 훅 */
     /* 방향이 그대로면 아무것도 하지 않는다 — 드래그 중 대부분의 이벤트가 여기서 끝난다.
        (예전엔 같은 칸을 훑어도 클래스 토글·readGame·curSpMap이 매번 돌았다) */
     if(userDir[0]===u&&userDir[1]===d&&userDir[2]===l&&userDir[3]===r) return;
+    /* 새로 **누른** 방향만 새 입력으로 본다 (뗀 것은 무시 — 점프 중 방향을 놓아도 착지 기술이 살아야 한다) */
+    if((u&&!userDir[0])||(d&&!userDir[1])||(l&&!userDir[2])||(r&&!userDir[3])) bumpInput();
     userDir=[u,d,l,r];
     caps.u.classList.toggle("on",!!u); caps.d.classList.toggle("on",!!d);
     caps.l.classList.toggle("on",!!l); caps.r.classList.toggle("on",!!r);
@@ -1755,15 +1915,15 @@ function readOpp(){
 function oppTrait(key){
   const t=MOVE_KB[key]; if(!t) return null;
   const has=tag=>Object.values(t).some(m=>m.t.includes(tag));
-  if(has("반격")) return "받아치기 기술을 갖고 있습니다 — 함부로 치면 위험";
-  if(has("빙결")||has("기절")||has("혼란")) return "상태이상 기술을 갖고 있습니다 — 한 대 조심";
-  if(has("순간이동")&&has("잡기")) return "이동기와 잡기를 다 갖고 있습니다";
-  if(has("순간이동")) return "이동기를 갖고 있습니다 — 위치를 놓치지 마십시오";
-  if(has("소환")) return "파트너 공격을 갖고 있습니다";
-  if(has("투사체")&&has("대공")) return "탄과 대공을 다 갖고 있습니다";
-  if(has("투사체")) return "탄을 갖고 있습니다 — 거리 조심";
-  if(has("잡기")) return "잡기를 갖고 있습니다 — 굳히면 잡힙니다";
-  if(has("돌진")) return "돌진기를 갖고 있습니다";
+  if(has("반격")) return "받아치기 보유 — 함부로 치면 위험";
+  if(has("빙결")||has("기절")||has("혼란")) return "상태이상 기술 보유 — 한 대 조심";
+  if(has("순간이동")&&has("잡기")) return "이동기+잡기 보유 — 까다로운 상대";
+  if(has("순간이동")) return "이동기 보유 — 위치 주의";
+  if(has("소환")) return "파트너 공격 보유";
+  if(has("투사체")&&has("대공")) return "탄+대공 보유 — 접근이 답";
+  if(has("투사체")) return "탄 보유 — 거리 조심";
+  if(has("잡기")) return "잡기 보유 — 밀착 주의";
+  if(has("돌진")) return "돌진기 보유";
   return null;
 }
 
@@ -1787,7 +1947,10 @@ function fitFont(t){
     const w=m.offsetWidth; if(!w) return;
     const fw=$("#commFace"), sw=$("#commSpk");
     const avail=Math.max(60,pn.clientWidth-((fw&&fw.offsetWidth)||0)-((sw&&sw.offsetWidth)||0)-34);
-    el.style.fontSize=Math.floor(Math.max(11,Math.min(26,15*avail*0.97/w)))+"px"; /* 정수 px — 픽셀 폰트 또렷하게 */
+    /* v0.3.3 두 줄 조판: 한 줄로 13px 이상 나오면 한 줄 크게, 아니면 두 줄로 (줄높이 한도 21px) */
+    const one=15*avail*0.97/w;
+    const fs=one>=13?Math.min(26,one):Math.min(21,15*avail*1.8/w);
+    el.style.fontSize=Math.floor(Math.max(11,fs))+"px"; /* 정수 px — 픽셀 폰트 또렷하게 */
   }catch(e){}
 }
 function showSub(t,big,dur,mood,prio){
@@ -1824,7 +1987,7 @@ function showSub(t,big,dur,mood,prio){
 const ANN={q:[],busyUntil:0};
 function annPush(text,big,prio,mood){
   if(prio>=3){ ANN.q.length=0; ANN.busyUntil=0; }        /* KO급 — 즉시 */
-  else if(ANN.q.length>=3){                               /* 대기 상한 3 — 가득 차면 가장 낮은 것을 버린다 */
+  else if(ANN.q.length>=4){                               /* 대기 상한 4(v0.3.2 조밀화) — 가득 차면 가장 낮은 것을 버린다 */
     let mi=0; for(let k=1;k<ANN.q.length;k++) if(ANN.q[k].prio<ANN.q[mi].prio) mi=k;
     if(ANN.q[mi].prio<=prio) ANN.q.splice(mi,1); else return;
   }
@@ -1833,7 +1996,7 @@ function annPush(text,big,prio,mood){
 function annClear(){
   ANN.q.length=0; ANN.busyUntil=0;
   clearInterval(showSub._type); clearTimeout(showSub._t);   /* 타이핑 중이던 문장도 정지 */
-  clearTimeout(lineFade._t); lineFade._t=null;
+  clearTimeout(lineFade._t); lineFade._t=null; museAt=0;
   const el=$("#commLine"); if(el){ el.textContent="…"; el.style.fontSize=""; el.classList.remove("pop","shake","tremble","impact","brush","fadeout"); }
   const pn=$("#commPanel"); if(pn) pn.classList.remove("big","flash");
   pendMove=null; clearTimeout(pendT);
@@ -1846,14 +2009,35 @@ function lineFade(){
     el.classList.remove("fadeout","pop","shake","tremble","impact","brush");
     el.textContent="…"; el.style.fontSize="";
     const pn=$("#commPanel"); if(pn) pn.classList.remove("big");
-    commLastAt=0;
+    commLastAt=0; museAt=performance.now();   /* v0.4.5: 쉼 시작 — 여기서부터 혼잣말 타이머 */
   },450);
 }
 /* 장면 전환 시 — 2초 넘게 떠 있던 옛 대사는 지운다 (새 대사가 오면 showSub가 페이드를 취소) */
 function commSceneClear(){ if(commLastAt&&performance.now()-commLastAt>2000) lineFade(); }
+/* v0.3.2: 장면 비트 — 대사가 쿨다운에 막혀도 전환마다 "반응은 한다": 초상 팝 + 테두리 반짝 */
+function sceneBeat(){
+  const f=$("#commFace"), pn=$("#commPanel");
+  if(f){ f.classList.remove("beat"); void f.offsetWidth; f.classList.add("beat"); }
+  if(pn){ pn.classList.remove("beatline"); void pn.offsetWidth; pn.classList.add("beatline"); }
+}
+let museAt=0, commMuseMs=3000, commMuseBattleMs=6000;
+/* v0.4.6: 쉼 판정을 "마지막 말로부터"로 바꾸고 간격을 확 줄였다(사용자: 15초는 너무 김, 3초면 충분).
+   전투 중에는 공방 사이 짧은 정적이 잦아 6초로 조금 길게 잡는다. */
 setInterval(()=>{
   const t=performance.now();
   if(!ANN.q.length&&t>ANN.busyUntil&&commLastAt&&t-commLastAt>commLineTTL) lineFade(); /* 자연 소멸 */
+  /* 쉼 채우기 — 할 말이 없을 때 침묵 대신 "그 캐릭터다운" 한마디.
+     조용해진 기준점 = 마지막 발화(commLastAt) 또는 창이 빈 시각(museAt) 중 최근 것 */
+  if(!ANN.q.length&&t>ANN.busyUntil){
+    const md=commSt.mode;
+    const quiet=Math.max(commLastAt||0, museAt||0);
+    const need=(md===0xF1)?commMuseBattleMs:commMuseMs;
+    if(quiet&&t-quiet>need&&t>commHush&&!commSt.ko){  /* 결과 직후·KO 연출 중엔 혼잣말을 삼간다 */
+      museAt=t;
+      const ctx=(md===0xF1)?"battle":(md===MD_QUOTE?"quote":(md===MD_ENDING?"ending":"menu"));
+      commEmit("muse",{ctx:ctx},"muse",Math.min(3000,need));
+    }
+  }
   if(t<ANN.busyUntil||!ANN.q.length) return;
   ANN.q.sort((a,b)=>b.prio-a.prio);                       /* 안정 정렬 — 같은 급은 온 순서 */
   const it=ANN.q.shift();
@@ -1895,13 +2079,21 @@ const CHAR_LORE={
    기술명은 cfg.commNames 로 끄고 켠다 — NM()이 빈 문자열을 돌려주면 이름 없는 문형을 쓴다.
    관계 설정은 시리즈 공식 설정 범위(라이벌·자매·동경·닌자 선후배)만 — 창작 단정 금지. */
 function NM(d){ return (cfg.commNames&&d.name&&d.name!=="필살기")?d.name:""; }
+/* 조사 「(으)로」 — 받침 없거나 ㄹ 받침이면 「로」. 「츠바메 가에시으로」 같은 오류를 막는다. */
+function RO(n){
+  const c=(n||"").charCodeAt((n||"").length-1);
+  if(!(c>=0xAC00&&c<=0xD7A3)) return "로";
+  const j=(c-0xAC00)%28;
+  return (j===0||j===8)?"로":"으로";
+}
 const SPK_KO={haohmaru:"하오마루",nakoruru:"나코루루",hanzo:"한조",galford:"갈포드"};
 /* 자체 제작 도트 초상 3표정 — 롬 자산이 아니라 직접 그린 것(금지선 준수) */
 const FACES={"haohmaru": {"neutral": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA+klEQVR42u3ZPQ4BQRgGYCs6jSidQOkADqB2ApVaVApRiEIU4ghOoFI4gAMot1CKUjRqalvYsH+Sfd5us5PJ5Mk3szOzQSXnjHrt56f3m0MY5DmeaqXkAVB2gKDoOR+XrNcEUwAAAAAAANgH5Pddzzrf7htMAQAAAAAAAAAAAAAlTS3tDmfTSaYDni+WKgAAAAAAAAD4031ANJ3++O35tFun2l4FAACQKIn/vd+O20L/EzS7g0AFAAAAAAAAAAAAAADwf/cBcef9aLI+/6sAAADSXQMu5/Cr9vvVMNX+VAAAAImS+E7wcb8WeidYb7TcCQIAAAAAAAC/5QXj5SdYJxRJ4wAAAABJRU5ErkJggg==", "happy": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABE0lEQVR42u3ZoQoCMRzH8ZvYLGIwGMxGMYpZzPcEBrOI6YIYxHBJ5J7AJzD7AGI2XjCKUSxmzS5s6G7b4b6/Jhvj+PD//z12InKc2ajzUq1vD7lw+TyVKPAAEDqA8N3zutieCbQAAAAAAAAAvAe4+1+3nW/fG2gBAAAAAAAAAAAAAAACTbXoA5eLxOoDr9YpFQAAACWeAXK68fzj93m/KXQ/FQAAAOWaAaY9LO+Xz4t7TSoAAACKi/G39/tx5/U7QWMwFlQAAAAAAAAAAJTzPkDOKcmU6/10SgUAAMAfzQBdz+v2254JtAAAzACzXC+5cr09GVo9nwoAAACjGN8JPh83r3eCtXqLO0EAAAAAAAAA+C1vLzwx6ks5o7QAAAAASUVORK5CYII=", "worried": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABCklEQVR42u3ZLQ7CMBTA8ZXMYQgCwQmQBM0B0DsBCk1QEwSxIAiCcAROgELsABwAOYEkSDIzDZqJLaWfpP/nljVN88t7b10rIsuxnI3eTe+PeSFsrqcTBR4AhA4gXNd8W5juCZQAAAAAAAAA7APsfddNh+y+gRIAAAAAAAAAAAAAACDQiHVPuFmnRhecbXdkAAAAeNwDxsnq6/l2PmidL5kMyAAAAPC4B9RrXrYntI1nH0AJAKA1lO/eX9eT03uC/nQuyAAAAAAAAAAA8ONfwPX5ARkAAAB+94B6zZMBAADw3z3gcS+kxl/2C63zkQEAAKAUymeCVfl0eibY7Q05EwQAAAAAAACA3+IDu9kweHuCgv4AAAAASUVORK5CYII="}, "nakoruru": {"neutral": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA6UlEQVR42u3aIQ7CMBQG4I1wCgwW3CRBcQZOgEKhOAYCxQE4AYoDoAhyjgkMCeEMONCopXSwkX2/W9I26ZfXpi9ZkoiIiEhbk4ZOGGSzZ5M3VOTboD112l4BAAAAAACgzemGTtg+To3e0EgFAABQaS/Q9Ld/bG/gCADwDojLcTOpdQPjxUEFAAAAAAAAADW9A8qSTZdv3/luXel4FQAAQLPvgNAz/O0zrwIAAAAAAAAAAAAAAPhNL1DW7+sFHAEA/30H3C5F0Pj9al7peioAAICopLEL3K/nWv8h6vWHqQoAAAAAAAAAPsoLChQl/vKfEH4AAAAASUVORK5CYII=", "happy": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABBElEQVR42u2aLQ7CMBSAV8IpEGCHmyRTKA7ACRCTBIHiCCgE4QA7AWdALcg5JjAkhDPgQDOxprw2LfT7XNOf5H1576VdliQAAAAQK8p0Q5otXiEH1NSlUUy92DMAAQhAAAIQEDN90w3l8xx0QBMyAAEIsPoWCP3uL30bUAII4B4gozpMvQaQL09kAAIQ4LEH6Mjm649xfdxZXU8GIAABYfUAaQ2317vuCZQAAugBdrFdo9wDKAEEIAABCEDA734PaFNt9p3z+XZFBiAAAX/UA3Q1r1vvuidQAgigB8i4X5vO+WExc3o+GYAABIhQ0gMet4vXf4gGo7EiAxCAAAQgAAEI+Io3xQEyAlV0QOYAAAAASUVORK5CYII=", "worried": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA90lEQVR42u3aoQ3CQBQGYEqYAoMFV0lQzMAEKBSKMRAoBugEKAZAEWQdCAwJYQYcaGrI0TY90u93TdpL7st7L3dJOx0RERFpa5LQD4bp/BXzhi55FrSnbtsrAAAAAAAAtDm90A+y5ynqDY1VAAAAld4FYj/7l70baAEAzgHlctxOG93AZHlQAQAANDgDiklnq4/nfLeJaj0VAABAvTOg2KOhPVx3z6sAAADqnQHfZkLV76sAAAAAAAAAIN5zQNP3fRUAAEBcM6DY8yoAAID/ngH36yXo/f16Uel6KgAAgFJJyi7wuJ0b/YeoPxglKgAAAAAAAAD4KW8/8i8CsoMe/QAAAABJRU5ErkJggg=="}, "hanzo": {"neutral": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAxUlEQVR42u3aMQqCUBzAYV90nAZpjqboANIRGpo7SHNDR4gOEE3RLA0dJVxrtu2h4ov3/TZBRT/+T0QsCkmSlGsh9oD5bPFJ+Ybq1yPqnia5TwAAAAAAAAAAAAAAAAAAAMixad8nvB23g17wancyAQAAAAAAAECi7wG/ldW+tf28HHrd3wQAAJD2MyB2DQ+95k0AAACtQtcTrJebUf8XuN7PwQQAAAAAAAAAAAAAAAAAAAAAUXX+Jtg0bxMAAAAAAAAA/GdfdDAYb0oMSJcAAAAASUVORK5CYII=", "happy": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA4ElEQVR42u3asQnCQBgG0EQcQRxCLMRarMQBxBEsrB3E2sIRxAHESqzFQjKEWEparb1CCDlJJO/rAsmRe/x3ueSSJCIiItLUpEUvGPZHrzp36HI7F+pTq+kVAAAAAAAAAAAAAAAAAAAAmph27AaPm8VPb3iy3KoAAABqPAeEGcxWH8fX/Trq+SoAAIBSib4v8LhnUcdwOCd0ur2v59sXMAQAVLsOiP3cDtvzLmAIAKh2HRBmOp5X+r/A4bRLVQAAAAAAAAAAAAAAAAAAAABQKKW/Ceb5UwUAAAAAAAAA/5k3JrgjttXjbNUAAAAASUVORK5CYII=", "worried": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA1klEQVR42u3asQnCQBQG4Jw4gjiEWIi1WIkDSEawsHYQawtHEAcQK7EWC0eRtFprE45EPLnv7wKXR+7j3SOEFIWIiIjkmhB7w3g4eaa8oev9ErWnTu4dAAAAAAAAAAAAAAAAAAAAcky37YKn7fKrDzxb7XQAAAAJz4DRYv12fTtsWq3X6w90AAAACc+AzzMfOxPq1nsPcAQApD0D6mZC2+t1AAAAjRKaFphPy5/+L3A874MOAAAAAAAAAAAAAAAAAAAAAKLS+JtgVT10AAAAAAAAAPCfeQH4UCAN1CSjmgAAAABJRU5ErkJggg=="}, "galford": {"neutral": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA6ElEQVR42u3XIQ6CUBzAYXBkgyfwCB7AQPIAZgPJmZ2HcAYPYOIEJg9A4ABGg8FgNpjdNEvQwVDY+H7NDdT37c8bLwgkSZIkdbGw7A2XLHm2eUHDOC21pl7XJwBA1wGisjfMdouWLyk1AQAAAAAAAEBDZ4F+FP/0D98fmbOARwAAAAAAADT0HlDslqcf3wtG0+Xb5+N+G9R5/WCchCYAAID27gG/zh7gEQAAAAAAAAAAAABQqejfP1g87xf7dv43AQAAtGsPuJ5Ppa4/bOa1fp8JAACg2T1glU8aXsLaBAAAAAAAAADVegH1nCdFW5t0IQAAAABJRU5ErkJggg==", "happy": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA/UlEQVR42u2YLRKCQBSAwSEbPIDjEciOgcQBzAYCwURwDB6BZDCa9gSegcCYiQYDwWwgM4NZAjurLrvjfl9j9md437z3hofnAQAAAACAi/iqB+oi6WwOaBEJpZgmrmcAAlwXEKge2Jy3lockyAAEIAABCEAAAgzNAtMg0vrCTVswC1ACCDA4C6gSrndvz9Xl+NP9ZAACEDDud0CfZyk6nTUsu2+2SnwyAAEIsKcHjA09gBJAAAIQgAAE2Ps/oM/1cBpcX+YZGYAABPxRD5DVvGy/7p5ACSCAHvAdj/ttcH2exlrvJwMQgACzPWBfxoZDyMkABCAAAQhAAAI+4wUV7jE97f06FQAAAABJRU5ErkJggg==", "worried": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA8klEQVR42u3YMQ4BQRiGYWRrhRM4ggMoVEqFWqEStTiEKBxAtbVC5QAiDqBUKBRqhVpCTSMjKzOyz9tNMjPZ/803f3amUgEAAABQRqqhC87b4SPlgpqdPKimWtkTQEDZBWShCwbLceIl5RJAAAEEEEAAAZHuAvWs89MPvt237gKOAAER7wKfaPUnL+PDelHofrtVTwIIICDif8A7133+KLInhM5vtIdVCSCAgHR7wK/RAxwBAggggAAC0nkPiP1+IAEEEJB2D3g/8xJAAAH/3QMup2PQ/M18VOh+EkAAAXF7wHTfjVzCTAIIIIAAAggg4Duessot6/zYQEgAAAAASUVORK5CYII="}};
 const EV_MOOD={moveHit:"happy",moveDown:"happy",moveKo:"happy",hit:"happy",ko:"happy",dko:"happy",
                reversal:"happy",low2:"happy",down:"happy",winScr:"happy",
                perfect:"happy",comeback:"happy",quickKo:"happy",revenge:"happy",streak:"happy",
-               roundLead:"happy",firstBlood:"happy",
+               roundLead:"happy",firstBlood:"happy",domLead:"happy",halfHp2:"happy",rush:"happy",survStreak:"happy",storyStage:"happy",ending:"happy",winTalk:"happy",loseTalk:"worried",
+               domBehind:"worried",halfHp1:"worried",
                taken:"worried",koed:"worried",downed:"worried",low1:"worried",oppSp:"worried",loseScr:"worried",
                roundBehind:"worried",matchPoint:"worried",doubleLow:"worried"};
 /* ── 초상 수확 — 전투 HUD의 실제 초상(P1 (0,0,18,18) / P2 (139,0,157,18), 160×152 기준)을
@@ -1958,6 +2150,7 @@ function buildRomFaces(bytes){
       }
       ctx.putImageData(im,0,0);
       romFaces[id]=c.toDataURL("image/png");
+      sideArtCur="";
     }
   }catch(e){ romFaces={}; }
 }
@@ -2004,7 +2197,7 @@ const SPEAKERS={
   hello:"하오마루다. 좋은 승부를 보여다오!",
   move:d=>d.sup?["비오의냐! 좋다, 와라!!",1,3]:null,
   moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+"제대로 들어갔다!!",1,2]:[(nm?nm+" ":"")+"적중이다!",0,1.8];},
-  moveDown:d=>{const nm=NM(d); return [nm?nm+"으로 눕혔군!":"잘 눕혔다!",1,2];},
+  moveDown:d=>{const nm=NM(d); return [nm?nm+RO(nm)+" 눕혔군!":"잘 눕혔다!",1,2];},
   moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+"이걸로 끝이다!!",1,4];},
   hit:d=>d.dmg>=12?[pick(["핫하! 묵직한 일격!","좋은 베기다!"]),1,1.2]:null,
   taken:d=>d.dmg>=12?["끄윽, 그건 아팠겠군",0,1.2]:null,
@@ -2042,6 +2235,29 @@ const SPEAKERS={
   quickKo:d=>["순살이다!! 눈 깜짝할 새군!",1,2],
   revenge:d=>["지난 빚 갚았군! 이런 게 승부지!",1,2],
   streak:d=>[d.n>=5?d.n+"연승!! 대적할 자가 없느냐!!":d.n+"연승! 오늘 검이 좋군!",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이다!! 어디까지 가나 보자!!",1,2];
+    if(d.n>=10) return [d.n+"연승!! 전설을 쓰는군!!",1,2];
+    if(d.n>=7) return [d.n+"연승! 검이 뜨거워졌다!",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중! 다음 놈도 베어라!",0,1.5];
+    return [pick([d.n+"연승! 다음 상대다","좋아, "+d.n+"명째다. 계속 가자"]),0,1.3]; },
+  survEnd:d=>[d.n+"명 베고 여기까지… 훌륭한 기록이다!",1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기까지 왔군… 이제 진짜배기들이다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째. 손이 완전히 풀렸겠군",0,1.4];
+    return [pick([d.n+"연전째다. 계속 가자!","다음 상대다. 아직 멀었지?"]),0,1.3]; },
+  quoteScr:d=>[pick(["무슨 말을 하는 거냐, 저 녀석","한마디 하는군. 말보다 검이다","입은 그만 놀리고 덤벼라!"]),0,1.2],
+  ending:d=>["끝까지 베고 올라갔군!! 오늘은 내가 술을 사마!!",1,3],
+  winTalk:d=>[pick(["좋은 검이었다. 다음 상대가 기다린다","이런 승부라면 몇 번이고 좋다","술이 달겠군. 자, 계속 가자!","베어야 할 때 벤다 — 그거면 된다"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…검이 근질거리는군","호흡을 고르는 것도 검술이다","슬슬 한 방 크게 가도 좋겠는데"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말은 됐고","길군, 말이"]),0,1];
+    return [pick(["…술이 떨어졌군","해설도 목이 마르다","좋은 승부가 그립군","이런 날엔 한잔이 제격인데","심심하면 한판 더 하자!"]),0,1]; },
+  loseTalk:d=>[pick(["진 판에서 배우는 게 더 많은 법이다","검이 무뎠나… 다시 잡아라","한 잔 걸치고 다시 하자","분해할 시간에 한 번 더 베는 거다"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승! 술맛 나는 날이군"):("오늘 "+d.g+"전 "+d.w+"승… 다음 판에 갚아주지"),0,1.5],
+  domLead:d=>[pick(["크게 벌렸다! 몰아붙여라!","판이 기울었군. 방심만 마라"]),0,1.3],
+  domBehind:d=>[pick(["밀리는군… 한 방이면 뒤집힌다","버텨라! 승부는 끝까지 모른다"]),0,1.3],
+  halfHp2:d=>["상대 반피다! 절반 넘겼다",0,1.2],
+  halfHp1:d=>["반피 깎였다… 정신 차려라",0,1.2],
+  rush:d=>["연타다! 물 흐르듯 이어지는군!",1,1.5],
   winScr:d=>[pick(["봐라, 승자의 얼굴이다! 핫핫하!","이긴 자의 이름이 남는 법이지"]),1,2],
   loseScr:d=>[pick(["…저 이름, 기억해 둬라. 다음에 갚아주면 된다","분한 얼굴도 나쁘지 않군. 다음이다"]),0,2],
   oppSp:d=>["온다!",0,1],
@@ -2091,6 +2307,29 @@ const SPEAKERS={
   quickKo:d=>["벌써 끝났어요…! 굉장해요!",1,2],
   revenge:d=>["지난번 설욕이에요! 잘하셨어요!",1,2],
   streak:d=>[d.n+"연승이에요! …무리는 하지 마세요?",1,2],
+  oppInfo:d=>["상대 정보예요 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이에요!! 대단해요!!",1,2];
+    if(d.n>=10) return [d.n+"연승…! 믿기지 않아요!!",1,2];
+    if(d.n>=7) return ["벌써 "+d.n+"연승이에요! 무리는 마세요?",1,1.8];
+    if(d.n>=3) return [d.n+"연승이에요! 다음 분도 힘내요!",0,1.5];
+    return [pick([d.n+"연승! 다음 상대예요","좋은 흐름이에요, "+d.n+"명째!"]),0,1.3]; },
+  survEnd:d=>[d.n+"연승에서 멈췄어요… 정말 수고했어요!",1,2],
+  storyStage:d=>{ if(d.n>=8) return ["많이 왔네요… 조심하세요, 강한 분들이에요",0,1.5];
+    if(d.n>=5) return [d.n+"연전째예요. 지치진 않으셨어요?",0,1.4];
+    return [pick([d.n+"연전째예요! 힘내요","다음 분이 오시네요"]),0,1.3]; },
+  quoteScr:d=>[pick(["인사를 나누고 있어요","무슨 말을 할까요…?","서로 각오를 다지는 순간이에요"]),0,1.2],
+  ending:d=>["끝까지 해내셨어요…! 정말 축하해요!!",1,3],
+  winTalk:d=>[pick(["다치지 않아서 다행이에요","좋은 승부였어요. 숨 좀 고르세요","자연도 웃고 있는 것 같아요","이 기세, 계속 가봐요!"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…바람이 조용해요","다치지 않게, 천천히요","마마하하도 지켜보고 있어요"]),0,1];
+    if(d.ctx==="quote") return [pick(["…무슨 말을 할까요","말에도 마음이 담겨요"]),0,1];
+    return [pick(["…오늘 날씨가 좋네요","리무루루는 잘 있을까요","자연의 소리가 들려요…","쉬는 것도 중요해요","조금 심심하네요… 헤헤"]),0,1]; },
+  loseTalk:d=>[pick(["괜찮아요, 다음이 있잖아요","조금 쉬었다 해요…","져도 멋진 승부였어요","저는 계속 응원할게요"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승이에요! 대단해요"):("오늘 "+d.g+"전 "+d.w+"승… 다음엔 꼭!"),0,1.5],
+  domLead:d=>[pick(["크게 앞서고 있어요!","흐름이 완전히 이쪽이에요!"]),0,1.3],
+  domBehind:d=>[pick(["많이 밀려요… 침착하게!","아직 뒤집을 수 있어요!"]),0,1.3],
+  halfHp2:d=>["절반 넘겼어요! 이대로!",0,1.2],
+  halfHp1:d=>["체력이 절반이에요… 조심!",0,1.2],
+  rush:d=>["연속으로 들어가요!",1,1.5],
   winScr:d=>[pick(["이름이 크게 나왔어요! 축하해요!","이겼어요…! 다치진 않으셨죠?"]),1,2],
   loseScr:d=>[pick(["아쉬워요… 그래도 좋은 승부였어요","다음엔 꼭… 꼭 이겨요!"]),0,2],
   oppSp:d=>["조심하세요!",0,1],
@@ -2140,6 +2379,29 @@ const SPEAKERS={
   quickKo:d=>["…일섬. 이상적인 승부다",1,2],
   revenge:d=>["…빚을 갚았군. 그것으로 됐다",1,2],
   streak:d=>["…"+d.n+"연승. 인정하마",1,2],
+  oppInfo:d=>["…적정 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return ["…"+d.n+"연승. 신기록이다. 계속해라",1,2];
+    if(d.n>=10) return ["…"+d.n+"연승. 견줄 자가 없군",1,2];
+    if(d.n>=7) return ["…"+d.n+"연승. 훌륭하다",1,1.8];
+    if(d.n>=3) return ["…"+d.n+"연승. 다음이다",0,1.5];
+    return ["…"+d.n+"명째. 간다",0,1.3]; },
+  survEnd:d=>["…"+d.n+"명 격파. 새겨 둘 기록이다",1,2],
+  storyStage:d=>{ if(d.n>=8) return ["…여기서부터가 진짜다. 방심하지 마라",0,1.5];
+    if(d.n>=5) return ["…"+d.n+"연전. 몸이 익었을 때다",0,1.4];
+    return ["…"+d.n+"연전째. 간다",0,1.3]; },
+  quoteScr:d=>[pick(["…말은 검으로 하는 것이다","…각오를 말하는군","……들을 필요는 없다"]),0,1.2],
+  ending:d=>["…완주. 수행의 끝을 보았군. 훌륭하다",1,3],
+  winTalk:d=>[pick(["…이겼다고 멈추지 마라","…다음 적은 더 강하다","…좋은 검이었다. 기억해 둬라","…승리는 수행의 중간 지점일 뿐"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["……","…호흡을 죽여라","…기다림도 술법이다"]),0,1];
+    if(d.ctx==="quote") return [pick(["……","…쓸데없는 말이다"]),0,1];
+    return [pick(["……","…수련을 게을리하지 마라","…조용하군. 나쁘지 않다","…그림자는 서두르지 않는다","…밤이 길다"]),0,1]; },
+  loseTalk:d=>[pick(["…패인을 새겨라. 그것이 수행이다","…다시 서라. 그뿐이다","…약함을 알았으면 강해질 수 있다","…한 번의 패배는 아무것도 아니다"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("…오늘 "+d.g+"전 "+d.w+"승. 좋은 수행이다"):("…오늘 "+d.g+"전 "+d.w+"승. 패배도 기록해 둬라"),0,1.5],
+  domLead:d=>[pick(["…승기가 보인다. 끊지 마라","…크게 앞섰다. 마무리를 생각해라"]),0,1.3],
+  domBehind:d=>[pick(["…열세. 조급함이 최대의 적이다","…버텨라. 한 수로 뒤집힌다"]),0,1.3],
+  halfHp2:d=>["…적, 절반. 순조롭다",0,1.2],
+  halfHp1:d=>["…피해가 크다. 호흡을 가다듬어라",0,1.2],
+  rush:d=>["…연격. 훌륭하다",1,1.5],
   winScr:d=>[pick(["…승자의 이름이다. 새겨 둬라","…이겼다. 그러나 자만은 금물"]),1,2],
   loseScr:d=>[pick(["…패배를 새겨라. 다음은 이긴다","…저 이름을 기억해라. 수행이 부족했다"]),0,2],
   oppSp:d=>["……온다",0,1],
@@ -2151,7 +2413,7 @@ const SPEAKERS={
   hello:"갈포드 참전! 정의의 해설, 시작한다!",
   move:d=>d.sup?["비오의다!! 우오오!!",1,3]:null,
   moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+"빅히트다!!",1,2]:[(nm?nm+" ":"")+"히트다!",0,1.8];},
-  moveDown:d=>{const nm=NM(d); return [nm?nm+"으로 테이크다운!":"테이크다운!",1,2];},
+  moveDown:d=>{const nm=NM(d); return [nm?nm+RO(nm)+" 테이크다운!":"테이크다운!",1,2];},
   moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+"저스티스!!",1,4];},
   hit:d=>d.dmg>=12?["나이스 샷!!",1,1.2]:null,
   taken:d=>d.dmg>=12?["앗, 저건 아프다!",0,1.2]:null,
@@ -2189,6 +2451,29 @@ const SPEAKERS={
   quickKo:d=>["초스피드 피니시!! 번개 같았다!",1,2],
   revenge:d=>["리벤지 성공이다!! 통쾌하다!",1,2],
   streak:d=>[d.n+"연승!! 연승 가도다!!",1,2],
+  oppInfo:d=>["스카우팅 정보다 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승 신기록!! 히스토리 메이커다!!",1,2];
+    if(d.n>=10) return [d.n+"연승!! 레전드다!!",1,2];
+    if(d.n>=7) return [d.n+"연승!! 폭주 기관차다!",1,1.8];
+    if(d.n>=3) return [d.n+"연승 스트릭! 고고!!",0,1.5];
+    return [d.n+"승째다! 다음 도전자 나와라!",0,1.3]; },
+  survEnd:d=>[d.n+"연승 스트릭 종료…! 멋진 도전이었다!",1,2],
+  storyStage:d=>{ if(d.n>=8) return ["종반전이다!! 여기서부터가 하이라이트다!",0,1.5];
+    if(d.n>=5) return ["벌써 "+d.n+"연전! 엔진 다 데워졌다!",0,1.4];
+    return [d.n+"연전째다! 다음 도전자, 어서 와라!",0,1.3]; },
+  quoteScr:d=>[pick(["명대사 타임이다!","뭐라고 하는 거냐! 두근두근!","말싸움도 승부의 일부다!"]),0,1.2],
+  ending:d=>["클리어다!! 오늘의 히어로는 너다!!",1,3],
+  winTalk:d=>[pick(["나이스 파이트! 파피도 꼬리 흔든다!","이게 정의의 승리다!","기세 좋다! 다음도 가자!","멋진 마무리였다! 하이파이브!"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["파피, 대기다!","슬슬 한 방 가자!","집중, 집중이다!"]),0,1];
+    if(d.ctx==="quote") return [pick(["오오, 뭐라고 할까!","대사도 히어로의 일부다!"]),0,1];
+    return [pick(["파피, 앉아! …좋아, 착하지","정의는 쉬지 않는다! …조금은 쉬어도 되나?","심심한데 한판 더 어때!","오늘도 평화롭군!","해설도 훈련이다!"]),0,1]; },
+  loseTalk:d=>[pick(["히어로는 넘어져도 다시 선다!","다음 판에서 갚아주자!","분하지만 좋은 경기였다!","파피도 괜찮다고 짖고 있다!"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승! 히어로의 하루다!"):("오늘 "+d.g+"전 "+d.w+"승… 재기의 스토리다!"),0,1.5],
+  domLead:d=>[pick(["압도하고 있다! 파피도 신났다!","이 기세, 멈추지 마라!"]),0,1.3],
+  domBehind:d=>[pick(["핀치다…! 하지만 히어로는 여기서 일어난다!","반격의 시간이다!"]),0,1.3],
+  halfHp2:d=>["하프라인 돌파다!",0,1.2],
+  halfHp1:d=>["반이나…! 여기서 리셋이다!",0,1.2],
+  rush:d=>["러시다!! 몰아쳐라!!",1,1.5],
   winScr:d=>[pick(["위너다!! 파피, 만세!!","승자의 이름이 빛난다! 예이!!"]),1,2],
   loseScr:d=>[pick(["히어로는 쓰러져도 일어난다! 다음이다!","분하다…! 하지만 좋은 승부였다!"]),0,2],
   oppSp:d=>["위험해!",0,1],
@@ -2221,6 +2506,141 @@ function alignCommPanel(){
   }catch(e){}
 }
 setTimeout(alignCommPanel,3000); setTimeout(alignCommPanel,8000);  /* 부팅 후 캔버스 늦게 생김 */
+
+/* ═══ 화면 캡처 ═══════════════════════════════════════════════════
+   양옆 아트웍 재료는 **지금 화면 그림**이다. 롬 주소도 캐릭터별 표도 안 쓰므로
+   다른 게임에 이식해도 그대로 돈다. 캡처는 장면이 바뀔 때만(최소 2.5초 간격).
+     · 스테이지  — 전투 화면 전체. 흐리게 깔아 화면 밖으로 번지게 한다.
+     · 캐릭터 아트 — 캐릭터·유파 선택 화면 한가운데 큰 그림(게임 픽셀 40,16~119,95),
+                    그리고 카드 화면(scr 6)에서는 카드 그림을 액자째 떠 둔다.
+   글씨는 우리가 그리지 않는다 — 필요하면 게임이 그린 글씨가 그림 안에 같이 담긴다. */
+let stageArt=null, capAt=0;
+let artList=[], nameList=[], styleList=[];      /* 카드 그림 · 이름판 · 유파판 (최대 4장) */
+
+/* 카드 화면(scr 6, 「능력 추가」)의 실측 좌표 — 160×152 화면 기준.
+   96×96 그림 액자, 좌우 세로 이름판 16×88. 코어 프론트엔드로 실기 화면을 떠서 잰 값이다. */
+const CARD_ART=[32,16,96,96], CARD_NAME=[8,8,16,88], CARD_STYLE=[136,8,16,88];
+
+async function capFrame(){
+  try{
+    const g=gm(); if(!g||!g.screenshot) return null;
+    const png=await g.screenshot();
+    const url=URL.createObjectURL(new Blob([png],{type:"image/png"}));
+    const img=new Image();
+    await new Promise((res,rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
+    const c=document.createElement("canvas"); c.width=160; c.height=152;
+    const ctx=c.getContext("2d",{willReadFrequently:true}); ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(img,0,0,img.width,img.height,0,0,160,152);
+    URL.revokeObjectURL(url);
+    return c;
+  }catch(e){ return null; }
+}
+function cropURL(src,b){
+  const c=document.createElement("canvas"); c.width=b[2]; c.height=b[3];
+  const x=c.getContext("2d"); x.imageSmoothingEnabled=false;
+  x.drawImage(src,b[0],b[1],b[2],b[3],0,0,b[2],b[3]);
+  return c.toDataURL("image/png");
+}
+/* 액자 위아래 두 줄이 새까맣다 = 카드 그림이 떠 있는 화면. 아니면 안 뜬다. */
+function rowDark(c,y){
+  try{
+    const d=c.getContext("2d").getImageData(32,y,96,1).data; let n=0;
+    for(let i=0;i<96;i++){ if((d[i*4]+d[i*4+1]+d[i*4+2])/3<48) n++; }
+    return n>=92;
+  }catch(e){ return false; }
+}
+function artSave(){
+  try{ localStorage.setItem("ss2_art_"+romKey, JSON.stringify({a:artList,n:nameList,s:styleList})); }catch(e){}
+}
+function artLoad(){
+  try{
+    const o=JSON.parse(localStorage.getItem("ss2_art_"+romKey)||"null")||{};
+    artList=o.a||[]; nameList=o.n||[]; styleList=o.s||[];
+  }catch(e){ artList=[]; nameList=[]; styleList=[]; }
+}
+async function grabStage(){
+  if(Date.now()-capAt<2500) return; capAt=Date.now();
+  const c=await capFrame(); if(!c) return;
+  stageArt=cropURL(c,[0,0,160,152]); sideArtCur=""; sideArtRefresh();
+}
+/* 카드 화면에서 그림과 이름판을 뜬다 — 이 게임 최고의 캐릭터 아트가 여기 있다.
+   v0.5.6d: 사용자 제보 "캡쳐가 옳게 잘 안 된다".
+   원인은 **화면이 서는 중에 찍는 것**이었다. 페이드 도중이거나 타일이 반만 올라온 프레임을
+   담으면 액자 판별은 통과해도 그림이 반쪽이다. 그래서 두 겹으로 막는다:
+     ① 액자 위아래 두 줄이 새까만지 (기존)
+     ② **280ms 간격으로 두 번 떠서 완전히 같아야** 담는다 (화면이 멈춰 있다는 뜻)
+   실패하면 500ms 뒤에 다시 시도한다 — 카드 화면에 머무는 동안 계속 노린다. */
+let grabBusy=false, cardTryAt=0;
+async function grabCard(){
+  if(grabBusy||Date.now()-cardTryAt<500) return;
+  grabBusy=true; cardTryAt=Date.now();
+  try{
+    const c1=await capFrame(); if(!c1) return;
+    if(!(rowDark(c1,14)&&rowDark(c1,15)&&rowDark(c1,112)&&rowDark(c1,113))) return;
+    const a1=cropURL(c1,CARD_ART);
+    if(artList.indexOf(a1)>=0) return;                        /* 이미 가진 카드 */
+    await new Promise(r=>setTimeout(r,280));
+    const c2=await capFrame(); if(!c2) return;
+    if(!(rowDark(c2,14)&&rowDark(c2,15)&&rowDark(c2,112)&&rowDark(c2,113))) return;
+    const a2=cropURL(c2,CARD_ART);
+    if(a1!==a2) return;                                       /* 아직 화면이 움직인다 */
+    artList.unshift(a2); nameList.unshift(cropURL(c2,CARD_NAME)); styleList.unshift(cropURL(c2,CARD_STYLE));
+    artList=artList.slice(0,4); nameList=nameList.slice(0,4); styleList=styleList.slice(0,4);
+    cfg.artIdx=0; artSave(); saveCfg(); sideArtCur=""; sideArtRefresh();
+    toast("🎴 카드 아트 담았다 — "+artList.length+"/4");
+  }catch(e){}
+  finally{ grabBusy=false; }
+}
+
+/* ═══ 화면 양옆 아트웍 ═══════════════════════════════════════════════
+   NGPC 화면은 160×152라 가로가 남는다. 그 빈 자리를 **사용자 롬에서 뽑은 초상 타일**로 채운다.
+   그림은 배포물에 없다 — buildRomFaces()가 로드된 롬에서 그 자리에서 그린 것을 쓴다.
+   비용: CSS 배경 두 장 + 글자 하나. 프레임마다 도는 것은 없다. */
+let sideArtCur="";
+/* 양옆 아트웍 후보 — 상단 🎴 버튼으로 돌린다 */
+const ART_MODES=["art","stage","off"];
+const ART_LABEL={art:"카드 아트",stage:"스테이지만",off:"끔"};
+cfg.art=ART_MODES.includes(cfg.art)?cfg.art:"art";
+cfg.artIdx=cfg.artIdx|0;
+function artCur(){ return artList.length?Math.min(cfg.artIdx|0,artList.length-1):-1; }
+function sideArt(){
+  try{
+    const gw=$("#gamewrap"), L=$("#artL"), R=$("#artR");
+    if(!gw||!L||!R) return;
+    const r=gw.getBoundingClientRect();
+    if(!(r.width>0&&r.height>0)) return;
+    const disp=Math.min(r.width,r.height*160/152);
+    const side=Math.floor((r.width-disp)/2)-1;
+    const ai=(cfg.art==="art")?artCur():-1;
+    const useArt=ai>=0;
+    const key=[cfg.art,ai,side,Math.round(r.height),stageArt?stageArt.length:0,artList.length].join("|");
+    if(key===sideArtCur) return;
+    sideArtCur=key;
+    const show=side>=56&&cfg.art!=="off"&&(!!stageArt||useArt);
+    [L,R].forEach(el=>{ el.style.width=side+"px"; el.classList.toggle("on",show); });
+    if(!show) return;
+    /* 그림 아래에 이름판 — 왼쪽은 캐릭터 이름, 오른쪽은 유파. 둘 다 게임이 그린 판이다. */
+    const w=Math.min(side-14, Math.round(r.height*0.38));
+    const ph=Math.round(w*0.88), pw=Math.max(8,Math.round(ph*16/88));
+    const ytop=Math.round((r.height-(w+10+ph))/2);
+    [L,R].forEach((el,i)=>{
+      const bg=el.querySelector(".bg"), card=el.querySelector(".card"), plate=el.querySelector(".plate");
+      bg.style.backgroundImage=stageArt?("url("+stageArt+")"):"none";
+      if(useArt){
+        card.style.display="block";
+        card.style.width=w+"px"; card.style.height=w+"px"; card.style.top=ytop+"px";
+        card.style.background="url("+artList[ai]+") center/contain no-repeat";
+        const pl=(i===0?nameList:styleList)[ai];
+        if(pl){
+          plate.style.display="block";
+          plate.style.width=pw+"px"; plate.style.height=ph+"px"; plate.style.top=(ytop+w+10)+"px";
+          plate.style.background="url("+pl+") center/contain no-repeat";
+        }else plate.style.display="none";
+      }else{ card.style.display="none"; plate.style.display="none"; }
+    });
+  }catch(e){}
+}
+function sideArtRefresh(){ sideArt(); }
 const commSeen={moves:{},sys:{}};   /* 세션당 1회 (기술 첫 호명·시스템 설명) */
 function commEmit(ev,d,kind,cd){
   if((cfg.commMode||"off")==="off"||editing) return false;
@@ -2253,24 +2673,47 @@ function pendTake(){ const d=pendMove; pendMove=null; clearTimeout(pendT); retur
 
 const commSt={p1:-1,p2:-1,a1:0,a2:0,mode:-1,offAt:0,ko:false,low1:false,low2:false,lead:0,revN:0};
 /* v0.3 세션 기억 — 연승·설욕 (페이지 세션 한정) */
-let sessStreak=0, sessLastLossOpp=null;
+let sessStreak=0, sessLastLossOpp=null, sessWins=0, sessGames=0, sessSurvBest=0;
+let commHush=0;   /* 결과 멘트 뒤 잡담(혼잣말·스토리 사담)을 잠그는 시각 */
 /* 상태 스냅샷 → 이벤트. 순수 단계 함수 — 합성 값으로도 부를 수 있다(회귀 14장). */
 function commStep(sn){
   const st=commSt;
   const mode=sn.mode, p1=sn.p1, p2=sn.p2, a1=sn.a1, a2=sn.a2, fresh=sn.fresh;
-  if(mode!==0xF1&&st.mode===0xF1) st.offAt=performance.now();
+  if(mode!==0xF1&&st.mode===0xF1){
+    st.offAt=performance.now();
+    /* v0.5.6d: 전투를 벗어나는 순간 **메뉴 잡담 타이머를 다시 센다.**
+       제보: "한 판 끝나도 준비할 때마다 항상 '빨리 고를 필요 없다' 같은 소리가 나온다".
+       원인: 결과 화면은 아직 mode 0xF1 이라 화면 전환 리셋(scr 변화)이 안 걸리고,
+       그 뒤 mode만 조용히 바뀌면서 **전투 전에 세워 둔 낡은 타이머가 이미 만료돼 있었다.**
+       그래서 메뉴에 들어서자마자 '15초 이상 머물렀다'로 판정돼 매번 터졌다. */
+    st.menuAt=st.offAt; st.selChatAt=st.offAt; st.selChatN=0;
+  }
+  /* v0.4.2: 캐릭터 대사 화면(mode 197) 진입 — 초상+말풍선이 뜨는 그 순간 한 마디 */
+  if(mode===MD_QUOTE&&st.mode!==MD_QUOTE&&st.mode!==-1&&!fresh){
+    sceneBeat(); commEmit("quoteScr",{},"quote",9000);
+  }
+  /* v0.4.3: 엔딩·스태프롤(mode 199) 진입 — 완주 축하. 세션 1회급(쿨다운 90초) */
+  if(mode===MD_ENDING&&st.mode!==MD_ENDING&&st.mode!==-1&&!fresh){
+    sceneBeat(); commEmit("ending",{},"ending",90000);
+  }
   /* v1.9.1: 전투측(mode 0xF1) 화면 전환 — 문구(VS) 화면 반응 + 승패 결과(이름) 화면 반응.
      실측: 문구 화면 = scr 0 · mode 0xF1 (카드/메뉴에서 진입), 승패 연출 = 전투 scr(8+) → scr 0/2. */
   if(sn.scr!==undefined&&sn.scr!==st.scr&&st.scr!==undefined&&!fresh&&mode===0xF1){
-    commSceneClear();                              /* 장면이 바뀌면 굳은 옛 대사부터 지운다 */
+    commSceneClear(); sceneBeat();                 /* 장면이 바뀌면: 옛 대사 지우고 + 비트 */
     const fromBattle=st.scr>=8;
     if(fromBattle&&(sn.scr===0||sn.scr===2)){
-      if(!st.resultDone&&(st.won||st.lost)){ st.resultDone=true;
-        commEmit(st.won?"winScr":"loseScr",{},"res",8000); }
-    }else if(sn.scr===0&&st.mode!==0xF1){ if(Math.random()<0.75) commEmit("vsq",{},"vsq",20000); }
+      /* v0.5.3: **매치가 실제로 끝났을 때만** 결과 멘트(2선승). 두 줄까지 내고, 그 뒤 잡담은 잠근다.
+         제보: "대전 사이 승부 난 뒤 대사가 어색하다" — 여러 줄이 몰리고 스토리 사담이 끼어들었다. */
+      const done=(st.myR>=2||st.opR>=2);
+      if(!st.resultDone&&done&&(st.won||st.lost)){ st.resultDone=true;
+        commEmit(st.won?"winScr":"loseScr",{},"res",8000);
+        commEmit(st.won?"winTalk":"loseTalk",{},"res2",7000);   /* 승패 후 한마디 더 */
+        if(sessGames>=3&&sessGames%3===0) commEmit("record",{w:sessWins,g:sessGames},"rec",6000);
+        commHush=performance.now()+10000; }
+    }else if(sn.scr===0&&st.mode!==0xF1){ commEmit("vsq",{},"vsq",15000); }
     /* v0.2 요령: 메뉴 전환은 클릭 후에만 일어난다 — 클릭 없이 넘어가는 0↔2 반복은
        스토리/연출 페이지(게임 전후의 특이 전환). 결과 반응 뒤엔 스토리 사담으로. */
-    else if((sn.scr===0||sn.scr===2)&&st.mode===0xF1&&Math.random()<0.5)
+    else if((sn.scr===0||sn.scr===2)&&st.mode===0xF1&&performance.now()>commHush)
       commEmit("storyChat",{},"story",15000);
   }
   /* ★ 전투 진입은 리싱크와 무관하게 본다 — 체력 변화가 없는 진입 틱(메뉴에서 128/128 그대로)
@@ -2282,7 +2725,7 @@ function commStep(sn){
     delete commCD.ko; delete commCD.rev;            /* 라운드 넘어온 쿨다운 잔존 방지 */
     if(!st.offAt||performance.now()-st.offAt>3000){
       /* ── 새 매치 — 라운드 전적 리셋 (v0.3) */
-      st.myR=0; st.opR=0; st.roundN=1; st.fb=false; st.longSaid=false; st.dblLow=false;
+      st.myR=0; st.opR=0; st.roundN=1; st.fb=false; st.longSaid=false; st.dblLow=false; st.half1=st.half2=false; st.h2t=[];
       st.roundStartAt=performance.now();
       autoDetectChar();
       const opp=readOpp();
@@ -2290,6 +2733,7 @@ function commStep(sn){
       const who=opp?curChar().n+" 대 "+opp.ko+(opp.style==="나찰"?" (나찰)":"")
                    :curChar().n+" · "+(cfg.style==="b"?"나찰":"수라");
       commEmit("start",{who:who},"round",2500);
+      setTimeout(grabStage,900);                          /* 판이 서면 스테이지를 떠서 양옆에 깐다 */
       setTimeout(()=>harvestFaces(opp&&opp.id),1200);
       /* 2절 — 해설자와 등장 캐릭터의 관계 대사 우선, 없으면 썰 */
       const sp=SPEAKERS[cfg.commSpk]||SPEAKERS.haohmaru;
@@ -2300,15 +2744,28 @@ function commStep(sn){
                   :(CHAR_LORE[cfg.char]?pick(CHAR_LORE[cfg.char]):null);
         if(lore) commEmit("lore",{text:(opp?opp.ko+" — ":"")+lore},"lore",5000);
       }
+      /* (v0.3.4) 상대 분석 3절은 제거 — 정보전달보다 흥·썰. oppTrait는 시트 표시에만 남음 */
     }else{
       /* ── 라운드 재개 (v0.3) — 전적 맥락 라인: 매치포인트 > 선취 > 열세 > 일반 */
-      st.roundN=(st.roundN||1)+1; st.fb=false; st.longSaid=false; st.dblLow=false;
+      st.roundN=(st.roundN||1)+1; st.fb=false; st.longSaid=false; st.dblLow=false; st.half1=st.half2=false; st.h2t=[];
       st.roundStartAt=performance.now();
       if(st.myR===1&&st.opR===1) commEmit("matchPoint",{},"roundCtx",2500);
       else if(st.myR===1&&st.opR===0) commEmit("roundLead",{},"roundCtx",2500);
       else if(st.myR===0&&st.opR===1) commEmit("roundBehind",{},"roundCtx",2500);
       else commEmit("round",{},"round",2500);
     }
+    /* v0.4.1: 무한대전(서바이벌) — 새 상대 진입마다 연승 콜. 0x180B는 서바이벌에서만 >0 */
+    if(sn.stage!==undefined&&st.lastStage!==undefined&&sn.stage<st.lastStage) st.lastStage=undefined; /* 새 주행 */
+    if(sn.surv>=1){
+      const rec=sn.surv>sessSurvBest&&sn.surv>=3;
+      if(sn.surv>sessSurvBest) sessSurvBest=sn.surv;
+      commEmit("survStreak",{n:sn.surv,rec:rec},"surv",8000);
+    }else if(sn.stage>=1&&sn.stage<=14&&sn.stage>(st.lastStage===undefined?-1:st.lastStage)){
+      /* 스토리 진행 — 2연전째부터. **값이 실제로 올라갔을 때만** 말한다:
+         보스 스테이지에서 카운터가 안 오르는 정황이 있어(승리봇 9연전 관측) 중복·오보를 막는다 */
+      st.lastStage=sn.stage;
+      commEmit("storyStage",{n:sn.stage+1},"stg",8000);
+    }else if(sn.stage>(st.lastStage===undefined?-1:st.lastStage)) st.lastStage=sn.stage;
     st.p1=p1; st.p2=p2; st.a1=a1; st.a2=a2; st.mode=mode; st.scr=sn.scr;
     if(p1>32) st.low1=false; if(p2>32) st.low2=false;
     return;
@@ -2317,15 +2774,15 @@ function commStep(sn){
     /* 메뉴 조잘 — 화면 전환 순간에만 한 마디 (0x1C0: 타이틀=0, 선택=2, 유파=4, 카드=6) */
     const scr=sn.scr, now=performance.now();
     if(scr!==undefined&&scr!==st.scr&&!fresh&&mode!==0xF1){
-      commSceneClear();                                  /* 장면이 바뀌면 굳은 옛 대사부터 지운다 */
+      commSceneClear(); sceneBeat();                     /* 장면이 바뀌면: 옛 대사 지우고 + 비트 */
       st.menuAt=now;                                     /* 화면이 바뀌면 메뉴 잡담 타이머 리셋 */
       st.selChatAt=now; st.selChatN=0;                   /* 선택창 사담 카운터 리셋 */
       /* v0.2 요령: 메뉴 화면 전환은 사용자가 누른 직후에만 일어난다. 입력 없이 넘어갔다면
          데모·스토리류 자동 전환(특이 전환) — 화면 멘트 대신 스토리 사담. */
       const byClick=now-lastTouchT<900;
-      if(!byClick&&st.scr!==undefined){ if(Math.random()<0.5) commEmit("storyChat",{},"story",15000); }
+      if(!byClick&&st.scr!==undefined){ commEmit("storyChat",{},"story",15000); }
       else if(scr===2) commEmit("charsel",{},"scr2",15000);
-      else if(scr===4&&Math.random()<0.5) commEmit("stylesel",{},"scr4",15000);
+      else if(scr===4) commEmit("stylesel",{},"scr4",12000);
       else if(scr===0&&st.scr!==undefined) commEmit("title",{},"scr0",30000);
       else if(scr===6) commEmit("cardsel",{},"scr6",20000);
     }
@@ -2333,7 +2790,7 @@ function commStep(sn){
       /* 캐릭터 선택창 사담 — 고르는 동안 7초마다 한 마디, 한 방문에 3마디까지 */
       if(scr===2){
         if(!st.selChatAt) st.selChatAt=now;
-        if(now-st.selChatAt>commSelChatMs&&(st.selChatN||0)<3){
+        if(now>commHush&&now-st.selChatAt>commSelChatMs&&(st.selChatN||0)<3){
           st.selChatAt=now; st.selChatN=(st.selChatN||0)+1;
           commEmit("charselChat",{},"selchat",5000);
         }
@@ -2341,7 +2798,8 @@ function commStep(sn){
       /* 메뉴에서 오래 놀면 — 한 화면에 15초 이상 머무를 때 한 마디 (쿨다운 35초).
          선택창(2)은 사담이 따로 있으므로 제외 */
       if(!st.menuAt) st.menuAt=now;
-      if(scr!==2&&now-st.menuAt>commIdleMenuMs){ st.menuAt=now; commEmit("menuIdle",{},"midle",35000); }
+      if(scr!==2&&now>commHush&&now-st.menuAt>commIdleMenuMs){ st.menuAt=now; commEmit("menuIdle",{},"midle",35000); }
+      if(scr===6) grabCard();                    /* 카드 화면 — 그림과 이름판을 뜬다 */
     }
     st.scr=scr;
     st.p1=p1; st.p2=p2; st.a1=a1; st.a2=a2; st.mode=mode;
@@ -2352,7 +2810,13 @@ function commStep(sn){
   st.scr=sn.scr;
   st.mode=mode;
   /* 기술 발동 — 바로 읽지 않고 결합창에 넣는다 */
-  if(a1>=0x180&&st.a1<0x180){
+  /* v0.5.6: 승부가 난 뒤 **승리 포즈도 액션ID가 0x180을 넘는다**. 그걸 필살기로 읽어
+     매 판 끝날 때마다 "온다! 비오의!" 를 뜬금없이 외치던 버그(사용자 제보)를 여기서 막는다.
+     둘 다 살아 있고 KO 처리 전일 때만 기술 발동으로 본다. */
+  /* 라운드가 새로 서면(양쪽 만피) KO 표식을 확실히 푼다 — 다음 라운드 기술 알림이 막히지 않게 */
+  if(p1>=100&&p2>=100) st.ko=false;
+  const live=(p1>0&&p2>0&&!st.ko);
+  if(live&&a1>=0x180&&st.a1<0x180){
     const recent=runMove.lastAt&&performance.now()-runMove.lastAt<2500;
     let nm=recent?runMove.lastName:null;
     const mv=recent?runMove.lastMv:null;
@@ -2365,9 +2829,12 @@ function commStep(sn){
     const first=mkey?!commSeen.moves[mkey]:false; if(mkey) commSeen.moves[mkey]=1;
     pendFlush();                                  /* 이전 결합창 정리 */
     pendMove={name:nm||"필살기",sup:supHit,note:kb&&kb.n,tags:kb&&kb.t,first:first};
+    /* v0.5.1: 비오의는 **나가는 순간 바로** 호들갑을 떤다.
+       결합창(450ms)을 기다리면 곧바로 맞았을 때 적중 멘트에 먹혀 예고가 사라진다. */
+    if(supHit) commEmit("move",pendMove,"sup",1500);
     clearTimeout(pendT); pendT=setTimeout(pendFlush,450);
   }
-  if(a2>=0x180&&st.a2<0x180) commEmit("oppSp",{},"osp",2200);
+  if(live&&a2>=0x180&&st.a2<0x180) commEmit("oppSp",{},"osp",2200);
   /* ── 한 틱에서 한 번만 결정: 더블KO > 기술KO > 기술다운(히트 포함) > 기술적중 > 일반다운 > 일반히트 */
   const hit2=p2<st.p2, hit1=p1<st.p1;
   /* v0.3 선제타 — 매치 1라운드의 첫 유효타(내 것·비KO·기술 결합 없음)만 한 마디 */
@@ -2384,7 +2851,7 @@ function commStep(sn){
          commEmit이 false(쿨다운·라인 없음)면 다음 후보로 넘어간다 */
       st.myR=(st.myR||0)+1;
       const mw=st.myR>=2, nowK=performance.now();
-      if(mw) sessStreak++;
+      if(mw){ sessStreak++; sessWins++; sessGames++; }
       (st.low1&&commEmit("comeback",{},"cbk",15000))||
       (p1>=128&&commEmit("perfect",{},"pft",15000))||
       (nowK-(st.roundStartAt||nowK)<10000&&commEmit("quickKo",{},"qko",15000))||
@@ -2405,8 +2872,9 @@ function commStep(sn){
     }
     if(hit1){ const d=st.p1-p1;
       if(p1<=0&&!st.ko){ st.ko=true; st.lost=true; st.won=false; commEmit("koed",{},"ko",4000);
+        if(sn.surv>0) commEmit("survEnd",{n:sn.surv},"surv2",10000);  /* 서바이벌 기록 결산 */
         st.opR=(st.opR||0)+1;
-        if(st.opR>=2){ sessStreak=0; sessLastLossOpp=st.oppId||null; } /* 설욕 대상 기억 */
+        if(st.opR>=2){ sessStreak=0; sessLastLossOpp=st.oppId||null; sessGames++; } /* 설욕 대상 기억 */
       }
       else if(d>=4) commEmit("taken",{dmg:d},"tk",900);
     }
@@ -2421,10 +2889,12 @@ function commStep(sn){
     if(p1>0&&p1<=32&&!st.low1){ st.low1=true; commEmit("low1",{},"low",1500); }
     if(p2>0&&p2<=32&&!st.low2){ st.low2=true; commEmit("low2",{},"low",1500); }
     if(st.low1&&st.low2&&!st.dblLow){ st.dblLow=true; commEmit("doubleLow",{},"low2x",8000); } /* 벼랑끝 */
+    /* v0.3.4: 전황·반피·연타 라인은 사용자 피드백("정보전달보다 흥·썰·분위기, 이전 속도가 나았다")으로
+       제거. 경기 중 발화는 v0.3 세트(결과·위기·역전·KO·잡담)로 복귀. */
   }
   /* 전투 중 놀 때 — 공방이 commIdleMs 이상 끊기면 낮은 우선순위로 한 마디 */
   const nowI=performance.now();
-  if(hit1||hit2||down2||a1>=0x180&&st.a1<0x180||a2>=0x180&&st.a2<0x180||
+  if(hit1||hit2||down2||(live&&(a1>=0x180&&st.a1<0x180||a2>=0x180&&st.a2<0x180))||
      (a1>=0x13C&&a1<=0x154&&!(st.a1>=0x13C&&st.a1<=0x154))) st.actAt=nowI;
   else if(!st.ko&&p1>0&&p2>0&&(sn.scr===undefined||sn.scr>=8)){ /* 결과·문구 화면에선 전투 잡담 금지 */
     if(!st.actAt) st.actAt=nowI;
@@ -2435,17 +2905,29 @@ function commStep(sn){
   }
   st.p1=p1; st.p2=p2; st.a1=a1; st.a2=a2;
 }
-let commIdleMs=12000, commIdleMenuMs=15000, commSelChatMs=7000;   /* 잡담 임계 — 회귀에서 짧게 조정 가능 */
+let commIdleMs=12000, commIdleMenuMs=15000, commSelChatMs=7000, commDomMs=8000;   /* 잡담 임계 — v0.3.4: 사용자 피드백으로 v0.3 페이스 복귀 */
 let commSynth=false;   /* 합성 검사 중 — 실제 램 감시 일시정지 (회귀 14장) */
+/* 전투가 끝났는데 예약된 SP 입력이 남아 있으면 버린다 (귀신터치 방지).
+   시한(2.6초) 안에서만 돌고, 전투가 살아 있으면 아무것도 하지 않는다. */
+function spGuard(mode,p1,p2){
+  if(!spArmedUntil||Date.now()>spArmedUntil) return;
+  if(mode===0xF1&&p1>0&&p2>0) return;      /* 전투 진행 중 — 정상 */
+  spArmedUntil=0;
+  abortMacros();
+}
 setInterval(()=>{
-  if(commSynth||(cfg.commMode||"off")==="off"||editing||document.hidden) return;
+  if(editing||document.hidden) return;
   const g=gm(); if(!g||heapBase<0||!g.Module||!g.Module.HEAPU8) return;
   const H=g.Module.HEAPU8;
+  spGuard(H[heapBase+CTX_OFF],H[heapBase+P1HP_OFF],H[heapBase+P2HP_OFF]);
+  if(commSynth||(cfg.commMode||"off")==="off") return;
   commStep({mode:H[heapBase+CTX_OFF],
             p1:H[heapBase+P1HP_OFF], p2:H[heapBase+P2HP_OFF],
             a1:H[heapBase+ACT_OFF]|(H[heapBase+ACT_OFF+1]<<8),
             a2:H[heapBase+P2ACT_OFF]|(H[heapBase+P2ACT_OFF+1]<<8),
             scr:H[heapBase+SCR_OFF],
+            surv:H[heapBase+SURV_OFF],
+            stage:H[heapBase+STAGE_OFF],
             fresh:Date.now()-lastStateLoad<300});
 },100);
 
@@ -2475,6 +2957,18 @@ function noteRestart(){
   },400);
 }
 
+/* 블록 바이트 → (캐릭터, 유파). 순수 함수라 합성 검사로 바로 확인할 수 있다.
+   ⚠ 쿠로코는 샤를로트-나찰과 블록(0x98)을 공유한다 — 실기 확인(쿠로코 수라=0x98, 샤를로트 나찰=0x98).
+   v0.4.7: 기본 해석을 **샤를로트 나찰**로 뒤집었다(제보: 샤를로트 나찰 자동인식이 안 됨).
+   샤를로트는 정규 로스터라 압도적으로 흔하고, 쿠로코를 쓰는 중이면 그대로 쿠로코를 유지한다. */
+function blkToChar(blk){
+  if(blk===undefined||blk&7||blk>0xE8) return null;
+  const ci=blk>>4, st=(blk>>3)&1;
+  let id=CHAR_BY_IDX[ci]; if(!id) return null;
+  let style=st?"b":"s";
+  if(ci===9&&st===1){ if(cfg.char==="kuroko"){ id="kuroko"; style="s"; } else { id="charlotte"; style="b"; } }
+  return {id:id, style:style};
+}
 let manualBlkHold=null; /* 수동 캐릭터 선택 시 현재 전투(blk)의 자동 감지를 보류 — 다음 전투부터 재개 */
 function autoDetectChar(){
   if(cfg.autoChar===false||heapBase<0) return;
@@ -2488,14 +2982,8 @@ function autoDetectChar(){
   const H=gm().Module.HEAPU8;
   const hp1=H[heapBase+0x1A46], hp2=H[heapBase+P2HP_OFF];
   if(!(hp1>0&&hp1<=128&&hp2>0&&hp2<=128)) return;
-  const blk=g.blk;
-  if(blk&7||blk>0xE8) return; /* 유효 블록 = 8의 배수 */
-  const ci=blk>>4, st=(blk>>3)&1;
-  let id=CHAR_BY_IDX[ci]; if(!id) return;
-  let style=st?"b":"s";
-  /* 쿠로코는 샤를로트-나찰과 블록(0x98) 공유 — 실기 확인(쿠로코 수라=0x98, 샤를로트 나찰=0x98).
-     현재 선택이 샤를로트면 나찰로, 아니면 쿠로코로 해석 */
-  if(ci===9&&st===1){ if(cfg.char==="charlotte"){ id="charlotte"; style="b"; } else { id="kuroko"; style="s"; } }
+  const r=blkToChar(g.blk); if(!r) return;
+  let id=r.id, style=r.style;
   const c=CHARS.find(x=>x.id===id); if(!c) return;
   if(style==="b"&&(!c.bst||!c.bst.length)) style="s";
   if(cfg.char===id&&cfg.style===style) return;
@@ -2748,24 +3236,18 @@ $("#sheet").addEventListener("click",e=>{ if(e.target===$("#sheet")){ saveCfg();
 
 /* ═══════════════ 설정 · 배치 커스텀 ═══════════════ */
 function renderSettings(){
-  $("#speedSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.s===cfg.speed));
   $("#langSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.l===cfg.lang));
   $("#commSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.cm===(cfg.commMode||"off")));
   $("#commSpkSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.spk===(cfg.commSpk||"haohmaru")));
   $("#commNamesSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.nm===(cfg.commNames?1:0)));
-  $("#watchSeg")&&$("#watchSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.w===(cfg.watch?1:0)));
   $("#hudSeg")&&$("#hudSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.h===(cfg.hud?1:0)));
   $("#shaderSeg")&&$("#shaderSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.shader===(cfg.shader||"off")));
+  $("#spToastSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.t===(cfg.spToast?1:0)));
   $("#autoCharSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.a===(cfg.autoChar?"1":"0")));
-  $("#ctxSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.c===(cfg.ctxButtons?"1":"0")));
   $("#padScale").value=cfg.scale.pad; $("#padScaleOut").textContent=cfg.scale.pad+"%";
   $("#btnScale").value=cfg.scale.btn; $("#btnScaleOut").textContent=cfg.scale.btn+"%";
   $("#alphaRange").value=cfg.alpha; $("#alphaOut").textContent=cfg.alpha+"%";
 }
-$("#watchSeg")&&$("#watchSeg").addEventListener("click",e=>{
-  const v=e.target.dataset.w;
-  if(v!==undefined){ cfg.watch=+v; if(!cfg.watch) clearInterval(fireWatch); renderSettings(); saveCfg(); }
-});
 $("#hudSeg")&&$("#hudSeg").addEventListener("click",e=>{
   const v=e.target.dataset.h;
   if(v!==undefined){ setHud(+v); renderSettings(); saveCfg(); }
@@ -2779,21 +3261,15 @@ $("#shaderSeg")&&$("#shaderSeg").addEventListener("click",e=>{
 $("#cfgBtn").onclick=()=>{ renderSettings(); $("#settings").hidden=false; };
 $("#cfgClose").onclick=()=>{ saveCfg(); $("#settings").hidden=true; };
 $("#settings").addEventListener("click",e=>{ if(e.target===$("#settings")){ saveCfg(); $("#settings").hidden=true; } });
+$("#spToastSeg").addEventListener("click",e=>{
+  const v=e.target.dataset.t;
+  if(v!==undefined){ cfg.spToast=+v; renderSettings(); saveCfg();
+    if(cfg.spToast) toast("하단 알림 켬");
+    else{ const t=$("#toast"); clearTimeout(toastT); t.classList.remove("show"); t.textContent=""; } }
+});
 $("#autoCharSeg").addEventListener("click",e=>{
   const a=e.target.dataset.a;
   if(a!==undefined&&a!=="") setAutoChar(a==="1");
-});
-$("#ctxSeg").addEventListener("click",e=>{
-  const c=e.target.dataset.c;
-  if(c!==undefined&&c!==""){
-    cfg.ctxButtons=c==="1"; saveCfg(); renderSettings();
-    if(!cfg.ctxButtons) setCtx("battle"); else ctxMenuStreak=0;
-    toast(cfg.ctxButtons?"메뉴에선 전투 버튼을 숨깁니다":"메뉴에서도 전체 조작창 유지");
-  }
-});
-$("#speedSeg").addEventListener("click",e=>{
-  const s=e.target.dataset.s;
-  if(s){ cfg.speed=s; renderSettings(); saveCfg(); }
 });
 $("#commSeg").addEventListener("click",e=>{
   const c=e.target.dataset.cm;
@@ -2809,6 +3285,7 @@ $("#commSpkSeg").addEventListener("click",e=>{
 $("#commNamesSeg").addEventListener("click",e=>{
   const v=e.target.dataset.nm;
   if(v!==undefined){ cfg.commNames=+v; renderSettings(); saveCfg();
+    if(!cfg.commNames){ const tt=$("#toast"); clearTimeout(toastT); tt.classList.remove("show"); tt.textContent=""; }
     annPush(+v?"기술 이름도 부르겠습니다":"기술 이름은 생략합니다",0,2); }
 });
 $("#langSeg").addEventListener("click",e=>{
@@ -2946,6 +3423,19 @@ $("#fsBtn").onclick=()=>{
 /* ═══════════════ 랜딩 초기화 ═══════════════ */
 const drop=$("#drop");
 $("#pickBtn").onclick=()=>$("#fileInput").click();
+/* v0.5.3: 시작 화면에서 **SP(또는 스페이스·엔터)** 로 시작한다. 저장된 롬이 있으면 바로, 없으면 파일 선택. */
+function startPress(){
+  if(!$("#landing")||$("#landing").hidden) return;
+  const row=$("#cachedRow"), rb=$("#resumeBtn");
+  if(row&&!row.hidden&&rb) rb.click();
+  else $("#fileInput").click();
+}
+$("#spStartBtn")&&$("#spStartBtn").addEventListener("click",startPress);
+window.addEventListener("keydown",e=>{
+  if($("#landing")&&$("#landing").hidden) return;
+  const k=(e.key||"").toLowerCase();
+  if(k===" "||k==="enter"||k==="spacebar"){ e.preventDefault(); startPress(); }
+});
 $("#fileInput").addEventListener("change",e=>{ if(e.target.files[0]) acceptFile(e.target.files[0]); });
 ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add("drag"); }));
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove("drag"); }));
@@ -2953,7 +3443,7 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
 
 (async function init(){
   if(Q.get("debug")==="1"){
-    window.__ss2={readFacing,readGame,cardState,readLangByte,enforceLang,effLang,runMove,runSuper,gm,curMoves,cfg,applyLayout,spPress,spRelease,curSpMap,
+    window.__ss2={sideArt,sideArtRefresh,grabStage,grabCard,artList:()=>artList,get sideArtCur(){return sideArtCur;},set sideArtCur(v){sideArtCur=v;},readFacing,readGame,cardState,readLangByte,enforceLang,effLang,runMove,runSuper,gm,curMoves,cfg,applyLayout,spPress,spRelease,curSpMap,fireAB,resolveSpSlot,slotKey,lastSteps:()=>runSteps.lastSteps,
       ver:APP_VER, prof:PROF,
       get romKey(){return romKey;},
       findHeap:()=>{heapBase=findHeapBase();return heapBase;},
@@ -2963,26 +3453,36 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
       get lastSteps(){return runSteps.lastSteps;},
       get mirrorHits(){return runSteps.mirrorHits;},
       get tickMs(){return MACRO_TICK_MS;}, set tickMs(v){MACRO_TICK_MS=v;},
+      compileMove, autoDetectChar, blkToChar, simDown, simUp, sim, get ID(){return ID;},
       get lastFlush(){return compileMove.poisonFlush;},
       get lastBufferReset(){return compileMove.bufferReset;},
-      ss2Actable, get spGatePending(){return !!spGate;},
+      ss2Actable, get spGatePending(){return !!spGate;}, get spArmed(){return spArmedUntil;}, spGuard,
+      SP_GATE_MS, SP_AIR_MS, bumpInput, get inputSeq(){return inputSeq;},
       harvestFaces, get faceStore(){return faceStore;},
       get romFaces(){return romFaces;}, buildRomFaces,
-      readOpp, oppTrait, commStep, get annQ(){return ANN.q.length;},
+      readOpp, oppTrait, commStep, commPend:()=>pendMove, SPEAKERS, get annQ(){return ANN.q.length;},
       get commSynth(){return commSynth;}, set commSynth(v){commSynth=!!v;},
       commReset:()=>{ annClear();
         for(const k in commCD) delete commCD[k];
         Object.assign(commSt,{p1:-1,p2:-1,a1:0,a2:0,mode:-1,offAt:0,ko:false,low1:false,low2:false,lead:0,revN:0,
-          actAt:0,menuAt:0,scr:undefined,won:false,lost:false,resultDone:false,selChatAt:0,selChatN:0,
+          actAt:0,menuAt:0,scr:undefined,won:false,lost:false,resultDone:false,selChatAt:0,selChatN:0,lastStage:undefined,
           myR:0,opR:0,roundN:1,fb:false,longSaid:false,dblLow:false,roundStartAt:0,oppId:null});
-        sessStreak=0; sessLastLossOpp=null;
-        commLast=""; },
+        sessStreak=0; sessLastLossOpp=null; sessWins=0; sessGames=0; sessSurvBest=0;
+        Object.assign(commSt,{half1:false,half2:false,h2t:[]});
+        commLast=""; commHush=0; museAt=0; },
       get sessStreak(){return sessStreak;}, set sessStreak(v){sessStreak=v;},
       get sessLastLossOpp(){return sessLastLossOpp;}, set sessLastLossOpp(v){sessLastLossOpp=v;},
       get commIdleMs(){return commIdleMs;}, set commIdleMs(v){commIdleMs=v;},
       get commIdleMenuMs(){return commIdleMenuMs;}, set commIdleMenuMs(v){commIdleMenuMs=v;},
       get commSelChatMs(){return commSelChatMs;}, set commSelChatMs(v){commSelChatMs=v;},
       get commLineTTL(){return commLineTTL;}, set commLineTTL(v){commLineTTL=v;}, lineFade,
+      get commMuseMs(){return commMuseMs;}, set commMuseMs(v){commMuseMs=v;},
+      get commMuseBattleMs(){return commMuseBattleMs;}, set commMuseBattleMs(v){commMuseBattleMs=v;},
+      get museAt(){return museAt;}, set museAt(v){museAt=v;},
+      get commDomMs(){return commDomMs;}, set commDomMs(v){commDomMs=v;},
+      get sessWins(){return sessWins;}, set sessWins(v){sessWins=v;},
+      get sessGames(){return sessGames;}, set sessGames(v){sessGames=v;},
+      get sessSurvBest(){return sessSurvBest;}, set sessSurvBest(v){sessSurvBest=v;},
       touchStamp:()=>{ lastTouchT=performance.now(); }, alignCommPanel,
       fitFont,
       commSub, get commLast(){return commLast;}, get commLastAt(){return commLastAt;},
@@ -3024,7 +3524,115 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
     if(Q.get("autostart")==="1") startGame(cached);
   }
 })();
+
+/* ═══════════════ PWA — 홈 화면 설치 · 오프라인 ═══════════════
+   http(s)로 열렸을 때만 등록한다. 단독 HTML(file://)로 열면 조용히 건너뛴다.
+   롬은 캐시에 넣지 않는다 — 롬은 IndexedDB 에만 있다. */
+(function pwa(){
+  const http = location.protocol === "http:" || location.protocol === "https:";
+  const standalone = matchMedia("(display-mode: standalone)").matches
+                   || matchMedia("(display-mode: fullscreen)").matches
+                   || navigator.standalone === true;
+  if(http && "serviceWorker" in navigator){
+    window.addEventListener("load",()=>{
+      navigator.serviceWorker.register("sw.js").then(reg=>{
+        reg.addEventListener("updatefound",()=>{
+          const nw=reg.installing; if(!nw) return;
+          nw.addEventListener("statechange",()=>{
+            if(nw.state==="installed" && navigator.serviceWorker.controller)
+              toast("새 판이 준비됐다 — 새로고침하면 바뀐다");
+          });
+        });
+      }).catch(()=>{});
+    });
+  }
+  let prompt=null;
+  const btn=$("#installBtn");
+  window.addEventListener("beforeinstallprompt",e=>{
+    e.preventDefault(); prompt=e;
+    if(btn && !standalone) btn.hidden=false;
+  });
+  window.addEventListener("appinstalled",()=>{ if(btn) btn.hidden=true; prompt=null; toast("홈 화면에 설치됐다"); });
+  btn && btn.addEventListener("click",async()=>{
+    if(!prompt) return;
+    btn.hidden=true; const p=prompt; prompt=null;
+    try{ await p.prompt(); await p.userChoice; }catch(e){}
+  });
+  if(standalone) document.documentElement.classList.add("standalone");
 })();
+
+/* ═══════════════ 성능 측정 ═══════════════
+   브라우저끼리 같은 조건으로 비교하기 위한 계측기.
+   두 구간으로 나눈다 — ① 무입력 8초 ② 디패드 문지르기 8초.
+   터치 처리가 브라우저마다 다른 곳이라, 둘을 나눠야 원인이 보인다.
+   재는 값:
+     · 에뮬 fps  = getFrameNum() 증가분 / 실제 경과 (화면 표시가 아니라 **게임이 실제로 돈 프레임**)
+     · 표시 간격 = rAF 간격의 중앙값·p95·최대
+     · 끊김      = rAF 간격 33ms 초과 횟수 (두 프레임 이상 건너뛴 것) */
+const BENCH={on:false};
+function benchEnv(){
+  const g=[];
+  try{
+    const ua=navigator.userAgentData;
+    if(ua&&ua.brands) g.push(ua.brands.map(b=>b.brand+" "+b.version).join(", "));
+  }catch(e){}
+  if(!g.length) g.push((navigator.userAgent||"").slice(0,140));
+  const dm=navigator.deviceMemory?navigator.deviceMemory+"GB":"?";
+  g.push("코어 "+(navigator.hardwareConcurrency||"?")+" · 메모리 "+dm
+        +" · 화면 "+innerWidth+"×"+innerHeight+"@"+(devicePixelRatio||1).toFixed(2));
+  g.push("필터 "+cfg.shader+" · 아트웍 "+cfg.art+" · 해설 "+(cfg.commMode||"off")
+        +" · 설치 "+(matchMedia("(display-mode: standalone)").matches?"홈화면":"브라우저"));
+  return g;
+}
+function benchStats(gaps,f0,f1,ms){
+  const s=gaps.slice().sort((a,b)=>a-b);
+  const q=p=>s.length?s[Math.min(s.length-1,Math.floor(s.length*p))]:0;
+  return {fps:(f1-f0)/(ms/1000), p50:q(.5), p95:q(.95), max:s.length?s[s.length-1]:0,
+          hitch:gaps.filter(x=>x>33).length, n:gaps.length};
+}
+async function benchRun(){
+  if(BENCH.on) return;
+  const g=gm(); if(!g||!(g.functions&&g.functions.getFrameNum)){ toast("게임이 먼저 떠 있어야 한다"); return; }
+  BENCH.on=true;
+  const wrap=$("#benchWrap"), phase=$("#benchPhase"), big=$("#benchBig"),
+        hint=$("#benchHint"), out=$("#benchOut"), btns=$("#benchBtns");
+  out.hidden=true; btns.hidden=true; wrap.hidden=false;
+  const fn=()=>{ try{ return g.functions.getFrameNum(); }catch(e){ return 0; } };
+  let gaps=[], last=0, raf=0, collecting=false;
+  const loop=t=>{ if(collecting){ if(last) gaps.push(t-last); last=t; } raf=requestAnimationFrame(loop); };
+  raf=requestAnimationFrame(loop);
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  async function seg(label,tip,sec){
+    phase.textContent=label; hint.textContent=tip;
+    for(let i=3;i>0;i--){ big.textContent=i; await sleep(700); }
+    gaps=[]; last=0; collecting=true;
+    const t0=performance.now(), f0=fn();
+    for(let i=sec;i>0;i--){ big.textContent=i; await sleep(1000); }
+    const ms=performance.now()-t0, f1=fn();
+    collecting=false;
+    return benchStats(gaps,f0,f1,ms);
+  }
+  const a=await seg("① 무입력","가만히 두세요",8);
+  const b=await seg("② 조작 중","디패드를 좌우로 계속 문지르세요",8);
+  cancelAnimationFrame(raf);
+  const row=(nm,r)=>nm+"  fps "+r.fps.toFixed(1)+"  간격 "+r.p50.toFixed(0)+"/"+r.p95.toFixed(0)+"/"+r.max.toFixed(0)+"ms  끊김 "+r.hitch;
+  const txt=["SS2 SP 성능 측정 · v0.5.6d (app "+APP_VER+")",...benchEnv(),"",
+             row("무입력",a),row("조작중",b),
+             "","(간격 = 중앙값/p95/최대, 끊김 = 33ms 초과 횟수)"].join("\n");
+  phase.textContent="측정 끝"; big.textContent=b.fps.toFixed(0); hint.textContent="조작 중 fps";
+  out.textContent=txt; out.hidden=false; btns.hidden=false;
+  BENCH.on=false; BENCH.last=txt;
+}
+$("#benchStart")&&$("#benchStart").addEventListener("click",()=>{ saveCfg(); $("#settings").hidden=true; setTimeout(benchRun,250); });
+$("#benchClose")&&$("#benchClose").addEventListener("click",()=>{ $("#benchWrap").hidden=true; });
+$("#benchCopy")&&$("#benchCopy").addEventListener("click",async()=>{
+  try{ await navigator.clipboard.writeText(BENCH.last||""); toast("복사했다"); }
+  catch(e){ const r=document.createRange(); r.selectNodeContents($("#benchOut"));
+            const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("길게 눌러 복사하세요"); }
+});
+
+})();
+
 </script>
 </body>
 </html>
