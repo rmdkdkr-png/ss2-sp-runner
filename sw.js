@@ -1,7 +1,7 @@
 /* SS2 SP 실행기 — 서비스워커
    목적 두 가지: ① 홈 화면에 설치된 뒤 오프라인으로 돌게 ② 두 번째 실행부터 즉시 뜨게.
    롬은 여기서 다루지 않는다 — 롬은 IndexedDB 에만 있고 캐시에 넣지 않는다. */
-const VER   = "ss2sp-v0.5.9";
+const VER   = "ss2sp-v0.6";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png"

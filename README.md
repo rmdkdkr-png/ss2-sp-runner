@@ -6,7 +6,9 @@
 
 # 버튼 하나 = 필살기
 
-<img src="docs/clips/play_landscape.webp" width="560" alt="SP 버튼 하나로 필살기가 나가는 장면">
+<img src="docs/clips/hero.webp" width="560" alt="SP 한 번 = 삼련살 · 앵화참 · 광양인 — 화면 아래에 실제 커맨드가 뜬다">
+
+*↑ 실기 화면. **SP 한 번**이 어떤 커맨드로 풀리는지 자막으로 같이 나옵니다*
 
 **네오지오 포켓 컬러 『사무라이 스피리츠! 2』를 브라우저에서.
 ↓↘→＋A 같은 커맨드는 몰라도 됩니다.**
@@ -15,10 +17,7 @@
 
 [사용설명서](https://rmdkdkr-png.github.io/ss2-sp-runner/docs/manual.html) &nbsp;·&nbsp; [📱 안드로이드 앱판](https://rmdkdkr-png.github.io/ss2-sp-runner/app.html) &nbsp;·&nbsp; [변경 이력](CHANGELOG.md)
 
-`HTML 한 장` · `설치 없음` · `롬 미포함` · `홈 화면 설치 가능` · `v0.5.9`
-
-<img src="docs/clips/sp_fire.webp" width="300" alt="SP 한 번에 필살기가 나간다">
-<img src="docs/clips/ko.webp" width="300" alt="KO">
+`HTML 한 장` · `설치 없음` · `롬 미포함` · `홈 화면 설치 가능` · `v0.6`
 
 **해설이 붙습니다 — 화자마다 다른 말을 합니다**
 
@@ -27,8 +26,10 @@
 <img src="docs/clips/line_haoh_sake.webp" width="420" alt="하오마루 — 한 잔 내렸군… 자, 여기부터">
 <img src="docs/clips/line_haoh_win.webp" width="420" alt="하오마루 — 핫핫하!! 승부 났다!!">
 
-<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/sideart.webp"><img src="docs/shots/sideart_still.webp" width="300" alt="양옆 카드 아트 (클릭하면 영상)"></a>
-<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/combo.webp"><img src="docs/shots/combo_still.webp" width="150" alt="세로 화면 실기 플레이 (클릭하면 영상)"></a>
+<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/super.webp"><img src="docs/shots/super_still.webp" width="270" alt="뒤+A+B = 비오의 (클릭하면 영상)"></a>
+<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/ko.webp"><img src="docs/shots/ko_still.webp" width="270" alt="KO (클릭하면 영상)"></a>
+<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/sideart.webp"><img src="docs/shots/sideart_still.webp" width="270" alt="양옆 카드 아트 (클릭하면 영상)"></a>
+<a href="https://rmdkdkr-png.github.io/ss2-sp-runner/docs/clips/combo.webp"><img src="docs/shots/combo_still.webp" width="135" alt="세로 화면 실기 플레이 (클릭하면 영상)"></a>
 
 *↑ 전부 실기 화면입니다. 클릭하면 영상이 열립니다*
 

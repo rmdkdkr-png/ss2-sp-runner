@@ -17,7 +17,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
-<title>HTML NGP SS2 runner — SP button · Character chat · v0.5.9</title>
+<title>HTML NGP SS2 runner — SP button · Character chat · v0.6</title>
 <style>
   :root{
     color-scheme: dark;
@@ -43,6 +43,15 @@
 
   /* ---------- 시작 화면: 옛 콘솔 부팅 화면 ---------- */
   #landing{background:#070605;}
+  /* v0.6: 시작 화면 설명은 **글자 한 줄**로 둔다.
+     v0.5.9f~h 에서 움짤을 배경으로 깔았다가 액자 칸으로 세웠다가 했는데,
+     html 한 장 무게가 818KB → 1.05MB 로 뛰었다. 시연은 저장소 README 로 보내고
+     시작 화면에는 **무엇을 하는 물건인지 한 줄**만 남긴다. */
+  #landNote{margin:20px auto 2px;max-width:min(30em,86%);
+    font-family:'Galmuri7',ui-monospace,monospace;
+    font-size:12.5px;line-height:1.7;color:rgba(217,185,104,.9);}
+  #landNote b{color:#f4e7c8;font-weight:400;}
+  #landNote .cmd{color:#f4e7c8;letter-spacing:.06em;white-space:nowrap;}
   #landing .panel{border:2px solid rgba(217,185,104,.45);border-radius:6px;background:#0a0807;
     box-shadow:0 0 0 3px #070605, 0 0 60px rgba(217,185,104,.10) inset;}
   #landing .panel::after{height:2px;background:linear-gradient(90deg,var(--red),var(--gold),var(--violet));}
@@ -397,6 +406,13 @@
     padding:calc(3px * var(--capS)) calc(8px * var(--capS));border-radius:999px;
     background:rgba(217,185,104,.14);border:1px solid rgba(217,185,104,.4);
     text-shadow:0 1px 3px #000;white-space:nowrap;}
+  /* 가로 화면은 세로가 짧다 — 제목·SP를 줄여 **설명 줄이 첫 화면에 들어오게** 한다 */
+  @media (orientation:landscape) and (max-height:620px){
+    #landing .hero{padding:14px clamp(16px,4vw,32px) 18px;}
+    #landing h1{font-size:clamp(26px,5.2vw,42px);}
+    #landing h1 span{margin-top:8px;}
+    .startPlate{margin:12px auto 4px;gap:8px;}
+  }
 </style>
 </head>
 <body>
@@ -404,12 +420,16 @@
 <!-- ═══════════ 랜딩 ═══════════ -->
 <div class="page" id="landing">
   <div class="panel"><div class="hero">
-    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v0.5.9</p>
+    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v0.6</p>
     <h1>사무라이 스피리츠! 2 <span>한글판 · SP 버튼 실행기</span></h1>
     <div class="startPlate">
       <button class="spStart" id="spStartBtn">SP</button>
       <div class="blink" id="startHint">PRESS  SP  TO  START</div>
     </div>
+
+    <p id="landNote"><b>버튼 하나 = 필살기.</b> <b>SP</b> 를 누르면 실기 커맨드가
+      대신 들어갑니다 — <span class="cmd">↓ ↘ → ＋ A</span> 같은 것을 외울 필요가 없습니다.
+      무엇이 들어갔는지는 화면에 같이 뜹니다.</p>
 
     <p style="margin:16px 0 0"><button class="pick alt" id="installBtn2" hidden
        style="max-width:22em">📲 홈 화면에 설치</button></p>
@@ -544,7 +564,7 @@
         <button data-cap="off">끔</button><button data-cap="on">켬</button><button data-cap="big">크게</button>
       </div>
     </div>
-    <div class="setRow"><b>더미 상대<br><small style="color:var(--muted)">반격하지 않는 연습 상대</small></b>
+    <div class="setRow"><b>더미 상대<br><small style="color:var(--muted)">반격 없음 · 체력/시간 최대</small></b>
       <div class="seg" id="dummySeg">
         <button data-dum="0">끔</button><button data-dum="1">켬</button>
       </div>
@@ -1230,6 +1250,41 @@ let userDir=[0,0,0,0];
    ·순수 뒤 입력 후 ~32프레임 안의 623은 게임 파서가 462(비오의)로 읽어 씹어버림 (전 캐릭터 실측)
    ·대각(↓뒤)은 무해 — 앉아가드 후 대공은 정상 발동 */
 let lastLeftAt=-1e9, lastRightAt=-1e9, lastUpAt=-1e9, prevApplied=[0,0,0,0];
+/* ═══ 대쉬(앞앞) 감지 — v0.5.9a ═════════════════════════════════════
+   제보: "대쉬 시즈쿠진이 작동을 안 하네, 대쉬 B가 발동됨."
+   좌우를 짧게 두 번 누르면 달리기다. **달리는 중에 커맨드를 쏘면 게임이
+   「달리기 중 버튼」으로 먼저 읽어** 대쉬 A/B 가 나간다. 커맨드 링과 무관한,
+   캐릭터 상태 쪽 문제라 링 리셋(0x1DCD)으로는 안 막힌다.
+
+   실측(겐주로 수라, 앞앞 유지 중 발동):
+     시즈쿠진(623+B) → 0x70 대쉬B   /  광양인(623+A)·삼련살(236+A) → 0x7C
+     중립 250ms 뒤   → 삼련살만 성공
+     중립 300ms 뒤   → **셋 다 성공**
+     뒤로 한 번 튕기기(4탭) → 도움 안 됨(오히려 실패)
+   → 답은 하나뿐이다. **달리기를 끊고 나서 쏜다.**
+
+   방향을 놓아도 달리기 모션이 ~300ms 더 가므로, 놓은 뒤에도 잠깐은 달리는 것으로 본다.
+   판정은 **입력 쪽에서** 한다 — 액션ID로 재면 캐릭터마다 달라 못 믿는다(인계문서 §액션ID). */
+const DASH_TAP_MS=300;     /* 이 안에 같은 방향을 다시 누르면 달리기 */
+const DASH_TAIL_MS=340;    /* 놓은 뒤 모션이 남는 시간 */
+const DASH_STOP_F=20;      /* 달리기를 끊는 데 쓰는 중립 프레임 (≈333ms) */
+let dashTapAt=[0,0,-1e9,-1e9], dashIdx=0, dashEnd=0;
+function noteDirs(nu,nd,nl,nr,prev){
+  const now=performance.now();
+  /* ↓ 가 섞이지 않은 순수 좌/우의 **새 눌림**만 본다 (앉아 걷기는 달리기가 아니다) */
+  if(nl&&!prev[2]&&!nd){ if(now-dashTapAt[2]<DASH_TAP_MS){ dashIdx=2; dashEnd=now+DASH_TAIL_MS; } dashTapAt[2]=now; }
+  if(nr&&!prev[3]&&!nd){ if(now-dashTapAt[3]<DASH_TAP_MS){ dashIdx=3; dashEnd=now+DASH_TAIL_MS; } dashTapAt[3]=now; }
+  if(dashIdx){
+    /* **끝났는지 먼저 본다.** 연장을 먼저 하면, 한참 뒤에 같은 방향을 한 번 눌렀을 때
+       죽은 대쉬가 되살아나 평시 기술에까지 300ms가 붙는다(회귀 14.78에서 잡음). */
+    if(now>=dashEnd) dashIdx=0;
+    else if((dashIdx===2)?nl:nr) dashEnd=now+DASH_TAIL_MS;   /* 잡고 있는 동안 연장 */
+  }
+}
+function dashing(){
+  if(dashIdx&&performance.now()>=dashEnd) dashIdx=0;   /* 아무도 안 부르는 동안 지났을 수 있다 */
+  return dashIdx!==0;
+}
 function applyDir(bits){
   sim(ID.U,bits[0]); sim(ID.D,bits[1]); sim(ID.L,bits[2]); sim(ID.R,bits[3]);
   const now=performance.now();
@@ -1270,6 +1325,13 @@ function compileMove(mv,facing,opts){
   /* 직전(0.25s 이내)에 기본기를 쳤다면 6f 지연 후 시작 — 공격 초반 프레임에선 캔슬이 안 받고,
      약간 지나서 넣으면 버퍼로 성립함 (실기 검증: 약공격+6f 후 커맨드 = 발동) */
   /* 공중/점프 스타트업 중 지상기: 착지까지 대기 후 발동 (그냥 쏘면 씹힘 — 실측 0/3 → 대기 시 3/3) */
+  /* ⚠️ v0.5.9b: **달리기 끊기(중립 0.33초)는 사용자 요청으로 되돌렸다.**
+     달리는 중엔 게임이 커맨드를 「달리기 중 버튼」으로 먼저 읽어 대쉬 A/B 가 나간다(§대쉬 감지 참조).
+     끊으려면 아래 한 줄을 살리면 되지만, 그 대가가 **모든 대쉬 기술에 0.33초 지연**이다.
+     사용자는 지연 쪽이 더 거슬린다고 판단했다. 다시 켜려거든 그 트레이드오프부터 합의할 것.
+         if(dashing()) steps.push({d:"5",f:DASH_STOP_F});
+     감지(dashing())는 계측용으로 살려 둔다 — 켜고 끄는 데 드는 비용이 한 줄이 되도록. */
+  compileMove.dashStop=false;
   if(opts.waitGround){ steps.push({d:"5",f:4},{d:"5",wg:1,f:40}); }   /* v0.5.7c: 72f(1.2초) → 40f(0.67초) */ /* 4f 리드: 점프 스쿼트가 액션ID에 잡히길 기다림 */
   /* 공중기 고속 모션: 체공 중엔 수용 창이 짧아 표준 4f가 간헐 실패 — 3f 스텝 + 3f 버튼이 최적(실측) */
   const airFast=mv.air&&opts.skipJump;
@@ -2067,6 +2129,7 @@ let dpadRemeasure=null; /* 디패드 사각형 캐시 재측정 훅 */
     if(userDir[0]===u&&userDir[1]===d&&userDir[2]===l&&userDir[3]===r) return;
     /* 새로 **누른** 방향만 새 입력으로 본다 (뗀 것은 무시 — 점프 중 방향을 놓아도 착지 기술이 살아야 한다) */
     if((u&&!userDir[0])||(d&&!userDir[1])||(l&&!userDir[2])||(r&&!userDir[3])) bumpInput();
+    noteDirs(u,d,l,r,userDir);       /* 앞앞 = 달리기 감지 (userDir 갈아 끼우기 전에) */
     userDir=[u,d,l,r];
     caps.u.classList.toggle("on",!!u); caps.d.classList.toggle("on",!!d);
     caps.l.classList.toggle("on",!!l); caps.r.classList.toggle("on",!!r);
@@ -2827,7 +2890,9 @@ function artLoad(){
 async function grabStage(){
   if(Date.now()-capAt<2500) return; capAt=Date.now();
   const c=await capFrame(); if(!c) return;
-  stageArt=cropURL(c,[0,0,160,152]); sideArtCur=""; sideArtRefresh();
+  /* v0.5.9e: 화면째(160×152) 뜨면 액자에 **체력바·타이머까지** 들어가 스샷 조각처럼 보인다.
+     HUD 위(0~40)와 분노바 아래(140~152)를 빼고 **싸움터만** 잘라 건다. */
+  stageArt=cropURL(c,[0,40,160,100]); sideArtCur=""; sideArtRefresh();
 }
 /* 카드 화면에서 그림과 이름판을 뜬다 — 이 게임 최고의 캐릭터 아트가 여기 있다.
    v0.5.7c: 사용자 제보 "캡쳐가 옳게 잘 안 된다".
@@ -3189,6 +3254,13 @@ setInterval(()=>{
   const g=gm(); if(!g||heapBase<0||!g.Module||!g.Module.HEAPU8) return;
   const H=g.Module.HEAPU8;
   spGuard(H[heapBase+CTX_OFF],H[heapBase+P1HP_OFF],H[heapBase+P2HP_OFF]);
+  /* v0.5.9e: **양옆 아트가 아예 안 붙던 것.**
+     제보: "카드 없을 때 시작하면 아트가 안 붙어 — 카드 선택을 안 하거든."
+     스테이지 갈무리(grabStage)를 부르는 자리가 해설 엔진의 '새 매치' 가지 하나뿐이었다.
+     카드가 없어 카드 화면을 건너뛰면 카드 아트가 없는 건 당연한데, **대체용 스테이지 그림마저**
+     그 가지를 안 타면 안 잡혀서 액자가 통째로 비었다. (해설을 끄면 아예 안 잡히는 것도 같은 이유)
+     → 전투 중인데 스테이지 그림이 없으면 여기서 잡는다. grabStage 자체가 2.5초 간격으로 스스로 막는다. */
+  if(cfg.art!=="off"&&!stageArt&&H[heapBase+CTX_OFF]===0xF1) grabStage();
   if(commSynth||(cfg.commMode||"off")==="off") return;
   commStep({mode:H[heapBase+CTX_OFF],
             p1:H[heapBase+P1HP_OFF], p2:H[heapBase+P2HP_OFF],
@@ -3234,16 +3306,32 @@ setInterval(()=>{
 
    잰 조건: 한글판 rom.ngc · 아수라(수라) 대 샤를로트 · st_battle/nav_fight 상태.
    16ms 간격은 **더미가 켜졌을 때만** 돈다 — 평시 타이머 0개. */
-const DUMMY_AI_OFF=0xE88;   /* COM 판단 바이트 — P2 구조체 +10. P1쪽(0xE48)은 늘 0이라 AI 전용 자리다 */
+const DUMMY_IDLE=8;         /* 서 있기 액션ID */
+/* ⚠️ 0xE88 은 **쓰지 않는다.** 예전에 「COM 판단을 막는 자리」로 알고 |=3 을 넣었는데,
+   256개 값을 거리까지 재 보니 그건 AI를 끈 게 아니라 **「거리 벌리기」 행동으로 바꾼 것**이었다.
+   피해가 0이던 건 상대가 계속 도망쳐서였다(거리 144 = 구석에 붙어 고정).
+   제보 "더미 제대로 안 됨 / 물러난다" 가 정확히 그 증상이다. 다시 넣지 말 것. */
+const DUMMY_AI_OFF=0xE88;
 const ROUND_PHASE_OFF=0x11A;/* 라운드 국면 — 1 전투 / 3 라운드 종료 연출 */
+/* 라운드 시간 (u16LE) — **30/초로 줄고 화면 표시는 값/30** 이다.
+   그래서 "1초에 1씩 줄어드는 바이트" 로 아무리 훑어도 안 나왔던 것이다(v0.5.8d 실패 기록).
+   3초 간격 스냅샷에서 **감소폭이 일정한 자리**를 찾으니 한 번에 잡혔다: 120프레임마다 정확히 60.
+   2970 = 99초. 넣어 두면 화면에 99가 서고 시간 초과가 오지 않는다(50초 방치 확인). */
+const TIMER_OFF=0x182F, TIMER_MAX=2970;
 let dummyIv=null;
 function dummyTick(){
   const g=gm(); if(!g||heapBase<0||!g.Module||!g.Module.HEAPU8) return;
   const H=g.Module.HEAPU8;
   if(H[heapBase+CTX_OFF]!==0xF1) return;                    /* 전투 중에만 */
   if(H[heapBase+ROUND_PHASE_OFF]!==1) return;               /* 라운드 종료 연출 중엔 손대지 않는다 */
-  H[heapBase+DUMMY_AI_OFF]|=3;                              /* 판단을 막는다 → 반격이 없다 */
-  if(H[heapBase+P2HP_OFF]<24) H[heapBase+P2HP_OFF]=128;     /* 쓰러지기 직전에만 채운다 */
+  /* ① 상대를 **서 있기로 붙잡는다.** 피격·다운 대역(0x100~0x17F)은 건드리지 않아 맞는 모습은 그대로 나온다. */
+  const a=H[heapBase+P2ACT_OFF]|(H[heapBase+P2ACT_OFF+1]<<8);
+  if(!(a>=0x100&&a<=0x17F)&&a!==DUMMY_IDLE){
+    H[heapBase+P2ACT_OFF]=DUMMY_IDLE; H[heapBase+P2ACT_OFF+1]=0;
+  }
+  H[heapBase+P1HP_OFF]=128; H[heapBase+P2HP_OFF]=128;       /* ② 양쪽 체력 최대 유지 */
+  H[heapBase+TIMER_OFF]=TIMER_MAX&0xFF;                     /* ③ 시간도 최대 — 라운드가 안 끝난다 */
+  H[heapBase+TIMER_OFF+1]=(TIMER_MAX>>8)&0xFF;
 }
 function dummyApply(){
   clearInterval(dummyIv); dummyIv=null;
@@ -3606,7 +3694,7 @@ $("#dummySeg")&&$("#dummySeg").addEventListener("click",e=>{
   const v=e.target.dataset.dum;
   if(v===undefined) return;
   cfg.dummy=(v==="1"); dummyApply(); renderSettings(); saveCfg();
-  toast(cfg.dummy?"더미 켬 — 상대가 반격하지 않습니다 (한 번 물러나 구석에 섭니다)":"더미 끔 — 상대가 평소대로 싸웁니다");
+  toast(cfg.dummy?"더미 켬 — 반격 없음 · 체력과 시간 최대 (라운드가 안 끝납니다)":"더미 끔 — 상대가 평소대로 싸웁니다");
 });
 $("#shaderSeg")&&$("#shaderSeg").addEventListener("click",e=>{
   const v=e.target.dataset.shader;
@@ -3806,6 +3894,8 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
     window.__ss2={sideArt,sideArtRefresh,grabStage,grabCard,artList:()=>artList,get sideArtCur(){return sideArtCur;},set sideArtCur(v){sideArtCur=v;},readFacing,readGame,cardState,readLangByte,enforceLang,effLang,runMove,runSuper,gm,curMoves,cfg,applyLayout,spPress,spRelease,curSpMap,fireAB,resolveSpSlot,slotKey,
       ver:APP_VER, prof:PROF,
       capApply, capShow, capStep, capEnd, capPress, capDirArrow, refreshSpButtons,
+      get stageArt(){return stageArt;},
+      dashing, noteDirs, get lastDashStop(){return !!compileMove.dashStop;},
       dummyApply, dummyTick, get dummyOn(){return !!dummyIv;},
       get romKey(){return romKey;},
       findHeap:()=>{heapBase=findHeapBase();return heapBase;},
@@ -3852,7 +3942,10 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
       get dbg(){return {prevApplied:prevApplied.slice(),lastLeftAt,lastRightAt,now:performance.now(),userDir:userDir.slice()};},
       clearCommandBuffer,
       poke:(off,v)=>{const g=gm(); if(g&&heapBase>=0&&g.Module&&g.Module.HEAPU8) g.Module.HEAPU8[heapBase+off]=v;},
-      setDir:(u,d,l,r)=>{userDir=[u,d,l,r]; applyDir(userDir);},
+      /* 검사도 **실제 경로**(터치 디패드·키보드가 쓰는 setDirs)를 타야 한다.
+         예전엔 여기서 userDir 을 바로 갈아 끼워, 방향 이력(대쉬 감지 등)을 통째로 건너뛰었다. */
+      setDir:(u,d,l,r)=>{ if(physSetDirs) physSetDirs(u,d,l,r);
+                          else { noteDirs(u,d,l,r,userDir); userDir=[u,d,l,r]; applyDir(userDir); } },
       get macroActive(){return MACRO.active;},
       abortMacros,
       loadStateBytes:b=>{const g=gm(); if(g){ abortMacros(); g.loadState(b instanceof Uint8Array?b:new Uint8Array(b)); lastStateLoad=Date.now(); ctxMenuStreak=0; setCtx("battle"); }}};
@@ -4025,7 +4118,7 @@ async function benchRun(){
   const b=await seg("② 조작 중","디패드를 좌우로 계속 문지르세요",8);
   cancelAnimationFrame(raf);
   const row=(nm,r)=>nm+"  fps "+r.fps.toFixed(1)+"  간격 "+r.p50.toFixed(0)+"/"+r.p95.toFixed(0)+"/"+r.max.toFixed(0)+"ms  끊김 "+r.hitch;
-  const txt=["SS2 SP 성능 측정 · v0.5.9 (app "+APP_VER+")",...benchEnv(),"",
+  const txt=["SS2 SP 성능 측정 · v0.6 (app "+APP_VER+")",...benchEnv(),"",
              row("무입력",a),row("조작중",b),
              "","(간격 = 중앙값/p95/최대, 끊김 = 33ms 초과 횟수)"].join("\n");
   phase.textContent="측정 끝"; big.textContent=b.fps.toFixed(0); hint.textContent="조작 중 fps";

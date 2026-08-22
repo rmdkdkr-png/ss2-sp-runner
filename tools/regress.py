@@ -343,12 +343,15 @@ async def main():
         async def synth_seq(js):
             await page.evaluate("window.__ss2.commReset()")
             await page.evaluate(js)
-        async def lines_until(want, sec=3.0):
-            seen=[]
+        async def lines_until(want, sec=3.0, seed=None):
+            # seed: 창을 열기 **직전에 이미 떠 있던** 줄. commLast 는 화면이 비어도
+            # 값이 남으므로, 이걸 안 걸러 주면 지난 창의 마지막 줄이 새 창의
+            # 첫 줄로 잡힌다 (14.41 이 그렇게 간헐 실패했다).
+            seen=[]; prev=seed
             for _ in range(int(sec*12)):
                 await page.wait_for_timeout(85)
                 t=await page.evaluate("window.__ss2.commLast")
-                if t and (not seen or seen[-1]!=t): seen.append(t)
+                if t and t!=prev: seen.append(t); prev=t
                 if any(want(x) for x in seen): break
             return seen
         await page.evaluate("window.__ss2.cfg.commMode='on'")
@@ -685,7 +688,8 @@ async def main():
         await page.evaluate("""() => {
             const S=(m,st)=>window.__ss2.commStep({mode:m,p1:128,p2:128,a1:8,a2:8,surv:0,stage:st,fresh:false});
             S(0xF0,3); S(0xF1,3); }""")   # 같은 stage 값으로 재진입
-        seen2=await lines_until(lambda t:False, 3.0)
+        stale=await page.evaluate("window.__ss2.commLast")
+        seen2=await lines_until(lambda t:False, 3.0, seed=stale)
         got2=any(any(w in t for w in STG) for t in seen2)
         check("14.41 연전 콜은 값 상승 시에만", got1 and not got2, {"1st":seen,"2nd":seen2})
 
@@ -770,13 +774,27 @@ async def main():
         await page.evaluate("window.__ss2.setDir(0,0,0,0)")
         try: await page.wait_for_function("window.__ss2.ss2Actable()", timeout=4000)
         except Exception: pass
-        abr=await page.evaluate("""() => {
-            const g=window.__ss2.readGame();
-            if(g.facing) window.__ss2.setDir(0,0,0,1); else window.__ss2.setDir(0,0,1,0);
-            document.getElementById('toast').textContent='';
-            window.__ss2.fireAB();
-            return {ab:document.getElementById('btnAB').className,
-                    sp:document.getElementById('spBig').className}; }""")
+        # 불빛은 runMove 가 실제로 시작해야 켜진다. 그 순간 피격·경직이면 선입력으로 밀리므로
+        # **행동 가능해질 때까지 몇 번 다시 시도**한다 (고정 1회 호출은 간헐 실패했다).
+        abr=None
+        for _ in range(12):
+            try: await page.wait_for_function("window.__ss2.ss2Actable()", timeout=3000)
+            except Exception: pass
+            abr=await page.evaluate("""async () => {
+                const g=window.__ss2.readGame();
+                if(g.facing) window.__ss2.setDir(0,0,0,1); else window.__ss2.setDir(0,0,1,0);
+                document.getElementById('toast').textContent='';
+                window.__ss2.fireAB();
+                for(let i=0;i<12;i++){
+                  const ab=document.getElementById('btnAB').className;
+                  if(ab.indexOf('busy')>=0) break;
+                  await new Promise(r=>setTimeout(r,25));
+                }
+                return {ab:document.getElementById('btnAB').className,
+                        sp:document.getElementById('spBig').className}; }""")
+            if abr and "busy" in abr["ab"]: break
+            await page.evaluate("window.__ss2.setDir(0,0,0,0)")
+            await page.wait_for_timeout(500)
         check("14.59 뒤+A+B 는 A+B 버튼에 불이 들어온다",
               abr and "busy" in abr["ab"] and "busy" not in abr["sp"], abr)
         await page.wait_for_timeout(400)
@@ -976,13 +994,20 @@ async def main():
         await page.evaluate("window.__ss2.findHeap()")
         await page.evaluate("window.__ss2.cfg.dummy=true; window.__ss2.dummyApply();")
         await page.wait_for_timeout(600)
-        # 게임이 매 프레임 이 자리를 0으로 되돌리고 우리는 16ms마다 비트를 세운다 —
-        # 한 번만 읽으면 게임이 지운 직후에 걸릴 수 있다(실측 약 1/5). 표본으로 본다.
+        # v0.5.9d: 상대를 **서 있기(act 8)로 붙잡는다.**
+        # 0xE88 은 쓰지 않는다 — 그건 AI를 끄는 게 아니라 「거리 벌리기」로 바꾸는 값이라
+        # 상대가 구석까지 도망만 다녔다(제보 "더미 제대로 안 됨"). 되살리지 말 것.
         ai=await page.evaluate("""async () => { const H=window.EJS_emulator.gameManager.Module.HEAPU8, hb=window.__ss2.heapBase;
-            let set=0; for(let i=0;i<60;i++){ if((H[hb+0xE88]&3)===3) set++; await new Promise(r=>setTimeout(r,5)); }
-            return {set:set, n:60, on:window.__ss2.dummyOn, mode:H[hb+0xA7]}; }""")
-        check("14.68 더미 켬 — COM 판단 바이트 하위 2비트가 선다",
-              ai["on"] and ai["set"]>=40, ai)
+            let idle=0, e88=0;
+            for(let i=0;i<60;i++){
+              const a=H[hb+0xE7E]|(H[hb+0xE7F]<<8);
+              if(a===8||(a>=0x100&&a<=0x17F)) idle++;
+              if((H[hb+0xE88]&3)===3) e88++;
+              await new Promise(r=>setTimeout(r,10));
+            }
+            return {idle:idle, e88:e88, n:60, on:window.__ss2.dummyOn}; }""")
+        check("14.68 더미 켬 — 상대가 서 있기로 붙잡힌다 (도망 바이트는 안 쓴다)",
+              ai["on"] and ai["idle"]>=50 and ai["e88"]<=5, ai)
 
         # v0.5.8d: 좌표 고정은 **폐기**했다. 0xE38·0xE78 은 월드가 아니라 카메라 상대 좌표라
         # 고정이 성립하지 않았고(써 넣어도 231→215→199 로 흐름), 상대를 화면 한 점에 묶어
@@ -990,16 +1015,18 @@ async def main():
         # 대신 라운드 종료 연출 중에는 아예 손대지 않는지를 본다.
         ph=await page.evaluate("""() => { const H=window.EJS_emulator.gameManager.Module.HEAPU8, hb=window.__ss2.heapBase;
             const keep=H[hb+0x11A];
-            H[hb+0x11A]=3; H[hb+0xE88]=0;      /* 라운드 종료 연출 중이라고 속인다 */
+            const put=(v)=>{ H[hb+0xE7E]=v&0xFF; H[hb+0xE7F]=(v>>8)&0xFF; };
+            const get=()=>H[hb+0xE7E]|(H[hb+0xE7F]<<8);
+            H[hb+0x11A]=3; put(0x1B0);         /* 라운드 종료 연출 중이라고 속인다 */
             window.__ss2.dummyTick();
-            const during=H[hb+0xE88];
-            H[hb+0x11A]=1; H[hb+0xE88]=0;
+            const during=get();                /* 손대면 안 된다 */
+            H[hb+0x11A]=1; put(0x1B0);
             window.__ss2.dummyTick();
-            const fighting=H[hb+0xE88];
+            const fighting=get();              /* 서 있기로 붙잡아야 한다 */
             H[hb+0x11A]=keep;
             return {during:during, fighting:fighting}; }""")
         check("14.69 라운드 종료 연출 중에는 더미가 손대지 않는다",
-              ph["during"]==0 and (ph["fighting"]&3)==3, ph)
+              ph["during"]==0x1B0 and ph["fighting"]==8, ph)
 
         # 좌표를 건드리지 않는다 — 이걸 되살리면 카메라 스크롤에 상대가 끌려다닌다
         nox=await page.evaluate("""() => { const H=window.EJS_emulator.gameManager.Module.HEAPU8, hb=window.__ss2.heapBase;
@@ -1010,9 +1037,59 @@ async def main():
         check("14.70 더미는 상대 좌표를 건드리지 않는다(카메라 상대값)", nox["now"]==nox["want"], nox)
 
         hp=await page.evaluate("""async () => { const H=window.EJS_emulator.gameManager.Module.HEAPU8, hb=window.__ss2.heapBase;
-            H[hb+0x1C46]=10; await new Promise(r=>setTimeout(r,120)); return H[hb+0x1C46]; }""")
-        check("14.71 더미 켬 — 쓰러지기 직전에 체력을 채운다", hp==128, hp)
+            H[hb+0x1A46]=40; H[hb+0x1C46]=10;
+            await new Promise(r=>setTimeout(r,120));
+            return {p1:H[hb+0x1A46], p2:H[hb+0x1C46]}; }""")
+        check("14.71 더미 켬 — 양쪽 체력을 최대로 유지한다", hp["p1"]==128 and hp["p2"]==128, hp)
+
+        # 라운드 시간 — u16LE 0x182F, 30/초로 줄고 화면 표시는 값/30. 최대(2970=99초)로 붙잡는다.
+        # 이걸 못 찾아 예전엔 "1분마다 라운드가 넘어간다"를 못 막았다(v0.5.8d 실패 기록).
+        tm=await page.evaluate("""async () => { const H=window.EJS_emulator.gameManager.Module.HEAPU8, hb=window.__ss2.heapBase;
+            H[hb+0x182F]=100; H[hb+0x1830]=0;                 /* 3초짜리로 깎아 놓고 */
+            await new Promise(r=>setTimeout(r,150));
+            const v=H[hb+0x182F]|(H[hb+0x1830]<<8);
+            return {raw:v, sec:Math.round(v/30)}; }""")
+        check("14.72b 더미 켬 — 라운드 시간을 최대로 붙잡는다", tm["sec"]>=98, tm)
         await page.evaluate("window.__ss2.cfg.dummy=false; window.__ss2.dummyApply();")
+
+        # ── 14.76~ 대쉬(앞앞) 중 커맨드 오발 (v0.5.9a) ──────────────────
+        # 제보: "대쉬 시즈쿠진이 작동을 안 하네, 대쉬 B가 발동됨."
+        # 달리는 중에 커맨드를 쏘면 게임이 「달리기 중 버튼」으로 먼저 읽는다
+        # (실측: 시즈쿠진→0x70 대쉬B, 광양인·삼련살→0x7C). 링 리셋으로는 안 막힌다.
+        # → 달리기를 끊는 중립 프레임을 앞에 붙인다. 되돌리지 말 것.
+        dash=await page.evaluate("""async () => {
+            const S=(u,d,l,r)=>window.__ss2.setDir(u,d,l,r);
+            S(0,0,0,0); await new Promise(r=>setTimeout(r,400));
+            const idle=window.__ss2.dashing();
+            S(0,0,0,1); await new Promise(r=>setTimeout(r,80));      /* 앞 */
+            S(0,0,0,0); await new Promise(r=>setTimeout(r,80));      /* 놓고 */
+            S(0,0,0,1);                                              /* 다시 앞 = 달리기 */
+            const run=window.__ss2.dashing();
+            const mv=window.__ss2.curMoves()[0];
+            const st=window.__ss2.compileMove(mv,0,{});
+            S(0,0,0,0);
+            return {idle:idle, run:run, first:st[0], stop:window.__ss2.lastDashStop}; }""")
+        check("14.76 앞을 두 번 누르면 달리기로 본다", dash["idle"] is False and dash["run"] is True, dash)
+        # v0.5.9b: 달리기 끊기(중립 0.33초)는 **사용자 요청으로 되돌렸다.**
+        # 모든 대쉬 기술에 0.33초 지연이 붙는 대가가 더 거슬린다는 판단.
+        # 이 검사는 "그 지연이 되살아나지 않았는지"를 붙잡아 둔다 — 다시 켜려거든 합의부터.
+        # 짧은 중립(방향 오염 플러시 {d:"5",f:2})은 정상이다 — **긴 중립 홀드**만 걸러낸다.
+        f0=dash["first"]
+        longhold=(f0.get("d")=="5" and f0.get("b") is None and f0.get("f",0)>=16)
+        check("14.77 달리는 중에도 커맨드 앞에 긴 지연을 붙이지 않는다 (v0.5.9b 롤백)",
+              dash["stop"] is False and not longhold, dash)
+
+        # 한 번만 눌렀으면 달리기가 아니다 — 평시에 300ms가 붙으면 안 된다
+        nod=await page.evaluate("""async () => {
+            const S=(u,d,l,r)=>window.__ss2.setDir(u,d,l,r);
+            S(0,0,0,0); await new Promise(r=>setTimeout(r,700));
+            S(0,0,0,1); await new Promise(r=>setTimeout(r,120));
+            const run=window.__ss2.dashing();
+            const mv=window.__ss2.curMoves()[0];
+            const st=window.__ss2.compileMove(mv,0,{});
+            S(0,0,0,0);
+            return {run:run, stop:window.__ss2.lastDashStop, first:st[0]}; }""")
+        check("14.78 한 번 누른 것은 달리기가 아니다", nod["run"] is False, nod)
 
         check("12.1 zero page errors", len(errors)==0, errors)
 
