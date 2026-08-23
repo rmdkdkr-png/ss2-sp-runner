@@ -116,6 +116,8 @@ HTML = r'''<!doctype html><html lang="ko"><head><meta charset="utf-8">
  #icons{display:flex;flex-wrap:wrap;gap:8px}
  #icons figure{margin:0;text-align:center;font-size:12px;color:#9ab}
  .note{font-size:13px;color:#89a;margin:6px 0}
+ mark{background:#c9921b;color:#000;border-radius:2px}
+ .list div.cur{outline:2px solid #e8b64a;outline-offset:-2px}
 </style></head><body>
 <h1>SS2 해설 검수 <span class="mut">— APK와 같은 폰트·줄바꿈·띠 규격으로 그립니다</span></h1>
 <div class="row"><label>롬 파일(선택): <input type="file" id="rom"></label> <span id="romst" class="mut">없으면 초상 자리만 표시</span></div>
@@ -164,6 +166,12 @@ HTML = r'''<!doctype html><html lang="ko"><head><meta charset="utf-8">
   <input type="text" id="q5" placeholder="거르기 (화자·칸·대사)">
   <span id="n5" class="mut"></span>
   <button class="sm" id="txt5">TXT 저장</button>
+ </div>
+ <div class="row">
+  <input type="text" id="find5" placeholder="검색 — 목록은 그대로, 자리로 점프">
+  <button class="sm" id="prev5">◀ 이전</button>
+  <button class="sm" id="next5">다음 ▶</button>
+  <span id="fn5" class="mut"></span>
  </div>
  <div style="position:sticky;top:0;background:#14161c;z-index:2"><canvas id="c5" width="480" height="96"></canvas></div>
  <div class="list" id="l5" style="max-height:62vh"></div>
@@ -407,6 +415,7 @@ function who5(r){ return r.spk===-1?"쿠로코":(r.spk===-2?"공용":D.SPK_KO[r.
 function list5(){
   buildAll();
   const q=$("q5").value.trim(), mode=$("mode5").value, l=$("l5"); l.innerHTML="";
+  ROWS5=[]; HITS5=[]; CUR5=-1;
   const frag=document.createDocumentFragment(); let n=0, lastHead=null;
   const head=t=>{ if(t===lastHead)return; lastHead=t;
     const h=document.createElement("div");
@@ -440,12 +449,43 @@ function list5(){
       blit($("c5"),[renderStrip(fill(r.txt,r.ev),{icon:r.spk>=0&&ICONS?ICONS[r.spk]:(r.spk===-1?KICON:null),
         color:r.ev==="REF"?REF:(gold?GOLD:WHITE)})]); };
     frag.appendChild(d);
+    ROWS5.push({el:d, line:line, html:d.innerHTML, marked:false});
   }
   l.appendChild(frag);
   $("n5").textContent=n+"줄"+(q?" (걸러짐)":"");
+  if($("find5").value.trim()) find5();          /* 목록을 다시 지으면 검색도 다시 건다 */
   const first=l.querySelector("div:not([style])"); if(first) first.click();
 }
 $("q5").oninput=list5; $("mode5").onchange=list5;
+/* ── 검색 — 거르기와 달리 목록을 줄이지 않는다. 자리로 점프하고 노랗게 칠한다 ── */
+let ROWS5=[], HITS5=[], CUR5=-1;
+function esc5(t){ return t.replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function find5(){
+  const q=$("find5").value.trim();
+  for(const r of ROWS5){ if(r.marked){ r.el.innerHTML=r.html; r.el.classList.remove("cur"); r.marked=false; } }
+  HITS5=[]; CUR5=-1;
+  if(!q){ $("fn5").textContent=""; return; }
+  for(const r of ROWS5){
+    if(!r.line.includes(q)) continue;
+    HITS5.push(r); r.marked=true;
+    r.el.innerHTML=r.html.split(esc5(q)).join("<mark>"+esc5(q)+"</mark>");
+  }
+  $("fn5").textContent=HITS5.length?("1 / "+HITS5.length):"없음";
+  if(HITS5.length){ CUR5=0; goto5(); }
+}
+function goto5(){
+  if(CUR5<0||!HITS5.length) return;
+  for(const r of HITS5) r.el.classList.remove("cur");
+  const r=HITS5[CUR5];
+  r.el.classList.add("cur");
+  r.el.scrollIntoView({block:"center"});
+  r.el.click();
+  $("fn5").textContent=(CUR5+1)+" / "+HITS5.length;
+}
+$("find5").oninput=find5;
+$("find5").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); $("next5").click(); } };
+$("next5").onclick=()=>{ if(HITS5.length){ CUR5=(CUR5+1)%HITS5.length; goto5(); } };
+$("prev5").onclick=()=>{ if(HITS5.length){ CUR5=(CUR5-1+HITS5.length)%HITS5.length; goto5(); } };
 $("txt5").onclick=()=>{ buildAll();
   const t=ALL.map(r=>"["+who5(r)+"] "+r.slot+"\t"+r.txt).join("\n");
   const a=document.createElement("a");
