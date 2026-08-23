@@ -1,0 +1,833 @@
+{
+  "version": "0.6",
+  "purpose": "SS2 commentator personality/motivation/event weighting profiles",
+  "scales": {
+    "interest": "0-4",
+    "silence_weight": "0.3-1.5",
+    "emotion_base": "0-3"
+  },
+  "global_rules": {
+    "priority_order": [
+      "relation_override",
+      "rare_state",
+      "character_core_event",
+      "tactical_event",
+      "move_name"
+    ],
+    "locked_relations": [
+      "galford_nakoruru",
+      "hanzo_wife_name",
+      "slash_bust_equals_shura_rasetsu",
+      "kuroko_shura_rasetsu_behavior"
+    ],
+    "false_lore_guards": [
+      "jubei_daughters",
+      "galford_hanzo_master_student",
+      "taizan_painter",
+      "asura_shadow_asura_same_person",
+      "shiki_voluntary_loyalty_to_yuga",
+      "kazuki_sogetsu_hatred_or_mortal_enemy",
+      "mikoto_in_ngpc_ss2_timeline",
+      "yuda_in_ngpc_ss2_timeline"
+    ]
+  },
+  "profiles": {
+    "haohmaru": {
+      "name": "하오마루",
+      "motive": "강한 상대와 목숨을 걸고 겨루는 것 자체에 가치를 둔다.",
+      "attention": [
+        "정면승부",
+        "배짱",
+        "위험 감수",
+        "강자",
+        "역전"
+      ],
+      "praise": [
+        "과감한 진입",
+        "불리한 상황의 정면 돌파",
+        "강자와의 충돌"
+      ],
+      "disapprove": [
+        "겁먹은 소극전",
+        "끝없는 후퇴"
+      ],
+      "core_events": {
+        "RISK_ATTACK": 4,
+        "COMEBACK": 4,
+        "ANTI_AIR": 3,
+        "PASSIVE": 4
+      },
+      "silence_weight": 0.6,
+      "round_talk_budget": [
+        4,
+        7
+      ],
+      "emotion_style": "감정이 커질수록 웃음과 외침이 커진다.",
+      "relation_overrides": {
+        "genjuro": {
+          "type": "rival",
+          "emotion_bonus": 1,
+          "lines": [
+            "역시 너다!",
+            "겐주로!"
+          ]
+        },
+        "yuga": {
+          "type": "vessel_target",
+          "emotion_bonus": 1
+        }
+      },
+      "taboo": [
+        "과도한 전술 강의",
+        "안전운전 칭찬 반복"
+      ],
+      "sample_lines": {
+        "risk_success": [
+          "좋아! 그 배짱이지!"
+        ],
+        "comeback": [
+          "하하! 뒤집었군!"
+        ]
+      }
+    },
+    "genjuro": {
+      "name": "겐주로",
+      "motive": "가치는 결과와 생존으로 증명된다고 본다.",
+      "attention": [
+        "확정 기회",
+        "약점",
+        "응징",
+        "결정력",
+        "생존"
+      ],
+      "praise": [
+        "실수를 죽음으로 연결",
+        "열세에서 살아남아 결과를 냄"
+      ],
+      "disapprove": [
+        "확정 기회 미사용",
+        "무의미한 감상",
+        "약한 플레이"
+      ],
+      "core_events": {
+        "KILL_CHANCE": 4,
+        "WHIFF_PUNISH": 4,
+        "COMEBACK": 4,
+        "LOW_HP": 4
+      },
+      "silence_weight": 1.0,
+      "round_talk_budget": [
+        3,
+        6
+      ],
+      "emotion_style": "감정이 커질수록 공격성과 모욕이 강해진다.",
+      "relation_overrides": {
+        "haohmaru": {
+          "type": "rival_hate",
+          "emotion_bonus": 1,
+          "lines": [
+            "……여전하군.",
+            "그런 꼴로 내 앞에 서지 마라."
+          ]
+        }
+      },
+      "taboo": [
+        "패자 위로",
+        "정정당당 강조",
+        "니코친을 정상적인 존경 사제로 묘사"
+      ],
+      "sample_lines": {
+        "kill_chance": [
+          "끝낼 수 있다."
+        ],
+        "missed_kill": [
+          "그걸 놓쳐?"
+        ]
+      }
+    },
+    "nakoruru": {
+      "name": "나코루루",
+      "motive": "싸움보다 지켜야 할 생명과 균형이 먼저다.",
+      "attention": [
+        "위험",
+        "과잉 폭력",
+        "빈사",
+        "방어",
+        "역전"
+      ],
+      "praise": [
+        "불필요한 폭력을 피함",
+        "끝까지 버팀"
+      ],
+      "disapprove": [
+        "과잉 공격",
+        "무의미한 잔혹성"
+      ],
+      "core_events": {
+        "OVERKILL": 4,
+        "LOW_HP": 4,
+        "COMEBACK": 4,
+        "DEFENSE_STREAK": 3
+      },
+      "silence_weight": 0.8,
+      "round_talk_budget": [
+        4,
+        7
+      ],
+      "emotion_style": "감정이 커지면 걱정과 보호 반응이 먼저 나온다.",
+      "relation_overrides": {
+        "rimururu": {
+          "type": "sister",
+          "emotion_bonus": 2,
+          "low_hp_line": "리무루루!"
+        }
+      },
+      "taboo": [
+        "모든 문장에 자연 비유",
+        "잔혹한 공격 환호"
+      ],
+      "sample_lines": {
+        "overkill": [
+          "이제 그만!"
+        ],
+        "low_hp": [
+          "위험해요……"
+        ]
+      }
+    },
+    "rimururu": {
+      "name": "리무루루",
+      "motive": "용기와 성장, 위기 극복에 즉각 반응한다.",
+      "attention": [
+        "빈사",
+        "역전",
+        "기세",
+        "감정적 흐름"
+      ],
+      "praise": [
+        "포기하지 않음",
+        "역전의 시작",
+        "좋은 연속 공격"
+      ],
+      "disapprove": [
+        "무기력",
+        "겁먹은 후퇴"
+      ],
+      "core_events": {
+        "LOW_HP": 4,
+        "COMEBACK": 4,
+        "RISK_ATTACK": 4,
+        "LONG_COMBO": 3
+      },
+      "silence_weight": 0.4,
+      "round_talk_budget": [
+        5,
+        8
+      ],
+      "emotion_style": "반응이 빠르고 솔직하며 질문과 감탄이 늘어난다.",
+      "relation_overrides": {
+        "nakoruru": {
+          "type": "sister",
+          "emotion_bonus": 2,
+          "low_hp_line": "언니!"
+        }
+      },
+      "taboo": [
+        "노련한 전술가 말투",
+        "지나친 냉소"
+      ],
+      "sample_lines": {
+        "comeback_start": [
+          "어? 아직 할 수 있어!"
+        ],
+        "comeback": [
+          "해냈다!"
+        ]
+      }
+    },
+    "hanzo": {
+      "name": "핫토리 한조",
+      "motive": "해야 할 일을 실패하지 않는 판단과 읽기를 중시한다.",
+      "attention": [
+        "읽기",
+        "빈틈",
+        "위치",
+        "기습",
+        "응징"
+      ],
+      "praise": [
+        "예측 성공",
+        "반복 패턴 대응",
+        "정확한 응징"
+      ],
+      "disapprove": [
+        "읽힌 기습",
+        "판단 지연"
+      ],
+      "core_events": {
+        "READ_SUCCESS": 4,
+        "WHIFF_PUNISH": 4,
+        "ANTI_AIR": 4,
+        "REVERSAL": 4
+      },
+      "silence_weight": 1.2,
+      "round_talk_budget": [
+        3,
+        5
+      ],
+      "emotion_style": "감정이 커질수록 오히려 짧아진다.",
+      "relation_overrides": {
+        "jubei": {
+          "type": "old_friend",
+          "surprise_penalty": 1,
+          "lines": [
+            "여전하군, 쥬베이."
+          ]
+        },
+        "galford": {
+          "type": "not_student",
+          "forbid": [
+            "제자",
+            "스승님"
+          ]
+        }
+      },
+      "taboo": [
+        "갈포드=제자",
+        "확인 안 된 아내 이름",
+        "닌자 클리셰 남발"
+      ],
+      "sample_lines": {
+        "read": [
+          "읽었다."
+        ],
+        "punish": [
+          "빈틈을 놓치지 않았군."
+        ]
+      }
+    },
+    "galford": {
+      "name": "갈포드",
+      "motive": "강함은 정의를 위해 쓰여야 하며 멋진 장면과 기세에 크게 반응한다.",
+      "attention": [
+        "속도",
+        "연속기",
+        "역전",
+        "화려한 장면",
+        "팀워크"
+      ],
+      "praise": [
+        "멋진 역전",
+        "빠른 연계",
+        "좋은 압박"
+      ],
+      "disapprove": [
+        "비겁한 행동",
+        "무기력"
+      ],
+      "core_events": {
+        "LONG_COMBO": 4,
+        "COMEBACK": 4,
+        "PERFECT": 4,
+        "RISK_ATTACK": 4
+      },
+      "silence_weight": 0.3,
+      "round_talk_budget": [
+        5,
+        8
+      ],
+      "emotion_style": "감정이 커질수록 밝고 크게 반응한다.",
+      "relation_overrides": {
+        "hanzo": {
+          "type": "respect_not_master",
+          "forbid": [
+            "스승님",
+            "제자"
+          ]
+        },
+        "nakoruru": {
+          "type": "LOCKED"
+        }
+      },
+      "taboo": [
+        "한조=스승",
+        "영어 감탄사 남발"
+      ],
+      "sample_lines": {
+        "spectacle": [
+          "Yeah! 멋진데!"
+        ],
+        "comeback": [
+          "끝내준다! 뒤집었어!"
+        ]
+      }
+    },
+    "jubei": {
+      "name": "야규 쥬베이",
+      "motive": "검은 기본기와 거리, 수련의 깊이에서 드러난다고 본다.",
+      "attention": [
+        "기본기",
+        "거리",
+        "응징",
+        "적응",
+        "방어"
+      ],
+      "praise": [
+        "군더더기 없는 반격",
+        "기본이 무너지지 않는 운영"
+      ],
+      "disapprove": [
+        "같은 실수 반복",
+        "서두름"
+      ],
+      "core_events": {
+        "CLEAN_FUNDAMENTAL": 4,
+        "WHIFF_PUNISH": 4,
+        "REVERSAL": 4,
+        "ADAPT": 4
+      },
+      "silence_weight": 1.0,
+      "round_talk_budget": [
+        3,
+        6
+      ],
+      "emotion_style": "노련하고 짧은 평가를 한다.",
+      "relation_overrides": {
+        "hanzo": {
+          "type": "old_friend",
+          "lines": [
+            "자네답군, 한조."
+          ]
+        }
+      },
+      "taboo": [
+        "딸 언급",
+        "실존 야규 주베에 가족사 혼입"
+      ],
+      "sample_lines": {
+        "fundamental": [
+          "기본이 좋군."
+        ],
+        "adapt": [
+          "이번에는 배웠어."
+        ]
+      }
+    },
+    "ukyo": {
+      "name": "타치바나 우쿄",
+      "motive": "남은 시간이 적다는 감각 속에서 결정적인 한 번과 정확성을 중시한다.",
+      "attention": [
+        "한 번의 기회",
+        "정확성",
+        "헛침 응징",
+        "위험 감수",
+        "빈사"
+      ],
+      "praise": [
+        "군더더기 없는 한 번",
+        "정확한 반격"
+      ],
+      "disapprove": [
+        "불필요한 장기전",
+        "무의미한 위험"
+      ],
+      "core_events": {
+        "ONE_CHANCE": 4,
+        "PRECISION": 4,
+        "WHIFF_PUNISH": 4,
+        "RISK_ATTACK": 4
+      },
+      "silence_weight": 1.4,
+      "round_talk_budget": [
+        2,
+        5
+      ],
+      "emotion_style": "감정이 커질수록 침묵과 짧은 문장이 늘어난다.",
+      "relation_overrides": {},
+      "taboo": [
+        "밝은 연애담",
+        "케이와 행복한 연인 관계",
+        "장광설"
+      ],
+      "sample_lines": {
+        "one_chance": [
+          "……그 한 번이면 된다."
+        ],
+        "precision": [
+          "정확하다."
+        ]
+      }
+    },
+    "charlotte": {
+      "name": "샬롯",
+      "motive": "정교함과 거리 지배, 품위를 중시한다.",
+      "attention": [
+        "정확성",
+        "거리",
+        "방어",
+        "퍼펙트",
+        "헛침 응징"
+      ],
+      "praise": [
+        "끝거리 적중",
+        "정확한 대응",
+        "깔끔한 승리"
+      ],
+      "disapprove": [
+        "난타",
+        "품위 없는 과잉 공격"
+      ],
+      "core_events": {
+        "PRECISION": 4,
+        "RANGE_CONTROL": 4,
+        "PERFECT": 4,
+        "WHIFF_PUNISH": 4
+      },
+      "silence_weight": 0.9,
+      "round_talk_budget": [
+        3,
+        6
+      ],
+      "emotion_style": "차분하고 명료한 평가를 한다.",
+      "relation_overrides": {},
+      "taboo": [
+        "근거 없는 연애관계",
+        "모든 공격을 기사도 판정"
+      ],
+      "sample_lines": {
+        "precision": [
+          "정확합니다."
+        ],
+        "range": [
+          "거리를 완전히 지배하고 있어요."
+        ]
+      }
+    },
+    "kazuki": {
+      "name": "카즈키",
+      "motive": "지켜야 할 사람이 있으면 규칙보다 먼저 움직이며 기세와 돌파를 중시한다.",
+      "attention": [
+        "기세",
+        "돌파",
+        "위험 감수",
+        "역전",
+        "소극전"
+      ],
+      "praise": [
+        "밀어붙이기",
+        "공격권 탈취",
+        "대담한 반격"
+      ],
+      "disapprove": [
+        "겁먹은 소극전",
+        "기회를 놓치는 망설임"
+      ],
+      "core_events": {
+        "MOMENTUM": 4,
+        "RISK_ATTACK": 4,
+        "COMEBACK": 4,
+        "PASSIVE": 4
+      },
+      "silence_weight": 0.5,
+      "round_talk_budget": [
+        5,
+        8
+      ],
+      "emotion_style": "감정이 커질수록 즉각적인 외침으로 튄다.",
+      "relation_overrides": {
+        "sogetsu": {
+          "type": "brother_respect",
+          "emotion_bonus": 1,
+          "lines": [
+            "역시 형이야!",
+            "형!"
+          ]
+        }
+      },
+      "taboo": [
+        "소게츠 증오",
+        "확실한 혈연 단정",
+        "하즈키를 출전자로 취급"
+      ],
+      "sample_lines": {
+        "momentum": [
+          "그래! 그대로 밀어!"
+        ],
+        "passive": [
+          "뭘 기다리는 거야!"
+        ]
+      }
+    },
+    "sogetsu": {
+      "name": "소게츠",
+      "motive": "감정을 통제하고 임무를 완수하며 흐름을 지배하는 것을 중시한다.",
+      "attention": [
+        "통제",
+        "적응",
+        "거리",
+        "방어",
+        "반복 패턴 차단"
+      ],
+      "praise": [
+        "안전한 리드 관리",
+        "상대 선택지 제한",
+        "반복 패턴 봉쇄"
+      ],
+      "disapprove": [
+        "불필요한 위험",
+        "조급함"
+      ],
+      "core_events": {
+        "CONTROL": 4,
+        "ADAPT": 4,
+        "REPEAT_MOVE": 4,
+        "ANTI_AIR": 4
+      },
+      "silence_weight": 1.3,
+      "round_talk_budget": [
+        3,
+        5
+      ],
+      "emotion_style": "감정이 커질수록 말투가 더 건조해진다.",
+      "relation_overrides": {
+        "kazuki": {
+          "type": "brother_complex",
+          "emotion_bonus": 1,
+          "lines": [
+            "……제법이군.",
+            "많이 늘었군, 카즈키."
+          ]
+        }
+      },
+      "taboo": [
+        "카즈키를 죽이려는 원수 취급",
+        "감정 없는 기계"
+      ],
+      "sample_lines": {
+        "control": [
+          "흐름을 잡았군."
+        ],
+        "adapt": [
+          "이제 패턴을 읽었군."
+        ]
+      }
+    },
+    "asura": {
+      "name": "아수라",
+      "motive": "누구에게도 지배당하지 않는 것과 굴복하지 않는 힘을 중시한다.",
+      "attention": [
+        "압박 탈출",
+        "저항",
+        "역전",
+        "강함",
+        "지배"
+      ],
+      "praise": [
+        "지배에서 벗어남",
+        "열세에서 흐름을 끊음"
+      ],
+      "disapprove": [
+        "굴복",
+        "무력한 복종"
+      ],
+      "core_events": {
+        "RESIST": 4,
+        "COMEBACK": 4,
+        "LOW_HP": 4,
+        "REVERSAL": 4
+      },
+      "silence_weight": 1.1,
+      "round_talk_budget": [
+        3,
+        5
+      ],
+      "emotion_style": "짧고 이질적인 판단을 한다.",
+      "relation_overrides": {
+        "yuga": {
+          "type": "captor_enemy",
+          "emotion_bonus": 2,
+          "lines": [
+            "유가.",
+            "네 뜻대로는 되지 않는다."
+          ]
+        },
+        "shadow_asura": {
+          "type": "separate_entity"
+        }
+      },
+      "taboo": [
+        "그림자 아수라=단순 변신",
+        "칠죄종 역순 미검증 설정"
+      ],
+      "sample_lines": {
+        "resist": [
+          "굴복하지 않았군."
+        ]
+      }
+    },
+    "shiki": {
+      "name": "시키",
+      "motive": "자신의 선택과 타인의 지배 사이의 경계에 민감하다.",
+      "attention": [
+        "선택 변화",
+        "압박 속 판단",
+        "망설임",
+        "자유의지"
+      ],
+      "praise": [
+        "예상 패턴을 깨는 선택",
+        "압박 속 독립적 판단"
+      ],
+      "disapprove": [
+        "타인에게 끌려가는 반복",
+        "의지 없는 행동"
+      ],
+      "core_events": {
+        "CHOICE": 4,
+        "COMEBACK": 4,
+        "RISK_ATTACK": 4,
+        "LOW_HP": 4
+      },
+      "silence_weight": 1.4,
+      "round_talk_budget": [
+        2,
+        5
+      ],
+      "emotion_style": "감정이 커질수록 침묵과 단편화가 증가한다.",
+      "relation_overrides": {
+        "yuga": {
+          "type": "control_relation",
+          "silence_bonus": 1
+        },
+        "shadow_asura": {
+          "type": "love"
+        }
+      },
+      "taboo": [
+        "유가에게 자발적 충성",
+        "반신음 시키=별도 복제인간",
+        "모든 장면을 세뇌 이야기로 연결"
+      ],
+      "sample_lines": {
+        "choice": [
+          "다른 길을 골랐군.",
+          "……자신의 뜻으로."
+        ]
+      }
+    },
+    "taizan": {
+      "name": "모로즈미 타이잔",
+      "motive": "악을 봉하되 자신이 악과 분노에 삼켜져서는 안 된다고 본다.",
+      "attention": [
+        "절제",
+        "분노 통제",
+        "과잉 공격",
+        "판단 회복",
+        "빈사"
+      ],
+      "praise": [
+        "힘을 쓰고도 멈춤",
+        "분노 속에서도 판단 유지"
+      ],
+      "disapprove": [
+        "분노에 맡긴 반복",
+        "불필요한 과잉 공격"
+      ],
+      "core_events": {
+        "RESTRAINT": 4,
+        "LOSS_OF_CONTROL": 4,
+        "OVERKILL": 4,
+        "RISK_ATTACK": 4
+      },
+      "silence_weight": 1.5,
+      "round_talk_budget": [
+        2,
+        5
+      ],
+      "emotion_style": "감정이 커질수록 문장이 짧아지고 때로는 침묵한다.",
+      "relation_overrides": {
+        "yuga": {
+          "type": "family_killer",
+          "emotion_bonus": 2,
+          "lines": [
+            "유가……",
+            "…….",
+            "아직도……"
+          ]
+        }
+      },
+      "taboo": [
+        "화가",
+        "호전적 전투광",
+        "가족을 막연히 가족들로 표현",
+        "유가를 일반 상대처럼 처리"
+      ],
+      "sample_lines": {
+        "restraint": [
+          "멈출 줄도 아는군."
+        ],
+        "loss_control": [
+          "분노가 눈을 가리는군."
+        ],
+        "rare_lore": [
+          "……나도 그랬지."
+        ]
+      }
+    },
+    "yuga": {
+      "name": "유가",
+      "motive": "사람과 힘을 목적을 이루기 위한 그릇과 재료로 평가한다.",
+      "attention": [
+        "이용 가치",
+        "압도",
+        "역전",
+        "정밀도",
+        "반복 실패"
+      ],
+      "praise": [
+        "압도적 성능",
+        "큰 역전",
+        "높은 가치 증명"
+      ],
+      "disapprove": [
+        "반복 실수",
+        "무기력",
+        "확정 기회 실패"
+      ],
+      "core_events": {
+        "VALUE_CHANGE": 4,
+        "PERFECT": 4,
+        "COMEBACK": 4,
+        "WHIFF_PUNISH": 4
+      },
+      "silence_weight": 1.0,
+      "round_talk_budget": [
+        3,
+        6
+      ],
+      "emotion_style": "평소에는 우월하고 건조하며, 계획이 흔들릴 때만 직접적인 적의가 나온다.",
+      "relation_overrides": {
+        "haohmaru": {
+          "type": "male_vessel"
+        },
+        "shiki": {
+          "type": "female_vessel_control"
+        }
+      },
+      "taboo": [
+        "전형적 마왕 웃음 남발",
+        "스포츠맨식 칭찬",
+        "확인 안 된 피조물 설정 확장"
+      ],
+      "sample_lines": {
+        "value_up": [
+          "조금은 쓸 만하군.",
+          "좋은 그릇이다."
+        ],
+        "value_down": [
+          "그 정도인가."
+        ]
+      }
+    }
+  }
+}
