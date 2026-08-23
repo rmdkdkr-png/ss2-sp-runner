@@ -241,6 +241,8 @@ function parseHeader(txt) {
   const CHAR_BY_IDX = litFrom(srcText, 'CHAR_BY_IDX');
   const CHAR_LORE = litFrom(srcText, 'CHAR_LORE');
   const CHAR_ANEC = litFrom(srcText, 'CHAR_ANEC');   /* 썰 — 짧은 일화·행적 */
+  const REL_SELF  = litFrom(srcText, 'REL_SELF');    /* 미러전 */
+  const REL_GAND  = litFrom(srcText, 'REL_GANDHARA'); /* 표 밖 개체 */
   const CHAR_WEAP = litFrom(srcText, 'CHAR_WEAP');   /* 무기 소회 */
   const FACE_ROM = litFrom(srcText, 'FACE_ROM');
   const roster = [];
@@ -464,6 +466,15 @@ function parseHeader(txt) {
   const weapW = Math.max(1, ...roster.map(c => ((CHAR_WEAP && CHAR_WEAP[c]) || []).length));
   L.push(`#define SS2COMM_ANEC_N ${anecW}`);
   L.push(`#define SS2COMM_WEAP_N ${weapW}`);
+  /* 화자별 한 줄짜리 표 — 미러전 / 표 밖 개체 */
+  const one = (name, src) => {
+    L.push(`static const char *${name}[SS2COMM_SPK_N] = {`);
+    for (const sp of order) L.push('  ' + ((src && src[sp]) ? cstr(src[sp]) : '0') + ',   /* ' + sp + ' */');
+    L.push('};');
+    L.push('');
+  };
+  one('RELSELF', REL_SELF);
+  one('RELGAND', REL_GAND);
   tbl('ANEC', CHAR_ANEC, anecW);
   tbl('WEAP', CHAR_WEAP, weapW);
 
