@@ -345,6 +345,12 @@
   /* 초상 표정 — 수확한 실제 초상엔 필터로, 도트 폴백은 프레임 교체로 */
   #commFace.happy{filter:brightness(1.3) saturate(1.25);}
   #commFace.worried{filter:brightness(.7) saturate(.55);animation:commTremble .14s 5;}
+  /* ── 심판(쿠로코) 차선 — 해설자가 아니다. 얼굴도 이름도 없이 제 색으로 가운데 선다.
+     색은 앱판 COL_REF(0x9E7F, RGB555 7/20/31)를 그대로 옮긴 것 = rgb(58,165,255) */
+  #commPanel.ref #commFace,#commPanel.ref #commSpk{display:none;}
+  #commPanel.ref #commLine{color:#3aa5ff;text-align:center;letter-spacing:2px;
+    text-shadow:0 0 8px rgba(58,165,255,.45);}
+  #commPanel.ref{border-color:rgba(58,165,255,.5);}
   /* 캐릭터 시트 — 기술 성격 설명(문헌 접합 지식) */
   .mv{flex-wrap:wrap;}
   .mv .kbn{flex:1 0 100%;font-size:11px;color:var(--muted);margin:2px 0 0 2px;line-height:1.35;}
@@ -2286,7 +2292,7 @@ function fitFont(t){
     el.style.fontSize=Math.floor(Math.max(11,fs))+"px"; /* 정수 px — 픽셀 폰트 또렷하게 */
   }catch(e){}
 }
-function showSub(t,big,dur,mood,prio){
+function showSub(t,big,dur,mood,prio,ref){
   commLast=t; commLastAt=performance.now();
   const el=$("#commLine"); if(!el) return;
   const pn=$("#commPanel");
@@ -2295,7 +2301,8 @@ function showSub(t,big,dur,mood,prio){
   el.classList.remove("pop","shake","tremble","impact"); void el.offsetWidth;  /* 애니메이션 재무장 */
   if(pn) pn.classList.remove("flash");
   prio=prio||1;
-  el.classList.toggle("brush",prio>=2.5);        /* KO·비오의·완승급 = 붓글씨 (장 타이틀 서체) */
+  el.classList.toggle("brush",prio>=2.5||!!ref);  /* KO·비오의·완승급 = 붓글씨 (장 타이틀 서체). 심판은 언제나 */
+  if(ref) prio=2.6;                              /* 심판은 흔들지도 꽝 하지도 않는다 — 담담하게 */
   fitFont(t);                                    /* 폭 맞춤은 전체 문장 기준 — 타이핑 도중 리플로 없음 */
   if(prio>=4){                       /* KO급 — 즉시 꽝 */
     el.textContent=t; el.classList.add("impact","shake");
@@ -2332,7 +2339,7 @@ function annClear(){
   clearInterval(showSub._type); clearTimeout(showSub._t);   /* 타이핑 중이던 문장도 정지 */
   clearTimeout(lineFade._t); lineFade._t=null; museAt=0;
   const el=$("#commLine"); if(el){ el.textContent="…"; el.style.fontSize=""; el.classList.remove("pop","shake","tremble","impact","brush","fadeout"); }
-  const pn=$("#commPanel"); if(pn) pn.classList.remove("big","flash");
+  const pn=$("#commPanel"); if(pn) pn.classList.remove("big","flash","ref");
   pendMove=null; clearTimeout(pendT);
 }
 /* v0.3.1: 대사가 굳어 있지 않게 — 스르륵 사라지고 "…"로 복귀 (사용자 피드백) */
@@ -2342,7 +2349,7 @@ function lineFade(){
   lineFade._t=setTimeout(()=>{ lineFade._t=null;
     el.classList.remove("fadeout","pop","shake","tremble","impact","brush");
     el.textContent="…"; el.style.fontSize="";
-    const pn=$("#commPanel"); if(pn) pn.classList.remove("big");
+    const pn=$("#commPanel"); if(pn) pn.classList.remove("big","ref");
     commLastAt=0; museAt=performance.now();   /* v0.4.5: 쉼 시작 — 여기서부터 혼잣말 타이머 */
   },450);
 }
@@ -2377,11 +2384,37 @@ setInterval(()=>{
   const it=ANN.q.shift();
   const dur=Math.min(3000,Math.max(1200,800+it.text.length*45));
   ANN.busyUntil=t+dur*0.8;
-  showSub(it.text,it.big,dur,it.mood,it.prio);
-  commLastSpk=it.spk;
-  commFace(it.mood,it.spk);
+  const isRef=(it.spk===REF_SPK);
+  { const pn=$("#commPanel"); if(pn) pn.classList.toggle("ref",isRef); }
+  showSub(it.text,it.big,dur,it.mood,it.prio,isRef);
+  if(!isRef){ commLastSpk=it.spk; commFace(it.mood,it.spk); }
 },120);
 let commLineTTL=8000;   /* 대사 자연 소멸 시간 */
+
+/* ── 심판(쿠로코) ─────────────────────────────────────────────
+   해설자 15명에 쿠로코는 없다. 심판은 **다른 차선**이다 — 얼굴도 이름표도 없이
+   제 색으로 가운데 선다. 앱판(ss2comm.c 의 SS2_SPK_REF)과 같은 구조다.
+   대사는 넷뿐: 판마다 「N 판 — 정정당당히, 승부!」, 승부가 갈리면 「본명 — 훌륭하오!」 */
+const REF_SPK="__ref__";
+const REF_ROUND=["첫 판 — 정정당당히, 승부!",
+                 "둘째 판 — 정정당당히, 승부!",
+                 "셋째 판 — 정정당당히, 승부!"];
+/* 이 게임은 음성도 없고 본명을 화면에 띄우지도 않는다. 그래서 여기서만 불리는 이름이 된다. */
+const CHARFULL={
+  kazuki:"카자마 카즈키", sogetsu:"카자마 소게츠", haohmaru:"하오마루",
+  genjuro:"키바가미 겐주로", nakoruru:"나코루루", rimururu:"리무루루",
+  hanzo:"핫토리 한조", galford:"갈포드", asura:"아수라",
+  charlotte:"샤를로트 크리스틴 드 콜데", morozumi:"모로즈미 타무리키",
+  ukyo:"타치바나 우쿄", jubei:"야규 쥬베이", shiki:"시키", yuga:"유가" };
+/* 심판은 해설과 자리를 다투지 않는다 — 낮은 것을 밀어내고 바로 선다 */
+function refSay(t){
+  if(!t||(cfg.commMode||"off")==="off"||editing) return;   /* 해설 꺼져 있으면 심판도 조용하다 */
+  for(let k=ANN.q.length-1;k>=0;k--) if(ANN.q[k].prio<3) ANN.q.splice(k,1);
+  ANN.busyUntil=0;
+  ANN.q.push({text:t,big:true,prio:3.6,mood:"neutral",spk:REF_SPK});
+}
+function refRound(myR,opR){ refSay(REF_ROUND[Math.min(2,(myR||0)+(opR||0))]); }
+function refWinner(id){ const n=CHARFULL[id]; if(n) refSay(n+" — 훌륭하오!"); }
 
 function pick(a){ return a[(Math.random()*a.length)|0]; }
 /* ═══ v1.7 컨셉: 분위기 메이커 ═══════════════════════════════════
@@ -2745,7 +2778,7 @@ const SPEAKERS={
   moveKo:d=>{const nm=NM(d); return [(nm?nm+". ":"")+pick(["…끝이다","…거기까지다","…승부다","…숨이 끊겼다","…더는 없다"]),1,4];},
   hit:d=>d.dmg>=12?[pick(["좋은 일격이다","…그 정도면 신조도 고개를 끄덕였겠지","깊이 들어갔다","…잘 잡았다","좋다. 계속해라"]),1,1.2]:null,
   taken:d=>d.dmg>=12?[pick(["빈틈이 있었다. 그림자는 빈틈에서 죽는다","…빈틈이다","맞았다. 호흡을 고쳐라","…방심했군","깊다. 정신을 차려라"]),0,1.2]:null,
-  down:d=>null,                      /* v0.5.7c: 잔사건은 침묵 — 한조는 말수가 무기다 */
+  down:d=>[pick(["…끝내라","…일어서게 두지 마라","눕혔군. 그거면 됐다","…지금이다"]),0,1.5],
   downed:d=>[pick(["…일어나라","…아직이다","…누울 때가 아니다","…숨을 골라라","일어서라. 그뿐이다"]),0,1.5],
   low1:d=>[pick(["물러설 곳은 없다. 주군께 등을 보일 셈이냐","…한 방이면 끝난다","…목숨이 얇다","…물러설 곳은 없다","…호흡을 죽여라"]),1,2],
   low2:d=>[pick(["끝내라","…한 수면 된다","…숨통을 끊어라","마무리해라","…지금이다"]),1,2],
@@ -4307,6 +4340,7 @@ function commStep(sn){
          제보: "대전 사이 승부 난 뒤 대사가 어색하다" — 여러 줄이 몰리고 스토리 사담이 끼어들었다. */
       const done=(st.myR>=2||st.opR>=2);
       if(!st.resultDone&&done&&(st.won||st.lost)){ st.resultDone=true;
+        refWinner(st.won?cfg.char:st.oppId);                /* 심판: 승자의 본명을 부른다 */
         commEmit(st.won?"winScr":"loseScr",{},"res",8000);
         /* v0.7: 판 전체의 **모양**을 먼저 읽는다. 모양이 안 잡히면 원래 한마디로. */
         const arc=flowArc();
@@ -4337,6 +4371,7 @@ function commStep(sn){
       st.oppId=opp&&opp.id;
       const who=opp?curChar().n+" 대 "+opp.ko+(opp.style==="나찰"?" (나찰)":"")
                    :curChar().n+" · "+(cfg.style==="b"?"나찰":"수라");
+      refRound(0,0);                                      /* 심판: 첫 판 구호 */
       commEmit("start",{who:who},"round",2500);
       setTimeout(grabStage,900);                          /* 판이 서면 스테이지를 떠서 양옆에 깐다 */
       setTimeout(()=>harvestFaces(opp&&opp.id),1200);
@@ -4355,6 +4390,7 @@ function commStep(sn){
       st.roundN=(st.roundN||1)+1; st.fb=false; st.longSaid=false; st.dblLow=false; st.half1=st.half2=false; st.h2t=[];
       st.roundStartAt=performance.now();
       flowReset(false);                                   /* v0.7 라운드 단위 관찰만 리셋 */
+      refRound(st.myR,st.opR);                            /* 심판: 둘째·셋째 판 구호 */
       if(st.myR===1&&st.opR===1) commEmit("matchPoint",{},"roundCtx",2500);
       else if(st.myR===1&&st.opR===0) commEmit("roundLead",{},"roundCtx",2500);
       else if(st.myR===0&&st.opR===1) commEmit("roundBehind",{},"roundCtx",2500);
@@ -4410,7 +4446,12 @@ function commStep(sn){
     st.scr=scr;
     st.p1=p1; st.p2=p2; st.a1=a1; st.a2=a2; st.mode=mode;
     if(p1>32) st.low1=false; if(p2>32) st.low2=false;
-    if(p1>0&&p2>0) st.ko=false;
+    if(p1>0&&p2>0){
+      /* 체력이 가득 돌아왔다 = 다음 판이 선다. 이 게임은 판 사이에 mode 를 안 벗어나기도 해서,
+         전투 재진입만 보면 심판 구호를 놓친다 (앱판 ss2comm.c 와 같은 처리). */
+      if(st.ko&&mode===0xF1&&p1>=100&&p2>=100&&((st.myR||0)+(st.opR||0))>=1) refRound(st.myR,st.opR);
+      st.ko=false;
+    }
     return;
   }
   st.scr=sn.scr;
@@ -5195,7 +5236,7 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
 
 (async function init(){
   if(Q.get("debug")==="1"){
-    window.__ss2={sideArt,sideArtRefresh,grabStage,grabCard,artList:()=>artList,get sideArtCur(){return sideArtCur;},set sideArtCur(v){sideArtCur=v;},readFacing,readGame,cardState,readLangByte,enforceLang,effLang,runMove,runSuper,gm,curMoves,cfg,applyLayout,spPress,spRelease,curSpMap,fireAB,resolveSpSlot,slotKey,
+    window.__ss2={refSay,refRound,refWinner,REF_ROUND,CHARFULL,sideArt,sideArtRefresh,grabStage,grabCard,artList:()=>artList,get sideArtCur(){return sideArtCur;},set sideArtCur(v){sideArtCur=v;},readFacing,readGame,cardState,readLangByte,enforceLang,effLang,runMove,runSuper,gm,curMoves,cfg,applyLayout,spPress,spRelease,curSpMap,fireAB,resolveSpSlot,slotKey,
       ver:APP_VER, prof:PROF,
       capApply, capShow, capStep, capEnd, capPress, capDirArrow, refreshSpButtons,
       get stageArt(){return stageArt;},

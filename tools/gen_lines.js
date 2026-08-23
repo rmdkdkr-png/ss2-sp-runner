@@ -214,7 +214,7 @@ function parseHeader(txt) {
   const { srv, port } = await serve(root);
 
   const { chromium } = require('playwright');
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.SS2_CHROMIUM || undefined });
   const page = await browser.newPage();
   await page.goto(`http://127.0.0.1:${port}/${path.basename(srcAbs)}?debug=1`, { waitUntil: 'domcontentloaded' });
 
