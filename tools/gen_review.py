@@ -29,7 +29,7 @@ F8  = [[int(m[0],16)] + [int(x,16) for x in m[1].split(",")]
 ev_blk = re.search(r"enum \{(.*?)EV_N", lines_h, re.S).group(1)
 EV = [x.strip()[3:] for x in re.sub(r"/\*.*?\*/","",ev_blk,flags=re.S).replace("\n"," ").split(",") if x.strip()]
 SPK_KO = re.findall(STR, re.search(r"SPK_NAME\[SS2COMM_SPK_N\] = \{(.*?)\};", lines_h, re.S).group(1))
-m = re.search(r"LINES\[SS2COMM_SPK_N\]\[EV_N\]\[EVMAXV\] = \{(.*)\n\};", lines_h, re.S)
+m = re.search(r"LINES\[SS2COMM_SPK_N\]\[EV_N\]\[EVMAXV\] = \{(.*?)\n\};", lines_h, re.S)
 SPK_ID = re.findall(r"\n \{ /\* (\w+) \*/", m.group(1))
 LINES = []
 for blk in re.split(r"\n \{ /\* \w+ \*/", m.group(1))[1:]:
@@ -122,7 +122,7 @@ HTML = r'''<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <div class="note">롬은 이 브라우저 안에서만 읽습니다 — 어디로도 전송되지 않습니다. 페이지에는 그림이 아니라 주소 숫자만 들어 있습니다.</div>
 <div class="tabs">
  <button data-t="t1" class="on">대사표</button><button data-t="t2">관계·썰</button>
- <button data-t="t3">한 판 재생</button><button data-t="t4">초상</button>
+ <button data-t="t3">한 판 재생</button><button data-t="t4">초상</button><button data-t="t5">전체 목록</button>
 </div>
 
 <div id="t1">
@@ -149,9 +149,24 @@ HTML = r'''<!doctype html><html lang="ko"><head><meta charset="utf-8">
   <button class="sm" id="play3">▶ 재생</button>
   <button class="sm" data-sp="1">×1</button><button class="sm" data-sp="2">×2</button><button class="sm" data-sp="4">×4</button>
  </div>
- <div class="mut">위 = 해설창 · 아래 = 심판 칸. 유가·간다라전에는 심판이 서지 않습니다.</div>
+ <div class="mut">위 = 해설창 · 아래 = 심판 칸. 유가·간다라전에는 심판이 서지 않습니다. 간격은 실기 규칙 그대로 — 전투 밖 1.6초, 전투 중 4.5초.</div>
  <canvas id="c3" width="480" height="192"></canvas>
  <div id="log3" class="list" style="max-height:30vh"></div>
+</div>
+
+<div id="t5" hidden>
+ <div class="row">
+  <select id="mode5">
+   <option value="all">전체 (화자순)</option>
+   <option value="char">캐릭터별 (그 사람에 대한 말)</option>
+   <option value="ev">상황별</option>
+  </select>
+  <input type="text" id="q5" placeholder="거르기 (화자·칸·대사)">
+  <span id="n5" class="mut"></span>
+  <button class="sm" id="txt5">TXT 저장</button>
+ </div>
+ <div style="position:sticky;top:0;background:#14161c;z-index:2"><canvas id="c5" width="480" height="96"></canvas></div>
+ <div class="list" id="l5" style="max-height:62vh"></div>
 </div>
 
 <div id="t4" hidden>
@@ -273,7 +288,7 @@ document.getElementById("rom").onchange=async e=>{
 const $=id=>document.getElementById(id);
 for(const b of document.querySelectorAll(".tabs button"))
   b.onclick=()=>{ for(const x of document.querySelectorAll(".tabs button"))x.classList.remove("on");
-    b.classList.add("on"); for(const t of ["t1","t2","t3","t4"]) $(t).hidden=(t!==b.dataset.t); };
+    b.classList.add("on"); for(const t of ["t1","t2","t3","t4","t5"]) $(t).hidden=(t!==b.dataset.t); };
 function opts(sel,arr){ sel.innerHTML=arr.map((n,i)=>`<option value="${i}">${n}</option>`).join(""); }
 opts($("s1"),D.SPK_KO); opts($("s2"),D.SPK_KO);
 /* REL·LORE 는 문장이 통째로 들어오는 통과용 칸(표에는 "%s" 뿐)이라 목록에서 뺀다 — 내용은 「관계·썰」 탭에 있다 */
@@ -327,10 +342,13 @@ $("play3").onclick=()=>{
   const seq=[]; const B=(t,txt,ev)=>txt&&seq.push({t,lane:0,txt:fill(txt),gold:ev&&(D.EVHIT[ev]==1)});
   const R=(t,txt)=>!boss&&txt&&seq.push({t,lane:1,txt});
   B(0.0,o>=0?pick(D.ANEC[o]):pick(L.MUSE_M));
-  R(1.0,D.REF_ROUND[0]); B(1.05,rel);
+  /* 박자는 실기 규칙 그대로 — 전투 밖 최소 1.6초(GAP_OTHER), 전투 중 4.5초(GAP_BATTLE).
+     심판은 제 차선이라 그 간격과 무관하게 진입 순간(1.0s)에 선다.
+     예전에 관계 대사를 1.1초에 넣었던 건 엔진보다 좁게 잡은 잘못이었다. */
+  R(1.0,D.REF_ROUND[0]); B(1.6,rel);
   B(4.5,Math.random()<.5&&o>=0?D.WEAPV[s][o]:pick(L.FIRSTBLOOD),"FIRSTBLOOD");
   B(9.0,pick(L.FLOWTRADE),"FLOWTRADE"); B(13.5,pick(L.HIT),"HIT");
-  B(18.0,pick(L.KO),"KO"); B(18.9,pick(L.PERFECT),"PERFECT");
+  B(18.0,pick(L.KO),"KO"); B(19.6,pick(L.PERFECT),"PERFECT");
   R(20.5,D.CHARFULL[m]+" — 훌륭하오!"); B(21.3,pick(L.WINSCR),"WINSCR"); B(23.6,pick(L.ARCSWEEP),"ARCSWEEP");
   $("log3").innerHTML=seq.map(e=>`<div>${e.t.toFixed(1)}s ${e.lane?"〔심판〕":""} ${e.txt}</div>`).join("");
   if(playT)cancelAnimationFrame(playT);
@@ -361,7 +379,78 @@ function drawIconsTab(){
   if(!ICONS){ box.innerHTML='<div class="mut">롬을 넣으면 여기에 초상이 뜹니다.</div>'; return; }
   D.SPK_KO.forEach((n,i)=>mk(ICONS[i],n)); mk(KICON,"쿠로코(심판)");
 }
-function redraw(){ list1(); grid2(); drawIconsTab(); }
+/* ── 전체 목록 — 한 줄도 안 빼고 쫙. 전체 / 캐릭터별 / 상황별로 묶어 볼 수 있다 ── */
+let ALL=null;
+function buildAll(){
+  if(ALL) return; ALL=[];
+  const A=(spk,slot,txt,ev,tgt)=>txt&&ALL.push({spk,slot,txt,ev:ev||"",tgt:(tgt===undefined?-1:tgt)});
+  D.REF_ROUND.forEach((t,i)=>ALL.push({spk:-1,slot:(i+1)+"판째 구호",txt:t,ev:"REF",tgt:-1}));
+  D.CHARFULL.forEach((n,c)=>ALL.push({spk:-1,slot:"승자 호명",txt:n+" — 훌륭하오!",ev:"REF",tgt:c}));
+  D.SPK_ID.forEach((id,sp)=>{
+    A(sp,"소개",D.HELLO[sp],"HELLO");
+    for(const ev of D.EV){ if(ev==="REL"||ev==="LORE")continue;
+      for(const t of (D.LINES[sp][ev]||[])) A(sp,ev,t,ev); }
+    D.CHARNAME.forEach((nm,c)=>{
+      A(sp,nm+" 맞은편",D.RELOPP[sp][c],"맞은편",c);
+      A(sp,nm+" 내 편",D.RELME[sp][c],"내 편",c);
+      A(sp,nm+" 무기",D.WEAPV[sp][c],"무기 소회",c); });
+    /* 미러전은 「같은 캐릭터끼리」라 특정 상대가 없다 — 화자 번호를 캐릭터 번호로
+       잘못 달면 캐릭터별 묶기에서 엉뚱한 사람 밑에 낀다(실제로 그랬다) */
+    A(sp,"미러전",D.RELSELF[sp],"미러전"); A(sp,"간다라",D.RELGAND[sp],"간다라");
+    (D.RELYOU[sp]||[]).forEach((t,i)=>A(sp,"당신에게 "+(i+1),t,"당신에게"));
+  });
+  D.CHARNAME.forEach((nm,c)=>{
+    (D.ANEC[c]||[]).forEach((t,i)=>A(-2,nm+" 썰"+(i+1),t,"썰",c));
+    (D.WEAPF[c]||[]).forEach((t,i)=>A(-2,nm+" 무기(예비)"+(i+1),t,"무기(예비)",c)); });
+}
+function who5(r){ return r.spk===-1?"쿠로코":(r.spk===-2?"공용":D.SPK_KO[r.spk]); }
+function list5(){
+  buildAll();
+  const q=$("q5").value.trim(), mode=$("mode5").value, l=$("l5"); l.innerHTML="";
+  const frag=document.createDocumentFragment(); let n=0, lastHead=null;
+  const head=t=>{ if(t===lastHead)return; lastHead=t;
+    const h=document.createElement("div");
+    h.textContent="── "+t+" ──";
+    h.style.cssText="background:#1d2333;color:#8fb0ff;font-weight:600;position:sticky;top:0";
+    frag.appendChild(h); };
+  let rows;
+  if(mode==="char"){
+    /* 캐릭터별: 그 사람에 대한 말 전부 — 열다섯 해설자의 관계·무기 + 공용 썰 */
+    rows=[];
+    D.CHARNAME.forEach((nm,c)=>{ for(const r of ALL) if(r.tgt===c) rows.push({h:nm,...r}); });
+    for(const r of ALL) if(r.ev==="미러전") rows.push({h:"미러전(같은 캐릭터끼리)",...r});
+    for(const r of ALL) if(r.ev==="간다라") rows.push({h:"간다라(표 밖)",...r});
+  }else if(mode==="ev"){
+    rows=[];
+    for(const ev of D.EV){ if(ev==="REL"||ev==="LORE")continue;
+      for(const r of ALL) if(r.ev===ev) rows.push({h:"상황 · "+ev,...r}); }
+    for(const g of ["HELLO","맞은편","내 편","무기 소회","미러전","간다라","당신에게","썰","무기(예비)","REF"])
+      for(const r of ALL) if(r.ev===g) rows.push({h:g==="REF"?"심판":g,...r});
+  }else{
+    rows=ALL.map(r=>({h:who5(r),...r}));
+  }
+  for(const r of rows){
+    const line="["+who5(r)+"] "+r.slot+" — "+r.txt;
+    if(q && !line.includes(q)) continue;
+    n++; head(r.h);
+    const d=document.createElement("div");
+    d.innerHTML='<span class="k">['+who5(r)+"] "+r.slot+"</span>"+r.txt;
+    d.onclick=()=>{ for(const x of l.children)x.classList.remove("on"); d.classList.add("on");
+      const gold=D.EVHIT[r.ev]==1;
+      blit($("c5"),[renderStrip(fill(r.txt,r.ev),{icon:r.spk>=0&&ICONS?ICONS[r.spk]:(r.spk===-1?KICON:null),
+        color:r.ev==="REF"?REF:(gold?GOLD:WHITE)})]); };
+    frag.appendChild(d);
+  }
+  l.appendChild(frag);
+  $("n5").textContent=n+"줄"+(q?" (걸러짐)":"");
+  const first=l.querySelector("div:not([style])"); if(first) first.click();
+}
+$("q5").oninput=list5; $("mode5").onchange=list5;
+$("txt5").onclick=()=>{ buildAll();
+  const t=ALL.map(r=>"["+who5(r)+"] "+r.slot+"\t"+r.txt).join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"})); a.download="ss2_대사_전체.txt"; a.click(); };
+function redraw(){ list1(); grid2(); drawIconsTab(); list5(); }
 redraw();
 </script></body></html>'''
 
