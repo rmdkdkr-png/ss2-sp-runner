@@ -242,6 +242,9 @@ function parseHeader(txt) {
   const CHAR_LORE = litFrom(srcText, 'CHAR_LORE');
   const CHAR_ANEC = litFrom(srcText, 'CHAR_ANEC');   /* 썰 — 짧은 일화·행적 */
   const REL_SELF  = litFrom(srcText, 'REL_SELF');    /* 미러전 */
+  const REL_OPPX  = litFrom(srcText, 'REL_OPP');     /* 화자 → 맞은편 (빈칸 메움) */
+  const REL_MEX   = litFrom(srcText, 'REL_ME');      /* 화자 → 내 편 */
+  const REL_YOUX  = litFrom(srcText, 'REL_YOU');     /* 화자 → 사람 */
   const REL_GAND  = litFrom(srcText, 'REL_GANDHARA'); /* 표 밖 개체 */
   const CHAR_WEAP = litFrom(srcText, 'CHAR_WEAP');   /* 무기 소회 */
   const FACE_ROM = litFrom(srcText, 'FACE_ROM');
@@ -473,6 +476,37 @@ function parseHeader(txt) {
     L.push('};');
     L.push('');
   };
+  /* 관계 표 셋 — 화자 × 캐릭터. RELLINE(기존 SPEAKERS[*].REL)에 REL_OPP 를 덮어
+     빈칸을 메우고, REL_ME 는 따로 낸다. */
+  const rel2 = (name, primary, fallback) => {
+    L.push(`static const char *${name}[SS2COMM_SPK_N][${roster.length}] = {`);
+    for (const sp of order) {
+      const row = roster.map(cid => {
+        const v = (primary && primary[sp] && primary[sp][cid])
+               || (fallback && fallback[sp] && fallback[sp][cid]);
+        return v ? cstr(v) : '0';
+      });
+      L.push('  {' + row.join(',') + '},   /* ' + sp + ' */');
+    }
+    L.push('};');
+    L.push('');
+  };
+  const relSrc = {};
+  order.forEach((sp, i) => { relSrc[sp] = relObjs[i] || {}; });   /* 페이지에서 이미 떠 온 것 */
+  rel2('RELOPP', REL_OPPX, relSrc);
+  rel2('RELME',  REL_MEX,  null);
+  {
+    const w = Math.max(1, ...order.map(sp => ((REL_YOUX && REL_YOUX[sp]) || []).length));
+    L.push(`#define SS2COMM_RELYOU_N ${w}`);
+    L.push(`static const char *RELYOU[SS2COMM_SPK_N][${w}] = {`);
+    for (const sp of order) {
+      const v = (REL_YOUX && REL_YOUX[sp]) || [];
+      const cells = []; for (let i = 0; i < w; i++) cells.push(v[i] ? cstr(v[i]) : '0');
+      L.push('  {' + cells.join(',') + '},   /* ' + sp + ' */');
+    }
+    L.push('};');
+    L.push('');
+  }
   one('RELSELF', REL_SELF);
   one('RELGAND', REL_GAND);
   tbl('ANEC', CHAR_ANEC, anecW);
