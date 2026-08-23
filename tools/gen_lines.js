@@ -35,7 +35,7 @@ const EV = [
   'MUSE_M','IDLE','VSQ','STORYCHAT','CHARSELCHAT','MENUIDLE',
   'FIRSTBLOOD','ROUNDLEAD','ROUNDBEHIND','MATCHPOINT','DOUBLELOW','LONGFIGHT',
   'HIT','TAKEN','DOWN','DOWNED','OPPSP','MOVE',
-  'MOVEHIT','MOVEDOWN','MOVEKO','REVENGE','STREAK','RECORD',
+  'MOVEHIT','MOVEHITL','MOVEDOWN','MOVEDOWNA','MOVEKO','REVENGE','STREAK','RECORD',
   'WINSCR','LOSESCR','REL','LORE','FLOWSAME','FLOWTRADE',
   'FLOWONE','FLOWCHASE','FLOWSP','ARCSWEEP','ARCSWEPT','ARCCOMEBACK',
   'ARCSWEAT','ARCCHOKE','ARCSLIP',
@@ -56,7 +56,10 @@ const MAP = {
   MENUIDLE:'menuIdle', FIRSTBLOOD:'firstBlood', ROUNDLEAD:'roundLead',
   ROUNDBEHIND:'roundBehind', MATCHPOINT:'matchPoint', DOUBLELOW:'doubleLow',
   LONGFIGHT:'longFight', HIT:'hit', TAKEN:'taken', DOWN:'down', DOWNED:'downed',
-  OPPSP:'oppSp', MOVE:'move', MOVEHIT:'moveHit', MOVEDOWN:'moveDown', MOVEKO:'moveKo',
+  OPPSP:'oppSp', MOVE:'move',
+  MOVEHIT:'moveHit', MOVEHITL:'moveHit',      // 강타 / 약타 — dmg 로 갈린다
+  MOVEDOWN:'moveDown', MOVEDOWNA:'moveDown',  // 이름 있음 / 없음
+  MOVEKO:'moveKo',
   REVENGE:'revenge', STREAK:'streak', RECORD:'record', WINSCR:'winScr', LOSESCR:'loseScr',
   REL:'rel', LORE:'lore', FLOWSAME:'flowSameMove', FLOWTRADE:'flowTrade',
   FLOWONE:'flowOneSide', FLOWCHASE:'flowChased', FLOWSP:'flowSpHeavy',
@@ -80,8 +83,12 @@ const BASE = {
   sup: false, rec: false,
 };
 const OVER = {
-  MOVE:    { sup: true },     // sup 아니면 null 을 돌려주는 화자가 있다
-  MOVEHIT: { dmg: NUM.dmg },  // dmg>=12 갈래
+  MOVE:      { sup: true },              // sup 아니면 null 을 돌려주는 화자가 있다
+  MOVEHIT:   { dmg: NUM.dmg },           // 강타 갈래 (d>=12)
+  MOVEHITL:  { dmg: 3 },                 // 약타 갈래
+  MOVEDOWN:  { name: S_NAME },           // 기술 이름이 있는 갈래
+  MOVEDOWNA: { name: '' },               // 이름 없는 갈래 — %s 가 들어가면 안 된다
+  MOVEKO:    { name: S_NAME },
   MUSE_B:  { ctx: 'battle' },
   MUSE_Q:  { ctx: 'quote' },
   MUSE_M:  { ctx: 'menu' },
@@ -114,9 +121,6 @@ const SLOTS = {
   RECORD:   [{ g: NUM.g, w: NUM.w }, { g: NUM.g, w: 400001 }],   // 0 이김(w*2>=g) · 1 짐
   STAGE:    [{ n: NUM.n }, { n: 6 }],
   STREAK:   [{ n: NUM.n }],
-  MOVEHIT:  [{ dmg: NUM.dmg }, null, { dmg: 3 }],      // 0 강타 · 2 약타 (1 은 C 가 안 읽지만 비우면 안 된다)
-  MOVEDOWN: [{ name: S_NAME }, { name: '' }],          // 0 이름 있음 · 1 이름 없음
-  MOVEKO:   [{ name: S_NAME }],
 };
 
 /* EVMAXV — 한 칸에 들어가는 변주의 최대 개수.
