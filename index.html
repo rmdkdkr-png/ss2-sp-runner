@@ -17,7 +17,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23140f0d'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23947a33'/%3E%3Ctext x='32' y='39' font-family='system-ui,sans-serif' font-size='17' font-weight='900' text-anchor='middle' fill='%23fff8e6'%3ESP%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
-<title>HTML NGP SS2 runner — SP button · Character chat · v0.6</title>
+<title>HTML NGP SS2 runner — SP button · Character chat · v0.7</title>
 <style>
   :root{
     color-scheme: dark;
@@ -278,6 +278,9 @@
   .setRow input[type=range]{flex:1;accent-color:var(--gold);touch-action:pan-y;}
   .setRow .seg{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;}
   .setRow .seg::-webkit-scrollbar{display:none;}
+  /* v0.7: 해설자가 15명이 되면서 한 줄 가로 스크롤로는 안 보인다 — 줄바꿈 격자로 */
+  .setRow .seg.spkGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;overflow:visible;}
+  .setRow .seg.spkGrid button{flex:none;padding:7px 4px;font-size:11.5px;}
   .setRow .seg button{flex:1 1 auto;min-width:0;white-space:nowrap;border:1px solid rgba(255,255,255,.12);background:#1b1512;border-radius:9px;padding:8px 6px;font-size:12.5px;font-weight:800;cursor:pointer;}
   .setRow .seg button.sel{border-color:var(--gold);color:var(--gold);background:rgba(217,185,104,.1);}
   .setRow output{width:44px;text-align:right;color:var(--muted);font-size:12px;}
@@ -313,7 +316,9 @@
     margin:0 auto;width:100%;
     font-family:'Galmuri7','DungGeunMo',ui-monospace,monospace;font-size:15px;color:#efe3d0;z-index:29;}
   #commFace{width:32px;height:32px;image-rendering:pixelated;flex:0 0 auto;
-    border:1px solid rgba(217,185,104,.5);border-radius:4px;background:#241c14;}
+    border:1px solid rgba(217,185,104,.5);border-radius:4px;background:#241c14;
+    cursor:pointer;}                       /* v0.7: 눌러서 해설자 교대 */
+  #commFace:active{border-color:var(--gold);filter:brightness(1.3);}
   #commPanel b{color:var(--gold);font-weight:400;flex:0 0 auto;font-size:13px;}
   /* v0.3.3: 대사 두 줄 — 줄바꿈 허용 + 2줄 클램프 (긴 대사는 두 줄로 크게) */
   #commPanel span{flex:1 1 auto;overflow:hidden;white-space:normal;line-height:1.15;
@@ -420,7 +425,7 @@
 <!-- ═══════════ 랜딩 ═══════════ -->
 <div class="page" id="landing">
   <div class="panel"><div class="hero">
-    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v0.6</p>
+    <p class="eyebrow">NEOGEO POCKET COLOR · WEB PLAYER · v0.7</p>
     <h1>사무라이 스피리츠! 2 <span>한글판 · SP 버튼 실행기</span></h1>
     <div class="startPlate">
       <button class="spStart" id="spStartBtn">SP</button>
@@ -549,7 +554,10 @@
       <div class="seg" id="commSeg"><button data-cm="off">끔</button><button data-cm="on">켬</button></div>
     </div>
     <div class="setRow"><b>해설자<br><small style="color:var(--muted)">캐릭터가 중계합니다</small></b>
-      <div class="seg" id="commSpkSeg"><button data-spk="haohmaru">하오마루</button><button data-spk="nakoruru">나코루루</button><button data-spk="hanzo">한조</button><button data-spk="galford">갈포드</button></div>
+      <div class="seg spkGrid" id="commSpkSeg"></div>
+    </div>
+    <div class="setRow"><b>짝꿍<br><small style="color:var(--muted)">큰 장면에서 한 명이 받아칩니다</small></b>
+      <div class="seg" id="commDuoSeg"><button data-duo="1">켬</button><button data-duo="0">끔</button></div>
     </div>
     <div class="setRow"><b>게임 언어<br><small style="color:var(--muted)">본체 설정</small></b>
       <div class="seg" id="langSeg"><button data-l="auto">자동</button><button data-l="japanese">일본어</button><button data-l="english">영어</button></div>
@@ -882,6 +890,7 @@ if(cfg.commMode&&cfg.commMode!=="off") cfg.commMode="on";
 cfg.commMode=cfg.commMode||"on";   /* off | on — v0.3.1: 기본 켬 (사용자 지시). 끈 사람 선택은 저장값으로 유지 */
 delete cfg.commVoice; delete cfg.commVol; delete cfg.commVoiceName; delete cfg.commTone;
 cfg.commSpk=cfg.commSpk||"haohmaru";   /* 해설자: haohmaru | nakoruru | hanzo | galford */
+cfg.commDuo=(cfg.commDuo===undefined)?1:(cfg.commDuo?1:0);   /* v0.7 짝꿍 — 큰 장면에서 받아치기 */
 /* v0.5.7c: [기술명] 설정 폐지 — **항상 켬**. 해설이 기술 이름을 부르는 게 이 도구의 재미고,
    끄면 「적중이다!」처럼 밋밋해질 뿐이라 고를 이유가 없었다. */
 cfg.commNames=1;
@@ -2252,7 +2261,7 @@ function oppTrait(key){
 }
 
 /* ── 단일 대기열 (자막 = 음성) ───────────────────────────────── */
-let commLast="", commLastAt=0;
+let commLast="", commLastAt=0, commLastSpk="";
 const commCD={};
 function commOK(k,ms){ const t=performance.now(); if(commCD[k]&&t-commCD[k]<ms) return false; commCD[k]=t; return true; }
 /* v1.8: TTS 제거 — 대신 글자가 연기한다: 타이핑 등장 · 펀치 팝 · 흔들림 · 파르르 · 임팩트 · 진동 */
@@ -2309,13 +2318,14 @@ function showSub(t,big,dur,mood,prio){
     showSub._t=setTimeout(()=>{ pn.classList.remove("big"); el.classList.remove("impact"); },1600); }
 }
 const ANN={q:[],busyUntil:0};
-function annPush(text,big,prio,mood){
+function annPush(text,big,prio,mood,spk){
   if(prio>=3){ ANN.q.length=0; ANN.busyUntil=0; }        /* KO급 — 즉시 */
   else if(ANN.q.length>=4){                               /* 대기 상한 4(v0.3.2 조밀화) — 가득 차면 가장 낮은 것을 버린다 */
     let mi=0; for(let k=1;k<ANN.q.length;k++) if(ANN.q[k].prio<ANN.q[mi].prio) mi=k;
-    if(ANN.q[mi].prio<=prio) ANN.q.splice(mi,1); else return;
+    if(ANN.q[mi].prio<=prio) ANN.q.splice(mi,1); else return false;
   }
-  ANN.q.push({text:text,big:big,prio:prio,mood:mood||"neutral"});
+  ANN.q.push({text:text,big:big,prio:prio,mood:mood||"neutral",spk:spk||cfg.commSpk||"haohmaru"});
+  return true;
 }
 function annClear(){
   ANN.q.length=0; ANN.busyUntil=0;
@@ -2368,7 +2378,8 @@ setInterval(()=>{
   const dur=Math.min(3000,Math.max(1200,800+it.text.length*45));
   ANN.busyUntil=t+dur*0.8;
   showSub(it.text,it.big,dur,it.mood,it.prio);
-  commFace(it.mood);
+  commLastSpk=it.spk;
+  commFace(it.mood,it.spk);
 },120);
 let commLineTTL=8000;   /* 대사 자연 소멸 시간 */
 
@@ -2415,7 +2426,12 @@ function RO(n){
   const j=(c-0xAC00)%28;
   return (j===0||j===8)?"로":"으로";
 }
-const SPK_KO={haohmaru:"하오마루",nakoruru:"나코루루",hanzo:"한조",galford:"갈포드"};
+/* v0.7: 해설자를 롬에서 초상을 뽑을 수 있는 15명 전원으로 늘렸다.
+   순서는 설정 화면에 나오는 순서다 — 원래 넷을 앞에 두고 그 뒤로 붙인다. */
+const SPK_KO={haohmaru:"하오마루",nakoruru:"나코루루",hanzo:"한조",galford:"갈포드",
+  rimururu:"리무루루",genjuro:"겐주로",ukyo:"우쿄",charlotte:"샬롯",jubei:"쥬베이",
+  kazuki:"카즈키",sogetsu:"소게츠",asura:"아수라",shiki:"시키",morozumi:"모로즈미",yuga:"유가"};
+const SPK_ORDER=Object.keys(SPK_KO);
 /* 자체 제작 도트 초상 3표정 — 롬 자산이 아니라 직접 그린 것(금지선 준수) */
 const FACES={"haohmaru": {"neutral": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA+klEQVR42u3ZPQ4BQRgGYCs6jSidQOkADqB2ApVaVApRiEIU4ghOoFI4gAMot1CKUjRqalvYsH+Sfd5us5PJ5Mk3szOzQSXnjHrt56f3m0MY5DmeaqXkAVB2gKDoOR+XrNcEUwAAAAAAANgH5Pddzzrf7htMAQAAAAAAAAAAAAAlTS3tDmfTSaYDni+WKgAAAAAAAAD4031ANJ3++O35tFun2l4FAACQKIn/vd+O20L/EzS7g0AFAAAAAAAAAAAAAADwf/cBcef9aLI+/6sAAADSXQMu5/Cr9vvVMNX+VAAAAImS+E7wcb8WeidYb7TcCQIAAAAAAAC/5QXj5SdYJxRJ4wAAAABJRU5ErkJggg==", "happy": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABE0lEQVR42u3ZoQoCMRzH8ZvYLGIwGMxGMYpZzPcEBrOI6YIYxHBJ5J7AJzD7AGI2XjCKUSxmzS5s6G7b4b6/Jhvj+PD//z12InKc2ajzUq1vD7lw+TyVKPAAEDqA8N3zutieCbQAAAAAAAAAvAe4+1+3nW/fG2gBAAAAAAAAAAAAAAACTbXoA5eLxOoDr9YpFQAAACWeAXK68fzj93m/KXQ/FQAAAOWaAaY9LO+Xz4t7TSoAAACKi/G39/tx5/U7QWMwFlQAAAAAAAAAAJTzPkDOKcmU6/10SgUAAMAfzQBdz+v2254JtAAAzACzXC+5cr09GVo9nwoAAACjGN8JPh83r3eCtXqLO0EAAAAAAAAA+C1vLzwx6ks5o7QAAAAASUVORK5CYII=", "worried": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABCklEQVR42u3ZLQ7CMBTA8ZXMYQgCwQmQBM0B0DsBCk1QEwSxIAiCcAROgELsABwAOYEkSDIzDZqJLaWfpP/nljVN88t7b10rIsuxnI3eTe+PeSFsrqcTBR4AhA4gXNd8W5juCZQAAAAAAAAA7APsfddNh+y+gRIAAAAAAAAAAAAAACDQiHVPuFmnRhecbXdkAAAAeNwDxsnq6/l2PmidL5kMyAAAAPC4B9RrXrYntI1nH0AJAKA1lO/eX9eT03uC/nQuyAAAAAAAAAAA8ONfwPX5ARkAAAB+94B6zZMBAADw3z3gcS+kxl/2C63zkQEAAKAUymeCVfl0eibY7Q05EwQAAAAAAACA3+IDu9kweHuCgv4AAAAASUVORK5CYII="}, "nakoruru": {"neutral": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA6UlEQVR42u3aIQ7CMBQG4I1wCgwW3CRBcQZOgEKhOAYCxQE4AYoDoAhyjgkMCeEMONCopXSwkX2/W9I26ZfXpi9ZkoiIiEhbk4ZOGGSzZ5M3VOTboD112l4BAAAAAACgzemGTtg+To3e0EgFAABQaS/Q9Ld/bG/gCADwDojLcTOpdQPjxUEFAAAAAAAAADW9A8qSTZdv3/luXel4FQAAQLPvgNAz/O0zrwIAAAAAAAAAAAAAAPhNL1DW7+sFHAEA/30H3C5F0Pj9al7peioAAICopLEL3K/nWv8h6vWHqQoAAAAAAAAAPsoLChQl/vKfEH4AAAAASUVORK5CYII=", "happy": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABBElEQVR42u2aLQ7CMBSAV8IpEGCHmyRTKA7ACRCTBIHiCCgE4QA7AWdALcg5JjAkhDPgQDOxprw2LfT7XNOf5H1576VdliQAAAAQK8p0Q5otXiEH1NSlUUy92DMAAQhAAAIQEDN90w3l8xx0QBMyAAEIsPoWCP3uL30bUAII4B4gozpMvQaQL09kAAIQ4LEH6Mjm649xfdxZXU8GIAABYfUAaQ2317vuCZQAAugBdrFdo9wDKAEEIAABCEDA734PaFNt9p3z+XZFBiAAAX/UA3Q1r1vvuidQAgigB8i4X5vO+WExc3o+GYAABIhQ0gMet4vXf4gGo7EiAxCAAAQgAAEI+Io3xQEyAlV0QOYAAAAASUVORK5CYII=", "worried": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA90lEQVR42u3aoQ3CQBQGYEqYAoMFV0lQzMAEKBSKMRAoBugEKAZAEWQdCAwJYQYcaGrI0TY90u93TdpL7st7L3dJOx0RERFpa5LQD4bp/BXzhi55FrSnbtsrAAAAAAAAtDm90A+y5ynqDY1VAAAAld4FYj/7l70baAEAzgHlctxOG93AZHlQAQAANDgDiklnq4/nfLeJaj0VAABAvTOg2KOhPVx3z6sAAADqnQHfZkLV76sAAAAAAAAAIN5zQNP3fRUAAEBcM6DY8yoAAID/ngH36yXo/f16Uel6KgAAgFJJyi7wuJ0b/YeoPxglKgAAAAAAAAD4KW8/8i8CsoMe/QAAAABJRU5ErkJggg=="}, "hanzo": {"neutral": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAxUlEQVR42u3aMQqCUBzAYV90nAZpjqboANIRGpo7SHNDR4gOEE3RLA0dJVxrtu2h4ov3/TZBRT/+T0QsCkmSlGsh9oD5bPFJ+Ybq1yPqnia5TwAAAAAAAAAAAAAAAAAAAMixad8nvB23g17wancyAQAAAAAAAECi7wG/ldW+tf28HHrd3wQAAJD2MyB2DQ+95k0AAACtQtcTrJebUf8XuN7PwQQAAAAAAAAAAAAAAAAAAAAAUXX+Jtg0bxMAAAAAAAAA/GdfdDAYb0oMSJcAAAAASUVORK5CYII=", "happy": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA4ElEQVR42u3asQnCQBgG0EQcQRxCLMRarMQBxBEsrB3E2sIRxAHESqzFQjKEWEparb1CCDlJJO/rAsmRe/x3ueSSJCIiItLUpEUvGPZHrzp36HI7F+pTq+kVAAAAAAAAAAAAAAAAAAAAmph27AaPm8VPb3iy3KoAAABqPAeEGcxWH8fX/Trq+SoAAIBSib4v8LhnUcdwOCd0ur2v59sXMAQAVLsOiP3cDtvzLmAIAKh2HRBmOp5X+r/A4bRLVQAAAAAAAAAAAAAAAAAAAABQKKW/Ceb5UwUAAAAAAAAA/5k3JrgjttXjbNUAAAAASUVORK5CYII=", "worried": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA1klEQVR42u3asQnCQBQG4Jw4gjiEWIi1WIkDSEawsHYQawtHEAcQK7EWC0eRtFprE45EPLnv7wKXR+7j3SOEFIWIiIjkmhB7w3g4eaa8oev9ErWnTu4dAAAAAAAAAAAAAAAAAAAAcky37YKn7fKrDzxb7XQAAAAJz4DRYv12fTtsWq3X6w90AAAACc+AzzMfOxPq1nsPcAQApD0D6mZC2+t1AAAAjRKaFphPy5/+L3A874MOAAAAAAAAAAAAAAAAAAAAAKLS+JtgVT10AAAAAAAAAPCfeQH4UCAN1CSjmgAAAABJRU5ErkJggg=="}, "galford": {"neutral": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA6ElEQVR42u3XIQ6CUBzAYXBkgyfwCB7AQPIAZgPJmZ2HcAYPYOIEJg9A4ABGg8FgNpjdNEvQwVDY+H7NDdT37c8bLwgkSZIkdbGw7A2XLHm2eUHDOC21pl7XJwBA1wGisjfMdouWLyk1AQAAAAAAAEBDZ4F+FP/0D98fmbOARwAAAAAAADT0HlDslqcf3wtG0+Xb5+N+G9R5/WCchCYAAID27gG/zh7gEQAAAAAAAAAAAABQqejfP1g87xf7dv43AQAAtGsPuJ5Ppa4/bOa1fp8JAACg2T1glU8aXsLaBAAAAAAAAADVegH1nCdFW5t0IQAAAABJRU5ErkJggg==", "happy": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA/UlEQVR42u2YLRKCQBSAwSEbPIDjEciOgcQBzAYCwURwDB6BZDCa9gSegcCYiQYDwWwgM4NZAjurLrvjfl9j9md437z3hofnAQAAAACAi/iqB+oi6WwOaBEJpZgmrmcAAlwXEKge2Jy3lockyAAEIAABCEAAAgzNAtMg0vrCTVswC1ACCDA4C6gSrndvz9Xl+NP9ZAACEDDud0CfZyk6nTUsu2+2SnwyAAEIsKcHjA09gBJAAAIQgAAE2Ps/oM/1cBpcX+YZGYAABPxRD5DVvGy/7p5ACSCAHvAdj/ttcH2exlrvJwMQgACzPWBfxoZDyMkABCAAAQhAAAI+4wUV7jE97f06FQAAAABJRU5ErkJggg==", "worried": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA8klEQVR42u3YMQ4BQRiGYWRrhRM4ggMoVEqFWqEStTiEKBxAtbVC5QAiDqBUKBRqhVpCTSMjKzOyz9tNMjPZ/803f3amUgEAAABQRqqhC87b4SPlgpqdPKimWtkTQEDZBWShCwbLceIl5RJAAAEEEEAAAZHuAvWs89MPvt237gKOAAER7wKfaPUnL+PDelHofrtVTwIIICDif8A7133+KLInhM5vtIdVCSCAgHR7wK/RAxwBAggggAAC0nkPiP1+IAEEEJB2D3g/8xJAAAH/3QMup2PQ/M18VOh+EkAAAXF7wHTfjVzCTAIIIIAAAggg4Duessot6/zYQEgAAAAASUVORK5CYII="}};
 const EV_MOOD={moveHit:"happy",moveDown:"happy",moveKo:"happy",hit:"happy",ko:"happy",dko:"happy",
@@ -2505,9 +2521,10 @@ async function harvestFaces(oppId){
     commFace("neutral");
   }catch(e){}
 }
-function commFace(mood){
+function commFace(mood,who){
   const el=$("#commFace"); if(!el) return;
-  const spk=cfg.commSpk||"haohmaru";
+  const spk=who||cfg.commSpk||"haohmaru";
+  const sk=$("#commSpk"); if(sk) sk.textContent=SPK_KO[spk]||"";   /* v0.7 짝꿍 — 줄마다 이름도 바뀐다 */
   el.classList.remove("happy","worried"); void el.offsetWidth;
   const real=romFaces[spk]||faceStore[spk];    /* 롬에서 그린 초상 > 수확 초상 > 도트 */
   if(real){
@@ -2524,25 +2541,25 @@ function commFace(mood){
 const SPEAKERS={
  haohmaru:{ /* 호쾌한 술꾼 검객 — 반말, 웃음 */
   hello:"하오마루다. 좋은 승부를 보여다오!",
-  move:d=>d.sup?["비오의냐! 좋다, 와라!!",1,3]:null,
-  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+"제대로 들어갔다!!",1,2]:[(nm?nm+" ":"")+"적중이다!",0,1.8];},
-  moveDown:d=>{const nm=NM(d); return [nm?nm+RO(nm)+" 눕혔군!":"잘 눕혔다!",1,2];},
-  moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+"이걸로 끝이다!!",1,4];},
-  hit:d=>d.dmg>=12?[pick(["핫하! 묵직한 일격!","좋은 베기다!"]),1,1.2]:null,
-  taken:d=>d.dmg>=12?["끄윽, 그건 아팠겠군",0,1.2]:null,
-  down:d=>["눕혔다! 몰아붙여라!",0,1.5],
-  downed:d=>["일어나라, 아직이다!",0,1.5],
-  low1:d=>["위험하다… 술이 확 깨는군!",1,2],
-  low2:d=>["끝장을 내라!!",1,2],
-  reversal:d=>["오오, 판이 뒤집혔다!!",1,2],
-  ko:d=>[pick(["핫핫하!! 승부 났다!!","훌륭한 마무리다!!"]),1,4],
-  koed:d=>["…좋은 승부였다. 한잔 하러 가지",1,4],
-  dko:d=>["둘 다 뻗었나! 하하!!",1,4],
-  round:d=>["간다!!",0,1],
-  start:d=>[d.who+"… 좋은 승부다!",1,2],
+  move:d=>d.sup?[pick(["비오의냐! 좋다, 와라!!","비오의다! 정면으로 받아라!!","오오, 비오의를 꺼냈군!!","큰 것이 온다! 각오해라!!"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["제대로 들어갔다!!","깊게 파고들었다!!","묵직하게 박혔군!!"]),1,2]:[(nm?nm+" ":"")+pick(["적중이다!","들어갔다!","깨끗하게 맞았군!"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔군!",nm+RO(nm)+" 쓰러뜨렸다!"]):pick(["잘 눕혔다!","깨끗하게 눕혔군!"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+pick(["이걸로 끝이다!!","승부는 났다!!","여기서 끝냈군!!"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["핫하! 묵직한 일격!","좋은 베기다!","제대로 실렸군!","크게 한 방 들어갔다!"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["끄윽, 그건 아팠겠군","저건 뼈에 울린다","크윽, 제대로 맞았군","술이 확 깨는 일격이군","저걸 맞고 서 있다니"]),0,1.2]:null,
+  down:d=>[pick(["눕혔다! 몰아붙여라!","쓰러뜨렸군! 지금이다!","넘어갔다! 틈을 주지 마라","잘 눕혔다! 계속 밀어라","일어나기 전에 붙어라!"]),0,1.5],
+  downed:d=>[pick(["일어나라, 아직이다!","넘어졌군… 털고 일어나라","아직 검은 부러지지 않았다","엎어진 김에 숨 고르고 일어나라","일어서라! 승부는 여기부터다"]),0,1.5],
+  low1:d=>[pick(["위험하다… 술이 확 깨는군!","한 방이면 끝난다, 정신 차려라!","검 끝이 흔들린다… 버텨라!","벼랑 끝이군. 여기서 근성이다","숨이 얕아졌다… 한 방을 노려라"]),1,2],
+  low2:d=>[pick(["끝장을 내라!!","한 걸음이다! 베어라!!","저놈 다리가 풀렸다, 지금이다!!","마무리다! 망설이지 마라!!","여기서 끝내라, 검을 뻗어!!"]),1,2],
+  reversal:d=>[pick(["오오, 판이 뒤집혔다!!","뒤집었다!! 이래서 승부는 모른다","순식간에 판이 돌았군!!","거꾸로 섰다! 대단한 검이다!!","호오, 이런 걸 승부라고 하지!!"]),1,2],
+  ko:d=>[pick(["핫핫하!! 승부 났다!!","훌륭한 마무리다!!","깨끗하게 베었군!!","끝났다! 좋은 검이었다!!"]),1,4],
+  koed:d=>[pick(["…좋은 승부였다. 한잔 하러 가지","졌군. 뒤끝은 없다","베였다… 다음엔 내가 벤다","깨끗하게 당했다. 인정하마","분하군. 술이나 마시러 가자"]),1,4],
+  dko:d=>[pick(["둘 다 뻗었나! 하하!!","동시에 베었군! 이런 판도 있지","둘 다 쓰러졌다! 무승부군!","서로 끝을 봤군, 핫핫하!","승부를 못 가렸다! 아깝군!"]),1,4],
+  round:d=>[pick(["간다!!","시작이다!","자, 붙어라!","검을 뽑아라!","한판 가자!"]),0,1],
+  start:d=>[pick([d.who+"… 좋은 승부다!",d.who+"인가. 검을 보여다오",d.who+"라… 재밌겠군!",d.who+"와 붙는군. 사양 말고 와라",d.who+"… 정정당당히 가자!"]),1,2],
   rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
-  charsel:d=>["누구와 겨루려느냐!",0,1],
-  stylesel:d=>["수라냐 나찰이냐… 고민되는군",0,1],
+  charsel:d=>[pick(["누구와 겨루려느냐!","누구를 고를 테냐!","마음에 드는 검을 골라라","고민은 짧게, 승부는 길게","누구든 좋다, 어서 골라라"]),0,1],
+  stylesel:d=>[pick(["수라냐 나찰이냐… 고민되는군","수라도 나찰도 결국은 검이다","제 손에 맞는 쪽을 골라라","나찰이냐? 사나운 쪽이군","수라냐? 정공법이군"]),0,1],
   title:d=>[pick(["사무라이의 혼이 부른다… 한판 하지!","기다렸다. 오늘도 좋은 승부를 하자"]),0,1],
   cardsel:d=>[pick(["카드라… 나는 힘만 있으면 된다만","받아 둬라, 공짜다","카드에 기대면 검이 무뎌진다?"]),0,1],
   idle:d=>[pick(["서로 노려보는군… 술이 식겠다","먼저 가라! 사양할 것 없다!","허어, 신중한 승부군"]),0,1],
@@ -2553,16 +2570,16 @@ const SPEAKERS={
     "쥬베이는 좋은 술친구다. 살살은 못 해주지만","시키라는 여자, 눈을 오래 마주치지 마라"]),0,1],
   vsq:d=>[pick(["한판 승부… 정정당당히다!","좋은 글귀군. 자, 간다!"]),0,1],
   storyChat:d=>[pick(["호오, 이야기가 이어지는군","…그래서 어떻게 되는 거냐","술안주로 딱 좋은 이야기다"]),0,1],
-  firstBlood:d=>["선제타! 기선을 잡았군",0,1.2],
-  roundLead:d=>["먼저 한 판! 이대로 밀어붙여라",0,1.5],
-  roundBehind:d=>["한 판 내줬군… 자, 여기부터다",0,1.5],
-  matchPoint:d=>["마지막 판이다…! 여기서 갈린다!",1,2],
-  doubleLow:d=>["둘 다 한 방이면 끝난다…!! 숨도 못 쉬겠군",1,2],
-  longFight:d=>["길어지는군… 한 방이면 끝난다, 집중해라",0,1],
-  perfect:d=>["완승이다!! 흠집 하나 없군, 핫핫하!!",1,2.5],
-  comeback:d=>["빈사에서 뒤집었다!! 이게 승부다!!",1,2.5],
-  quickKo:d=>["순살이다!! 눈 깜짝할 새군!",1,2],
-  revenge:d=>["지난 빚 갚았군! 이런 게 승부지!",1,2],
+  firstBlood:d=>[pick(["선제타! 기선을 잡았군","첫 피다! 흐름을 쥐었군","먼저 닿았다! 좋은 시작이군","선수를 잡았다! 이대로 가라","첫 일격이 갈랐군"]),0,1.2],
+  roundLead:d=>[pick(["먼저 한 판! 이대로 밀어붙여라","한 판 챙겼군. 기세를 이어라","선취다! 방심만 하지 마라","앞서간다! 한 판 더 따내라","기선 제압이군. 좋은 흐름이다"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내줬군… 자, 여기부터다","한 판 뺏겼다. 아직 안 끝났다","뒤졌군. 여기서 근성이다","내줄 수도 있지. 다음 판이다","검을 고쳐 잡아라. 한 판일 뿐이다"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이다…! 여기서 갈린다!","최종 라운드다! 전부 걸어라!","이 판이 전부다! 망설이지 마라!","여기서 끝난다! 후회 없이 베어라!","마지막이다… 숨을 고르고 가라"]),1,2],
+  doubleLow:d=>[pick(["둘 다 한 방이면 끝난다…!! 숨도 못 쉬겠군","서로 벼랑 끝이다!! 먼저 닿는 쪽이 이긴다","둘 다 빈사군! 한 수에 갈린다!!","이런 판이야말로 진짜 승부지!!","숨소리까지 들리는군… 한 방이다!"]),1,2],
+  longFight:d=>[pick(["길어지는군… 한 방이면 끝난다, 집중해라","질긴 승부군. 팔이 무거워질 때다","오래 끄는군… 먼저 지치는 쪽이 진다","길다… 이런 판은 집중이 승부다","서로 잘 버티는군. 볼만하다"]),0,1],
+  perfect:d=>[pick(["완승이다!! 흠집 하나 없군, 핫핫하!!","한 대도 안 맞았다! 완벽하군!!","무상처 승리다! 훌륭하다!!","흠집 하나 없는 검이군!!","이런 승부라면 술이 달지!!"]),1,2.5],
+  comeback:d=>[pick(["빈사에서 뒤집었다!! 이게 승부다!!","다 죽어가다 살아났군!! 대단하다!","벼랑 끝에서 베었다!! 근성이군!!","한 방 남기고 뒤집었다!!","이런 걸 보려고 승부를 보는 거다!!"]),1,2.5],
+  quickKo:d=>[pick(["순살이다!! 눈 깜짝할 새군!","일격에 끝냈군!! 빠르다!","숨 한 번에 승부가 났다!!","술 한 모금 마실 새도 없군!","단칼이다! 시원하군!!"]),1,2],
+  revenge:d=>[pick(["지난 빚 갚았군! 이런 게 승부지!","빚은 갚는 거다! 시원하군!","저번 패배를 되돌렸다!","제대로 되갚아줬군! 핫핫하!","기다린 보람이 있는 한 판이군"]),1,2],
   streak:d=>[d.n>=5?d.n+"연승!! 대적할 자가 없느냐!!":d.n+"연승! 오늘 검이 좋군!",1,2],
   oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
   survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이다!! 어디까지 가나 보자!!",1,2];
@@ -2570,12 +2587,12 @@ const SPEAKERS={
     if(d.n>=7) return [d.n+"연승! 검이 뜨거워졌다!",1,1.8];
     if(d.n>=3) return [d.n+"연승 중! 다음 놈도 베어라!",0,1.5];
     return [pick([d.n+"연승! 다음 상대다","좋아, "+d.n+"명째다. 계속 가자"]),0,1.3]; },
-  survEnd:d=>[d.n+"명 베고 여기까지… 훌륭한 기록이다!",1,2],
+  survEnd:d=>[pick([d.n+"명 베고 여기까지… 훌륭한 기록이다!",d.n+"명이라, 검이 잘 버텼군",d.n+"명 상대로 여기까지다. 잘 싸웠다",d.n+"명째에서 멈췄군. 다음엔 더 간다","여기까지 "+d.n+"명. 술 한잔 값은 했다"]),1,2],
   storyStage:d=>{ if(d.n>=8) return ["여기까지 왔군… 이제 진짜배기들이다",0,1.5];
     if(d.n>=5) return [d.n+"연전째. 손이 완전히 풀렸겠군",0,1.4];
     return [pick([d.n+"연전째다. 계속 가자!","다음 상대다. 아직 멀었지?"]),0,1.3]; },
   quoteScr:d=>[pick(["무슨 말을 하는 거냐, 저 녀석","한마디 하는군. 말보다 검이다","입은 그만 놀리고 덤벼라!"]),0,1.2],
-  ending:d=>["끝까지 베고 올라갔군!! 오늘은 내가 술을 사마!!",1,3],
+  ending:d=>[pick(["끝까지 베고 올라갔군!! 오늘은 내가 술을 사마!!","정상까지 베어냈다!! 훌륭하다!!","마지막까지 검이 살아 있었군!!","다 베고 올라섰다! 대단한 여정이군!!","끝을 봤군!! 오늘은 크게 마시자!!"]),1,3],
   winTalk:d=>[pick(["좋은 검이었다. 다음 상대가 기다린다","이런 승부라면 몇 번이고 좋다","술이 달겠군. 자, 계속 가자!","베어야 할 때 벤다 — 그거면 된다"]),0,1.5],
   muse:d=>{ if(d.ctx==="battle") return [pick(["…검이 근질거리는군","호흡을 고르는 것도 검술이다","슬슬 한 방 크게 가도 좋겠는데"]),0,1];
     if(d.ctx==="quote") return [pick(["…말은 됐고","길군, 말이"]),0,1];
@@ -2584,231 +2601,1331 @@ const SPEAKERS={
   record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승! 술맛 나는 날이군"):("오늘 "+d.g+"전 "+d.w+"승… 다음 판에 갚아주지"),0,1.5],
   domLead:d=>[pick(["크게 벌렸다! 몰아붙여라!","판이 기울었군. 방심만 마라"]),0,1.3],
   domBehind:d=>[pick(["밀리는군… 한 방이면 뒤집힌다","버텨라! 승부는 끝까지 모른다"]),0,1.3],
-  halfHp2:d=>["상대 반피다! 절반 넘겼다",0,1.2],
-  halfHp1:d=>["반피 깎였다… 정신 차려라",0,1.2],
-  rush:d=>["연타다! 물 흐르듯 이어지는군!",1,1.5],
+  halfHp2:d=>[pick(["상대 반피다! 절반 넘겼다","절반 깎았군! 계속 밀어라","반은 베었다. 여기서 굳혀라","절반이다! 흐름을 놓지 마라"]),0,1.2],
+  halfHp1:d=>[pick(["반피 깎였다… 정신 차려라","절반 잃었군. 호흡을 고쳐라","반이 날아갔다… 신중히 가라","절반이다. 여기서부터 조여라"]),0,1.2],
+  rush:d=>[pick(["연타다! 물 흐르듯 이어지는군!","쉴 틈 없이 몰아친다!","연속으로 꽂히는군!","흐름을 탔다! 계속 이어라!","좋은 연격이다! 볼만하군"]),1,1.5],
   winScr:d=>[pick(["봐라, 승자의 얼굴이다! 핫핫하!","이긴 자의 이름이 남는 법이지"]),1,2],
   loseScr:d=>[pick(["…저 이름, 기억해 둬라. 다음에 갚아주면 된다","분한 얼굴도 나쁘지 않군. 다음이다"]),0,2],
-  oppSp:d=>["온다!",0,1],
+  oppSp:d=>[pick(["온다!","필살기다!","온다, 조심해라!","큰 게 온다!","저놈이 크게 준비했다!"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째군":"같은 수에 벌써 세 번째군",
+    nm?nm+RO(nm)+" 계속 당하는군":"같은 수에 계속 당하는군","아까부터 같은 수에 걸리는군",
+    "같은 검을 세 번 맞으면 안 되지","저 수를 못 읽는군… 세 번째다"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오가는군!","서로 "+d.n+"번씩 주고받았다!","난타전이군! 이래야 승부지","치고받는 맛이 있군, 핫핫하!","서로 물러설 생각이 없군!"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 안 내주고 있다!","일방적이군! "+d.n+"대째다","완전히 흐름을 쥐었군!","저쪽은 손도 못 대는군","이대로면 흠집도 안 나겠다!"]),1,1.5],
+  flowChased:d=>[pick(["계속 맞기만 하는군… 한 번 끊어라","벌써 "+d.n+"대째다. 반격이 없군","숨 돌릴 틈이 없군… 버텨라","되받아치질 못하고 있다","이대로 밀리면 위험하다"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째군","저놈, 큰 기술만 노리는군","필살기를 아끼질 않는군","또 꺼냈다… 이제 읽을 때다","큰 것만 쓰다간 빈틈이 생기지"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져갔군. 깔끔하다","한 판도 안 내줬다! 훌륭한 검이군","시작부터 끝까지 흐름을 쥐었군","두 판 모두 제 검이었다","빈틈 없는 두 판이었다, 핫핫하"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내줬군… 손도 못 썼다","한 판도 못 가져왔군. 다음에 갚아라","흐름을 한 번도 못 잡았다","이런 날도 있는 거다. 검을 다시 잡아라","처음부터 끝까지 밀렸군"]),0,2],
+  arcComeback:d=>[pick(["첫 판을 내주고 내리 두 판. 뒤집었군","밀리다가 돌아섰다!! 이게 승부다","한 판 지고도 흔들리지 않았군!!","뒤에서 따라붙어 넘어섰다!!","이런 판을 보려고 술을 참는 거다"]),1,3],
+  arcSweat:d=>[pick(["마지막 판까지 갔군. 진땀나는 승부다","한 판씩 나눠 갖고 끝판 승부였다","끝까지 갈린 판이군. 훌륭하다","마지막 한 판이 갈랐다","이런 접전이라면 술맛이 나지"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 한 판 따 놓고 내리 두 판이라니","앞서다가 뒤집혔군… 방심했나","좋은 출발이었는데 끝이 아쉽군","쥐었던 흐름을 놓쳤다","이겨 놓고 흘려보낸 판이군"]),0,2],
+  arcSlip:d=>[pick(["따라붙었는데 마지막에 놓쳤군","끝판까지 갔지만 한 끗 모자랐다","거의 잡았던 판이다… 아깝군","막판에 미끄러졌군. 다음이다","여기까지 온 것만도 좋은 승부였다"]),0,2],
   REL:{genjuro:"겐주로냐…! 네놈과는 몇 번을 겨뤄도 좋지",ukyo:"우쿄인가. 무리하지 마라",
        nakoruru:"나코루루냐. 다치지 말고 해라",haohmaru:"허, 나랑 같은 얼굴이군! 하하!",
        kuroko:"심판이 왜 나오는 거냐!?",charlotte:"샤를로트! 여전히 검이 날카롭군"},
  },
- nakoruru:{ /* 상냥한 자연의 수호자 — 존댓말 */
+ nakoruru:{ /* 상냥한 자연의 수호자 — 존댓말, 유파로 인격이 갈린다 */
   hello:"나코루루예요. 다치지 않게… 힘내세요!",
-  move:d=>d.sup?[NR("비오의…! 큰 게 옵니다!","…비오의. 자연이 노한다"),1,3]:null,
-  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+"크게 들어갔어요!",1,2]:[(nm?nm+" ":"")+"맞았어요!",0,1.8];},
-  moveDown:d=>{const nm=NM(d); return [nm?nm+"… 눕혔어요!":"눕혔어요!",1,2];},
-  moveKo:d=>{const nm=NM(d); return [(nm?nm+"! ":"")+"이걸로 끝이에요!",1,4];},
-  hit:d=>d.dmg>=12?[NR("굉장한 일격이에요!","…좋은 바람이었다"),1,1.2]:null,
-  taken:d=>d.dmg>=12?[NR("괜찮으세요…?!","…아프겠군. 참아라"),0,1.2]:null,
-  down:d=>[NR("지금이 기회예요!","…지금. 끝내라"),0,1.5],
-  downed:d=>[NR("얼른 일어나세요…!","…일어나. 땅은 차갑다"),0,1.5],
-  low1:d=>[NR("위험해요… 조심하세요!","…피 냄새가 난다. 네 것이다"),1,2],
-  low2:d=>[NR("마마하하도 보고 있어요, 조금만 더!","…숨통이 얕다. 베어라"),1,2],
-  reversal:d=>[NR("바람이 이쪽으로 불어요…!","…흐름이 돌았군"),1,2],
-  ko:d=>[NR("승부가 났네요. 수고하셨어요","…끝이다. 자연은 아무 말도 안 한다"),1,4],
-  koed:d=>[NR("아… 다음엔 꼭 이겨요","…졌다. 산으로 돌아갈 시간이군"),1,4],
-  dko:d=>[NR("둘 다…!? 이런 일도 있네요","…둘 다 쓰러졌다. 흔한 일이다"),1,4],
-  round:d=>[NR("힘내세요!","…가라"),0,1],
-  start:d=>[d.who+NR("… 좋은 시합이 되길","… 어느 쪽이든 자연은 편들지 않는다"),1,2],
+  move:d=>d.sup?[NR(pick(["비오의…! 큰 게 옵니다!","큰 힘이 모여요… 조심하세요!","비오의예요! 바람이 무거워져요","온 힘을 담고 있어요…!","숨을 크게 들이켜요… 옵니다!"]),
+    pick(["…비오의. 자연이 노한다","…힘이 모였다. 피하지 마라","…끝을 낼 셈이군","…바람이 죽었다. 온다","…받아라. 그뿐이다"])),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["크게 들어갔어요!","깊게 닿았어요!","제대로 들어갔어요!","묵직해요… 아프겠어요","정통으로예요!"]),1,2]
+    :[(nm?nm+" ":"")+pick(["맞았어요!","닿았어요!","들어갔어요","잘 노렸어요!","스쳤어요!"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); const s=pick(["눕혔어요!","쓰러뜨렸어요!","땅에 닿았어요","크게 넘어갔어요!","일어나기 힘들겠어요"]); return [nm?nm+"… "+s:s,1,2];},
+  moveKo:d=>{const nm=NM(d); const s=pick(["이걸로 끝이에요!","승부가 났어요!","여기까지예요…","마지막 일격이에요!","끝났어요. 수고하셨어요"]); return [(nm?nm+"! ":"")+s,1,4];},
+  hit:d=>d.dmg>=12?[NR(pick(["굉장한 일격이에요!","제대로 들어갔어요!","깊게 닿았어요…!","좋은 흐름이에요!","숨이 막히겠어요…"]),
+    pick(["…좋은 바람이었다","…뼈까지 닿았군","…충분하다","…흔들렸다. 이어라","…그 정도면 된다"])),1,1.2]:null,
+  taken:d=>d.dmg>=12?[NR(pick(["괜찮으세요…?!","많이 아프겠어요…","다치셨어요… 조심하세요","숨 고르세요, 아직 괜찮아요","보고 있기 힘들어요…"]),
+    pick(["…아프겠군. 참아라","…피가 흐른다. 신경 쓰지 마라","…맞았다. 그것뿐이다","…아픔은 살아 있다는 뜻이다","…흔들리지 마라"])),0,1.2]:null,
+  down:d=>[NR(pick(["지금이 기회예요!","지금이에요, 거리를 잡으세요","일어나기 전에…!","숨 돌릴 틈이에요","기회가 왔어요!"]),
+    pick(["…지금. 끝내라","…망설이지 마라","…일어나기 전에 베어라","…틈이다","…기다려 줄 이유는 없다"])),0,1.5],
+  downed:d=>[NR(pick(["얼른 일어나세요…!","괜찮아요, 천천히 일어나요","아직 끝나지 않았어요!","손을 짚고… 힘내세요","일어설 수 있어요"]),
+    pick(["…일어나. 땅은 차갑다","…누워 있을 때가 아니다","…숨은 붙어 있다. 일어나라","…땅에 오래 있지 마라","…아직 끝이 아니다"])),0,1.5],
+  low1:d=>[NR(pick(["위험해요… 조심하세요!","체력이 얼마 없어요…!","한 방이면 위험해요!","물러서세요, 부탁이에요","무리하지 마세요…!"]),
+    pick(["…피 냄새가 난다. 네 것이다","…한 번이면 끝난다","…얕은 숨이군","…물러설 곳이 없다","…끝이 가깝다"])),1,2],
+  low2:d=>[NR(pick(["마마하하도 보고 있어요, 조금만 더!","상대도 한계예요, 조금만!","거의 다 왔어요!","한 번만 더 닿으면 돼요","숨통이 얕아요… 지금이에요"]),
+    pick(["…숨통이 얕다. 베어라","…한 걸음이면 된다","…끝을 봐라","…망설임은 필요 없다","…쓰러질 때가 됐다"])),1,2],
+  reversal:d=>[NR(pick(["바람이 이쪽으로 불어요…!","흐름이 바뀌었어요!","뒤집었어요…!","지금부터예요!","숨을 돌렸어요, 이대로!"]),
+    pick(["…흐름이 돌았군","…바람이 방향을 바꿨다","…뒤집혔다. 그뿐이다","…이제 네 차례다","…자연은 한쪽 편이 아니다"])),1,2],
+  ko:d=>[NR(pick(["승부가 났네요. 수고하셨어요","이겼어요…! 다치진 않으셨죠?","끝났어요. 숨 고르세요","좋은 승부였어요","상대분도 훌륭했어요"]),
+    pick(["…끝이다. 자연은 아무 말도 안 한다","…쓰러졌다. 그게 전부다","…끝났다. 바람이 잔다","…이걸로 됐다","…돌아가자"])),1,4],
+  koed:d=>[NR(pick(["아… 다음엔 꼭 이겨요","졌네요… 그래도 잘 싸우셨어요","다치지 않았으면 됐어요","아쉬워요… 다음이 있어요","여기까지네요. 수고하셨어요"]),
+    pick(["…졌다. 산으로 돌아갈 시간이군","…쓰러졌다. 그뿐이다","…강했다. 인정한다","…끝이다. 변명은 없다","…바람이 등을 떠민다"])),1,4],
+  dko:d=>[NR(pick(["둘 다…!? 이런 일도 있네요","둘 다 쓰러졌어요…!","동시에라니… 놀랐어요","둘 다 한계였나 봐요","무승부네요. 대단한 승부였어요"]),
+    pick(["…둘 다 쓰러졌다. 흔한 일이다","…같이 끝났군","…승자는 없다","…자연은 둘 다 거뒀다","…무승부다"])),1,4],
+  round:d=>[NR(pick(["힘내세요!","조심히 가세요","다음 판이에요, 침착하게","숨 고르고… 시작이에요","잘 하실 거예요"]),
+    pick(["…가라","…시작이다","…망설이지 마라","…앞을 봐라","…숨을 정리해라"])),0,1],
+  start:d=>[d.who+NR(pick(["… 좋은 시합이 되길","… 다치지 않기를 빌어요","… 부디 무사하시길","… 좋은 승부가 되길 바라요","… 마마하하도 지켜봐요"]),
+    pick(["… 어느 쪽이든 자연은 편들지 않는다","… 준비는 됐겠지","… 바람이 지켜본다","… 결과는 곧 나온다","… 살아남는 쪽이 옳다"])),1,2],
   rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
-  charsel:d=>["누구랑 싸우실 건가요?",0,1],
-  stylesel:d=>["수라와 나찰… 어느 쪽이든 응원할게요",0,1],
-  title:d=>["어서 오세요! 오늘도 힘내요",0,1],
-  cardsel:d=>[pick(["카드는 신중하게 고르세요","어떤 힘일까요… 두근거려요","무리해서 받지 않아도 돼요"]),0,1],
-  idle:d=>[pick(["숨을 고르는 중이네요…","바람이 조용해요… 폭풍 전일까요?","서로 거리를 재고 있어요"]),0,1],
-  menuIdle:d=>[pick(["천천히 고르셔도 돼요","고민되면 저한테 물어보세요… 아, 안 들리려나요"]),0,1],
+  charsel:d=>[pick(["누구랑 싸우실 건가요?","마음이 가는 분을 고르세요","누구를 고르실까요…?","다들 강한 분들이에요","손이 가는 쪽으로 하셔도 돼요"]),0,1],
+  stylesel:d=>[pick(["수라와 나찰… 어느 쪽이든 응원할게요","수라는 상냥하고, 나찰은 서늘해요","어느 쪽도… 저예요","시쿠루를 타면 말수가 줄어요","고르신 쪽으로 함께 갈게요"]),0,1],
+  title:d=>[pick(["어서 오세요! 오늘도 힘내요","오늘도 바람이 좋아요","다시 오셨네요, 반가워요","천천히 시작해요","마마하하도 기다렸어요"]),0,1],
+  cardsel:d=>[pick(["카드는 신중하게 고르세요","어떤 힘일까요… 두근거려요","무리해서 받지 않아도 돼요","마음이 끌리는 쪽도 답이에요","고르면 되돌릴 수 없어요"]),0,1],
+  idle:d=>[pick(["숨을 고르는 중이네요…","바람이 조용해요… 폭풍 전일까요?","서로 거리를 재고 있어요","눈을 떼지 않고 있어요","한 걸음도 물러서지 않네요"]),0,1],
+  menuIdle:d=>[pick(["천천히 고르셔도 돼요","고민되면 저한테 물어보세요… 아, 안 들리려나요","급할 것 없어요","마마하하도 기다려 줘요"]),0,1],
   charselChat:d=>[pick(["리무루루도 있어요. 제 동생이에요","다들 정말 강한 분들이에요…",
     "갈포드 씨의 파피, 정말 귀여워요","저를 고르시면… 열심히 할게요!","하오마루 씨는… 또 술 냄새가 나는 것 같아요",
     "샤를로트 씨는 멋있어요… 동경하게 돼요","유가 쪽은… 나쁜 기운이 느껴져요",
-    "카자마 형제는 사이가… 복잡하대요","한조 씨도 계시네요… 조, 조금 무서워요"]),0,1],
-  vsq:d=>[pick(["정정당당… 마음에 새길게요","좋은 승부가 되길 빌어요"]),0,1],
-  storyChat:d=>[pick(["이야기를 좀 더 볼까요…","다음 장면이에요","어떻게 될까요…?"]),0,1],
-  firstBlood:d=>["첫 유효타예요! 좋은 출발이에요",0,1.2],
-  roundLead:d=>["한 판 앞섰어요! 침착하게…",0,1.5],
-  roundBehind:d=>["한 판 졌어요… 아직 괜찮아요!",0,1.5],
-  matchPoint:d=>["마지막 판이에요… 심장이 떨려요",1,2],
-  doubleLow:d=>["둘 다 위험해요…! 못 보겠어요…!",1,2],
-  longFight:d=>["긴 승부네요… 힘내세요",0,1],
-  perfect:d=>[NR("마마하하도 봤을 거예요! 하나도 안 다쳤어요!","…흠 하나 없군. 시쿠루도 만족하겠다"),1,2.5],
-  comeback:d=>[NR("이겼다…! 아, 죄, 죄송해요. 저도 모르게…","…죽다 살아났군. 그것도 자연이다"),1,2.5],
-  quickKo:d=>["벌써 끝났어요…! 굉장해요!",1,2],
-  revenge:d=>["지난번 설욕이에요! 잘하셨어요!",1,2],
-  streak:d=>[d.n+"연승이에요! …무리는 하지 마세요?",1,2],
-  oppInfo:d=>["상대 정보예요 — "+d.text,0,1.2],
+    "카자마 형제는 사이가… 복잡하대요","한조 씨도 계시네요… 조, 조금 무서워요",
+    "우쿄 씨는 기침을 참고 계셨어요","쥬베이 씨는 눈이 아주 깊어요","겐주로 씨는… 눈이 무서워요"]),0,1],
+  vsq:d=>[pick(["정정당당… 마음에 새길게요","좋은 승부가 되길 빌어요","서로 다치지 않기를요","말에도 각오가 담겨요"]),0,1],
+  storyChat:d=>[pick(["이야기를 좀 더 볼까요…","다음 장면이에요","어떻게 될까요…?","조금만 더 들어 봐요"]),0,1],
+  firstBlood:d=>[pick(["첫 유효타예요! 좋은 출발이에요","먼저 닿았어요!","첫 한 방이에요, 좋아요","기선을 잡았어요!","좋은 시작이에요"]),0,1.2],
+  roundLead:d=>[pick(["한 판 앞섰어요! 침착하게…","먼저 한 판이에요!","한 판 앞서요. 방심은 금물이에요","좋아요, 이대로 한 판만 더","앞서고 있어요!"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 졌어요… 아직 괜찮아요!","한 판 뒤졌어요, 따라가요","괜찮아요, 아직 남았어요","밀렸지만 끝난 게 아니에요","숨 고르고 다시 해봐요"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이에요… 심장이 떨려요","이 판으로 끝이에요","마지막이에요, 후회 없이…","여기서 갈려요…!","떨려요… 부디 무사하시길"]),1,2],
+  doubleLow:d=>[pick(["둘 다 위험해요…! 못 보겠어요…!","둘 다 한 방이에요…!","누가 먼저 닿을까요…","보고 있기가 힘들어요…","숨이 멎을 것 같아요"]),1,2],
+  longFight:d=>[pick(["긴 승부네요… 힘내세요","오래 이어지고 있어요","둘 다 지치겠어요…","숨이 길어요, 침착하게","끝이 잘 안 보이네요"]),0,1],
+  perfect:d=>[NR(pick(["마마하하도 봤을 거예요! 하나도 안 다쳤어요!","한 대도 안 맞으셨어요!","완벽해요… 정말 대단해요","상처 하나 없네요!","이런 승부도 있군요…"]),
+    pick(["…흠 하나 없군. 시쿠루도 만족하겠다","…한 번도 닿지 못했다","…완전하다","…상처가 없다. 드문 일이다","…자연도 흠을 남기지 않았다"])),1,2.5],
+  comeback:d=>[NR(pick(["이겼다…! 아, 죄, 죄송해요. 저도 모르게…","다 진 줄 알았어요…!","끝까지 포기 안 하셨네요","심장이 아직 뛰어요…","믿고 있었어요… 정말이에요"]),
+    pick(["…죽다 살아났군. 그것도 자연이다","…끝에서 돌아왔다","…버틴 쪽이 남는다","…한 줄기 숨이 갈랐다","…운도 힘이다"])),1,2.5],
+  quickKo:d=>[pick(["벌써 끝났어요…! 굉장해요!","눈 깜짝할 사이였어요","너무 빨라요…!","숨 돌릴 틈도 없었어요","상대분이 놀랐겠어요"]),1,2],
+  revenge:d=>[pick(["지난번 설욕이에요! 잘하셨어요!","빚을 갚았어요!","지난 패배를 되돌렸어요","이번엔 이겼네요!","기다린 보람이 있어요"]),1,2],
+  streak:d=>[d.n+pick(["연승이에요! …무리는 하지 마세요?","연승이에요! 대단해요","연승… 다치진 않으셨죠?","연승이네요, 이 기세 좋아요","연승이에요. 숨은 고르셨죠?"]),1,2],
+  oppInfo:d=>[pick(["상대 정보예요 — ","이분에 대해서예요 — ","알아 두시면 좋아요 — ","상대를 살펴봤어요 — "])+d.text,0,1.2],
   survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이에요!! 대단해요!!",1,2];
     if(d.n>=10) return [d.n+"연승…! 믿기지 않아요!!",1,2];
     if(d.n>=7) return ["벌써 "+d.n+"연승이에요! 무리는 마세요?",1,1.8];
     if(d.n>=3) return [d.n+"연승이에요! 다음 분도 힘내요!",0,1.5];
-    return [pick([d.n+"연승! 다음 상대예요","좋은 흐름이에요, "+d.n+"명째!"]),0,1.3]; },
-  survEnd:d=>[d.n+"연승에서 멈췄어요… 정말 수고했어요!",1,2],
+    return [pick([d.n+"연승! 다음 상대예요","좋은 흐름이에요, "+d.n+"명째!",d.n+"연승이에요. 숨 고르고 가요"]),0,1.3]; },
+  survEnd:d=>[d.n+pick(["연승에서 멈췄어요… 정말 수고했어요!","연승이었어요. 훌륭했어요","연승… 여기까지네요. 잘하셨어요","연승에서 끝났어요. 쉬어요","연승, 자랑스러워요"]),1,2],
   storyStage:d=>{ if(d.n>=8) return ["많이 왔네요… 조심하세요, 강한 분들이에요",0,1.5];
     if(d.n>=5) return [d.n+"연전째예요. 지치진 않으셨어요?",0,1.4];
-    return [pick([d.n+"연전째예요! 힘내요","다음 분이 오시네요"]),0,1.3]; },
-  quoteScr:d=>[pick(["인사를 나누고 있어요","무슨 말을 할까요…?","서로 각오를 다지는 순간이에요"]),0,1.2],
-  ending:d=>["끝까지 해내셨어요…! 정말 축하해요!!",1,3],
-  winTalk:d=>[pick(["다치지 않아서 다행이에요","좋은 승부였어요. 숨 좀 고르세요","자연도 웃고 있는 것 같아요","이 기세, 계속 가봐요!"]),0,1.5],
-  muse:d=>{ if(d.ctx==="battle") return [pick(["…바람이 조용해요","다치지 않게, 천천히요","마마하하도 지켜보고 있어요"]),0,1];
-    if(d.ctx==="quote") return [pick(["…무슨 말을 할까요","말에도 마음이 담겨요"]),0,1];
-    return [pick(["…오늘 날씨가 좋네요","리무루루는 잘 있을까요","자연의 소리가 들려요…","쉬는 것도 중요해요","조금 심심하네요… 헤헤"]),0,1]; },
-  loseTalk:d=>[pick(["괜찮아요, 다음이 있잖아요","조금 쉬었다 해요…","져도 멋진 승부였어요","저는 계속 응원할게요"]),0,1.5],
+    return [pick([d.n+"연전째예요! 힘내요","다음 분이 오시네요",d.n+"연전째… 아직 갈 길이 있어요"]),0,1.3]; },
+  quoteScr:d=>[pick(["인사를 나누고 있어요","무슨 말을 할까요…?","서로 각오를 다지는 순간이에요","말이 오가면 곧 시작이에요"]),0,1.2],
+  ending:d=>[pick(["끝까지 해내셨어요…! 정말 축하해요!!","다 왔어요… 정말 대단해요","긴 여정이었어요. 수고하셨어요","마마하하도 기뻐하고 있어요","무사히 끝나서 다행이에요"]),1,3],
+  winTalk:d=>[pick(["다치지 않아서 다행이에요","좋은 승부였어요. 숨 좀 고르세요","자연도 웃고 있는 것 같아요","이 기세, 계속 가봐요!","바람이 부드러워졌어요"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…바람이 조용해요","다치지 않게, 천천히요","마마하하도 지켜보고 있어요","숲이 숨을 죽이고 있어요"]),0,1];
+    if(d.ctx==="quote") return [pick(["…무슨 말을 할까요","말에도 마음이 담겨요","말은 칼보다 오래 남아요"]),0,1];
+    return [pick(["…오늘 날씨가 좋네요","리무루루는 잘 있을까요","자연의 소리가 들려요…","쉬는 것도 중요해요","조금 심심하네요… 헤헤","마마하하가 하늘을 돌고 있어요"]),0,1]; },
+  loseTalk:d=>[pick(["괜찮아요, 다음이 있잖아요","조금 쉬었다 해요…","져도 멋진 승부였어요","저는 계속 응원할게요","바람은 또 방향을 바꿔요"]),0,1.5],
   record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승이에요! 대단해요"):("오늘 "+d.g+"전 "+d.w+"승… 다음엔 꼭!"),0,1.5],
-  domLead:d=>[pick(["크게 앞서고 있어요!","흐름이 완전히 이쪽이에요!"]),0,1.3],
-  domBehind:d=>[pick(["많이 밀려요… 침착하게!","아직 뒤집을 수 있어요!"]),0,1.3],
-  halfHp2:d=>["절반 넘겼어요! 이대로!",0,1.2],
-  halfHp1:d=>["체력이 절반이에요… 조심!",0,1.2],
-  rush:d=>["연속으로 들어가요!",1,1.5],
-  winScr:d=>[pick(["이름이 크게 나왔어요! 축하해요!","이겼어요…! 다치진 않으셨죠?"]),1,2],
-  loseScr:d=>[pick(["아쉬워요… 그래도 좋은 승부였어요","다음엔 꼭… 꼭 이겨요!"]),0,2],
-  oppSp:d=>[NR("조심하세요!","…온다. 물러서라"),0,1],
+  domLead:d=>[pick(["크게 앞서고 있어요!","흐름이 완전히 이쪽이에요!","여유가 생겼어요, 그래도 조심히"]),0,1.3],
+  domBehind:d=>[pick(["많이 밀려요… 침착하게!","아직 뒤집을 수 있어요!","한 번만 끊으면 돼요"]),0,1.3],
+  halfHp2:d=>[pick(["절반 넘겼어요! 이대로!","상대 체력이 절반이에요","반은 왔어요!","좋은 흐름이에요, 절반이에요","절반이에요. 방심은 마세요"]),0,1.2],
+  halfHp1:d=>[pick(["체력이 절반이에요… 조심!","절반이나 깎였어요…","조심하세요, 반이에요","여기서부터 신중하게요","슬슬 숨 고를 때예요"]),0,1.2],
+  rush:d=>[pick(["연속으로 들어가요!","쉬지 않고 이어져요!","몰아치고 있어요!","손이 멈추지 않아요","흐름을 잡았어요!"]),1,1.5],
+  winScr:d=>[pick(["이름이 크게 나왔어요! 축하해요!","이겼어요…! 다치진 않으셨죠?","잘 버텨 주셨어요"]),1,2],
+  loseScr:d=>[pick(["아쉬워요… 그래도 좋은 승부였어요","다음엔 꼭… 꼭 이겨요!","여기서 끝이 아니에요"]),0,2],
+  oppSp:d=>[NR(pick(["조심하세요!","큰 게 와요…!","상대가 힘을 모아요","피하세요, 부탁이에요","위험해요!"]),
+    pick(["…온다. 물러서라","…힘을 모았다","…받지 마라","…거리를 벌려라","…준비해라"])),0,1],
+  flowSameMove:d=>{const nm=NM(d); const p=nm?nm+RO(nm)+" ":"";
+    return [NR(p+pick(["세 번째예요. 읽히고 있어요","또 걸렸어요… 조심하세요","벌써 세 번이에요","같은 수에 계속 닿아요"]),
+      p+pick(["세 번. 버릇이 드러났다","또다. 눈이 익었군","세 번이면 우연이 아니다","같은 수에 걸리는군"])),0,1.5];},
+  flowTrade:d=>[NR(pick(["쉴 틈 없이 오가고 있어요","서로 물러서지 않네요",d.n+"번을 주고받았어요","숨 쉴 틈이 없어요…"]),
+    pick(["…쉬지 않고 오간다","…서로 물러서지 않는군",d.n+"번을 주고받았다","…먼저 지치는 쪽이 진다"])),1,1.5],
+  flowOneSide:d=>[NR(pick(["한 대도 안 내주고 있어요!",d.n+"대를 이어서 넣었어요","완전히 흐름을 잡았어요","상대가 손을 못 대요"]),
+    pick(["…한 대도 내주지 않았다","…일방적이군","…닿지 못하는군","…이대로 끝내라"])),1,1.5],
+  flowChased:d=>[NR(pick(["계속 맞기만 해요… 어떡해요","한 번도 못 돌려주고 있어요",d.n+"대째예요… 물러서세요","숨 돌릴 틈을 못 잡아요"]),
+    pick(["…맞기만 하는군","…한 번도 돌려주지 못했다","…흐름을 빼앗겼다","…숨부터 되찾아라"])),0,1.5],
+  flowSpHeavy:d=>[NR(pick(["필살기가 벌써 "+d.n+"번째예요","큰 기술만 노리고 있어요","상대가 힘으로 밀어붙여요","또 큰 게 와요… 조심하세요"]),
+    pick(["…큰 것만 꺼내는군",d.n+"번째다. 익숙해져라","…힘에만 기대고 있다","…패는 다 봤다"])),0,1.5],
+  arcSweep:d=>[NR(pick(["두 판을 내리… 흐름이 좋았어요","한 판도 안 내줬어요","깔끔한 두 판이었어요","숨 돌릴 틈도 없이 두 판이에요"]),
+    pick(["…두 판, 틈이 없었다","…한 판도 내주지 않았다","…흐름이 처음부터 한쪽이었다","…깔끔하군"])),1,2.5],
+  arcSwept:d=>[NR(pick(["두 판 다 내줬네요… 숨 고르고 가요","손도 못 써 봤어요…","흐름을 한 번도 못 잡았어요","다음엔 첫 판을 노려봐요"]),
+    pick(["…두 판 모두 내줬다","…흐름을 한 번도 잡지 못했다","…상대가 위였다","…처음부터 밀렸다"])),0,2],
+  arcComeback:d=>[NR(pick(["첫 판을 내주고 내리 두 판… 뒤집었어요","지고 시작해서 끝은 이쪽이에요","무너질 뻔한 걸 되돌렸어요","포기 안 한 쪽이 이겼어요"]),
+    pick(["…첫 판을 버리고 두 판을 가져갔다","…뒤에서 앞으로 돌았다","…흐름은 바뀌는 것이다","…버틴 쪽이 남았다"])),1,3],
+  arcSweat:d=>[NR(pick(["세 판까지 갔네요… 손에 땀이 났어요","한 판씩 주고받다 마지막을 잡았어요","끝까지 몰라서 떨렸어요","아슬아슬한 마지막 판이었어요"]),
+    pick(["…세 판까지 끌었다","…한 판씩 나누고 끝을 가져갔다","…마지막 한 판이 갈랐다","…종이 한 장 차이였다"])),1,2.5],
+  arcChoke:d=>[NR(pick(["첫 판을 따고도 내리 두 판이라니…","앞서 있었는데 흐름을 놓쳤어요","다 잡았던 승부였어요…","마무리가 아쉬웠어요"]),
+    pick(["…앞서 놓고 두 판을 내줬다","…잡은 것을 놓쳤다","…흐름은 돌아섰다","…끝을 내지 못했다"])),0,2],
+  arcSlip:d=>[NR(pick(["따라붙었는데 마지막에서…","동점까지 갔는데 아쉬워요","마지막 판 한 끗이었어요","거의 다 왔었어요…"]),
+    pick(["…따라붙고도 놓쳤다","…마지막 한 판이 멀었다","…한 걸음 모자랐다","…끝은 상대의 것이었다"])),0,2],
   REL:{rimururu:"리무루루…! 다치면 안 돼",galford:"갈포드 씨네요. 파피도 잘 있죠?",
        haohmaru:"하오마루 씨… 또 술 드시고 오신 거 아니죠?",nakoruru:"저…? 신기한 기분이에요",
        hanzo:"한조 씨는… 조금 무서워요",yuga:"저 사람에게선… 나쁜 기운이 느껴져요"},
  },
  hanzo:{ /* 과묵한 닌자 두목 — 단문 */
   hello:"핫토리 한조. …지켜보겠다",
-  move:d=>d.sup?["비오의. …이가의 이름을 걸어라",1,3]:null,
-  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+". ":"")+"…훌륭하다",1,2]:[(nm?nm+" ":"")+"명중.",0,1.8];},
-  moveDown:d=>{const nm=NM(d); return [nm?nm+". 눕혔다":"눕혔다.",1,2];},
-  moveKo:d=>{const nm=NM(d); return [(nm?nm+". ":"")+"…끝이다",1,4];},
-  hit:d=>d.dmg>=12?[pick(["좋은 일격이다","…그 정도면 신조도 고개를 끄덕였겠지"]),1,1.2]:null,
-  taken:d=>d.dmg>=12?["빈틈이 있었다. 그림자는 빈틈에서 죽는다",0,1.2]:null,
+  move:d=>d.sup?[pick(["비오의. …이가의 이름을 걸어라","비오의. …간다","비오의. 숨을 죽여라","비오의. 끝을 봐라"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+". ":"")+pick(["…훌륭하다","…깊다","…잘 들었다","…그거다","…충분하다"]),1,2]:[(nm?nm+" ":"")+pick(["명중.","들어갔다.","맞았다.","가볍군.","닿았다."]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); const s=pick(["눕혔다","무너뜨렸다","꺾었다","쓰러뜨렸다","넘겼다"]); return [nm?nm+". "+s:s+".",1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+". ":"")+pick(["…끝이다","…거기까지다","…승부다","…숨이 끊겼다","…더는 없다"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["좋은 일격이다","…그 정도면 신조도 고개를 끄덕였겠지","깊이 들어갔다","…잘 잡았다","좋다. 계속해라"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["빈틈이 있었다. 그림자는 빈틈에서 죽는다","…빈틈이다","맞았다. 호흡을 고쳐라","…방심했군","깊다. 정신을 차려라"]),0,1.2]:null,
   down:d=>null,                      /* v0.5.7c: 잔사건은 침묵 — 한조는 말수가 무기다 */
-  downed:d=>["…일어나라",0,1.5],
-  low1:d=>["물러설 곳은 없다. 주군께 등을 보일 셈이냐",1,2],
-  low2:d=>["끝내라",1,2],
-  reversal:d=>["…그림자는 서두르지 않는다. 이렇게 뒤집는 것이다",1,2],
-  ko:d=>[pick(["…끝이다. 시체는 밤이 치운다","…승부가 났다. 도쿠가와의 이름에 흠은 없다"]),1,4],
-  koed:d=>[pick(["…패배도 수행이다","…이대로는 신조를 볼 낯이 없다"]),1,4],
-  dko:d=>["동귀어진인가",1,4],
-  round:d=>["…간다",0,1],
-  start:d=>[d.who+". 시작하지",1,2],
+  downed:d=>[pick(["…일어나라","…아직이다","…누울 때가 아니다","…숨을 골라라","일어서라. 그뿐이다"]),0,1.5],
+  low1:d=>[pick(["물러설 곳은 없다. 주군께 등을 보일 셈이냐","…한 방이면 끝난다","…목숨이 얇다","…물러설 곳은 없다","…호흡을 죽여라"]),1,2],
+  low2:d=>[pick(["끝내라","…한 수면 된다","…숨통을 끊어라","마무리해라","…지금이다"]),1,2],
+  reversal:d=>[pick(["…그림자는 서두르지 않는다. 이렇게 뒤집는 것이다","…뒤집었다","…기다린 보람이 있군","…이것이 인내다","…형세가 바뀌었다"]),1,2],
+  ko:d=>[pick(["…끝이다. 시체는 밤이 치운다","…승부가 났다. 도쿠가와의 이름에 흠은 없다","…끝났다","…임무 완수다","…더 볼 것 없다"]),1,4],
+  koed:d=>[pick(["…패배도 수행이다","…이대로는 신조를 볼 낯이 없다","…부족했다","…아직 멀었군","…다시 수련이다"]),1,4],
+  dko:d=>[pick(["동귀어진인가","…둘 다 쓰러졌군","…무승부다","…서로 끝났다","…어리석은 결말이다"]),1,4],
+  round:d=>[pick(["…간다","…시작이다","…또 한 판","…숨을 죽여라","…준비는 됐겠지"]),0,1],
+  start:d=>[d.who+pick([". 시작하지",". 간다",". 부족함 없는 상대다",". 방심은 없다",". 지켜보겠다"]),1,2],
   rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
-  charsel:d=>["상대를 골라라",0,1],
-  stylesel:d=>["수라인가, 나찰인가",0,1],
-  title:d=>["…왔는가. 시작하지",0,1],
-  cardsel:d=>[pick(["…쓸 만한 카드인가","…힘에는 대가가 따른다","…받든 말든, 검은 스스로 휘두르는 것"]),0,1],
-  idle:d=>[pick(["……","…정적. 나쁘지 않다","기다리는 것도 병법이다"]),0,1],
-  menuIdle:d=>[pick(["…서두를 것 없다","준비가 되면 움직여라"]),0,1],
+  charsel:d=>[pick(["상대를 골라라","…정해라","…망설이지 마라","누구든 좋다. 골라라","고르는 것도 수행이다"]),0,1],
+  stylesel:d=>[pick(["수라인가, 나찰인가","…유파를 정해라","수라, 나찰. 골라라","…검의 결을 정해라","…어느 길이든 검은 하나"]),0,1],
+  title:d=>[pick(["…왔는가. 시작하지","…왔군","…기다렸다","…시작하지","…준비는 됐나"]),0,1],
+  cardsel:d=>[pick(["…쓸 만한 카드인가","…힘에는 대가가 따른다","…받든 말든, 검은 스스로 휘두르는 것","…고르면 되돌릴 수 없다","…신중해라"]),0,1],
+  idle:d=>[pick(["……","…정적. 나쁘지 않다","기다리는 것도 병법이다","…밤이 조용하군"]),0,1],
+  menuIdle:d=>[pick(["…서두를 것 없다","준비가 되면 움직여라","…아직 시간은 있다"]),0,1],
   charselChat:d=>[pick(["…갈포드. 요즘 닌자치고는 쓸 만하다","카자마 형제… 불과 물이군",
     "…누구를 고르든, 수행이 되길","…나를 고른다면, 후회는 시키지 않는다",
     "…유가. 저것만은 반드시 벤다","…쿠로코. 정체를 아는 자가 없다",
-    "…아수라. 알 수 없는 힘이다"]),0,1],
-  vsq:d=>[pick(["…각오는 좋다. 간다","…좋은 글귀다"]),0,1],
-  storyChat:d=>[pick(["……계속 봐라","…이야기인가. 나쁘지 않다","…다음이 궁금하군"]),0,1],
-  firstBlood:d=>["…선제. 좋다",0,1.2],
-  roundLead:d=>["…한 판 앞섰다. 방심은 금물",0,1.5],
-  roundBehind:d=>["…한 판 내줬다. 침착해라",0,1.5],
-  matchPoint:d=>["…최종국. 사념을 버려라",1,2],
-  doubleLow:d=>["…서로 목숨이 한 줄. 다음 일격이 전부다",1,2],
-  longFight:d=>["…긴 싸움. 인내도 무기다",0,1],
-  perfect:d=>["…흠 하나 없군. ……호오",1,2.5],
-  comeback:d=>["…사지에서 돌아왔군. 그것이 닌자다",1,2.5],
-  quickKo:d=>["…일섬. 이상적인 승부다",1,2],
-  revenge:d=>["…빚을 갚았군. 그것으로 됐다",1,2],
-  streak:d=>["…"+d.n+"연승. 인정하마",1,2],
+    "…아수라. 알 수 없는 힘이다","…하오마루. 검이 곧다","…우쿄. 병들었어도 빠르다",
+    "…쥬베이. 두 자루의 무게를 안다","…리무루루. 아직 어리다","…겐주로. 삿된 검이다",
+    "…시키. 위험한 눈이군","…샬롯. 먼 땅의 검이다"]),0,1],
+  vsq:d=>[pick(["…각오는 좋다. 간다","…좋은 글귀다","…말은 됐다. 간다"]),0,1],
+  storyChat:d=>[pick(["……계속 봐라","…이야기인가. 나쁘지 않다","…다음이 궁금하군","…끝까지 봐라"]),0,1],
+  firstBlood:d=>[pick(["…선제. 좋다","…먼저 잡았다","…선수다","…기선을 잡았군","…좋은 시작이다"]),0,1.2],
+  roundLead:d=>[pick(["…한 판 앞섰다. 방심은 금물","…앞섰다. 아직이다","…한 판. 그뿐이다","…유리하다. 방심 마라","…한 판 앞. 계속해라"]),0,1.5],
+  roundBehind:d=>[pick(["…한 판 내줬다. 침착해라","…한 판 뒤졌다","…아직 끝나지 않았다","…침착해라","…되찾으면 된다"]),0,1.5],
+  matchPoint:d=>[pick(["…최종국. 사념을 버려라","…마지막 판이다","…이 한 판이 전부다","…비워라. 그리고 베라","…끝을 낸다"]),1,2],
+  doubleLow:d=>[pick(["…서로 목숨이 한 줄. 다음 일격이 전부다","…양쪽 다 실 한 줄이다","…한 수로 끝난다","…먼저 닿는 쪽이 산다","…숨을 죽여라"]),1,2],
+  longFight:d=>[pick(["…긴 싸움. 인내도 무기다","…길어지는군","…인내다","…호흡을 아껴라","…아직 끝나지 않았다"]),0,1],
+  perfect:d=>[pick(["…흠 하나 없군. ……호오","…무결이다","…한 대도 안 줬군","…흠이 없다","…나무랄 데 없다"]),1,2.5],
+  comeback:d=>[pick(["…사지에서 돌아왔군. 그것이 닌자다","…죽음에서 돌아왔군","…버틴 자가 이긴다","…끈질기다","…놀랍군"]),1,2.5],
+  quickKo:d=>[pick(["…일섬. 이상적인 승부다","…한순간이었다","…빠르군","…군더더기가 없다","…일격이면 족하다"]),1,2],
+  revenge:d=>[pick(["…빚을 갚았군. 그것으로 됐다","…빚은 갚았다","…되갚았군","…그것으로 됐다","…묵은 빚이 사라졌다"]),1,2],
+  streak:d=>["…"+d.n+pick(["연승. 인정하마","연승. 계속해라","연승이군","연승. 멈추지 마라","연승. 나쁘지 않다"]),1,2],
   oppInfo:d=>["…적정 — "+d.text,0,1.2],
-  survStreak:d=>{ if(d.rec) return ["…"+d.n+"연승. 신기록이다. 계속해라",1,2];
-    if(d.n>=10) return ["…"+d.n+"연승. 견줄 자가 없군",1,2];
-    if(d.n>=7) return ["…"+d.n+"연승. 훌륭하다",1,1.8];
-    if(d.n>=3) return ["…"+d.n+"연승. 다음이다",0,1.5];
-    return ["…"+d.n+"명째. 간다",0,1.3]; },
-  survEnd:d=>["…"+d.n+"명 격파. 새겨 둘 기록이다",1,2],
-  storyStage:d=>{ if(d.n>=8) return ["…여기서부터가 진짜다. 방심하지 마라",0,1.5];
-    if(d.n>=5) return ["…"+d.n+"연전. 몸이 익었을 때다",0,1.4];
-    return ["…"+d.n+"연전째. 간다",0,1.3]; },
-  quoteScr:d=>[pick(["…말은 검으로 하는 것이다","…각오를 말하는군","……들을 필요는 없다"]),0,1.2],
-  ending:d=>["…완주. 수행의 끝을 보았군. 훌륭하다",1,3],
-  winTalk:d=>[pick(["…이겼다고 멈추지 마라","…다음 적은 더 강하다","…좋은 검이었다. 기억해 둬라","…나는 아직 아들을 되찾지 못했다. 너는 멈추지 마라"]),0,1.5],
+  survStreak:d=>{ if(d.rec) return ["…"+d.n+pick(["연승. 신기록이다. 계속해라","연승. 전례가 없다","연승. 새 기록이군"]),1,2];
+    if(d.n>=10) return ["…"+d.n+pick(["연승. 견줄 자가 없군","연승. 경지다","연승. 더 볼 것 없다"]),1,2];
+    if(d.n>=7) return ["…"+d.n+pick(["연승. 훌륭하다","연승. 인정하마","연승. 손색없다"]),1,1.8];
+    if(d.n>=3) return ["…"+d.n+pick(["연승. 다음이다","연승. 아직이다","연승. 계속해라"]),0,1.5];
+    return ["…"+d.n+pick(["명째. 간다","명째다","명째. 아직 몸풀기다"]),0,1.3]; },
+  survEnd:d=>["…"+d.n+pick(["명 격파. 새겨 둘 기록이다","명. 훌륭하다","명 베었군","명 격파. 기억해 둬라","명. 인정하마"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return [pick(["…여기서부터가 진짜다. 방심하지 마라","…이제부터다","…깊은 곳까지 왔군"]),0,1.5];
+    if(d.n>=5) return ["…"+d.n+pick(["연전. 몸이 익었을 때다","연전. 흐름을 탔군","연전. 아직 멀었다"]),0,1.4];
+    return ["…"+d.n+pick(["연전째. 간다","연전째다","연전째. 숨을 죽여라"]),0,1.3]; },
+  quoteScr:d=>[pick(["…말은 검으로 하는 것이다","…각오를 말하는군","……들을 필요는 없다","…글귀는 글귀일 뿐"]),0,1.2],
+  ending:d=>[pick(["…완주. 수행의 끝을 보았군. 훌륭하다","…끝까지 왔군","…완주다. 인정하마","…길의 끝을 보았군","…훌륭한 수행이었다"]),1,3],
+  winTalk:d=>[pick(["…이겼다고 멈추지 마라","…다음 적은 더 강하다","…좋은 검이었다. 기억해 둬라","…나는 아직 아들을 되찾지 못했다. 너는 멈추지 마라","…승리는 순간이다"]),0,1.5],
   muse:d=>{ if(d.ctx==="battle") return [pick(["……","…호흡을 죽여라","…기다림도 술법이다"]),0,1];
     if(d.ctx==="quote") return [pick(["……","…쓸데없는 말이다"]),0,1];
     return [pick(["……","…수련을 게을리하지 마라","…조용하군. 나쁘지 않다","…그림자는 서두르지 않는다","…밤이 길다"]),0,1]; },
-  loseTalk:d=>[pick(["…패인을 새겨라. 그것이 수행이다","…다시 서라. 그뿐이다","…약함을 알았으면 강해질 수 있다","…한 번의 패배는 아무것도 아니다"]),0,1.5],
+  loseTalk:d=>[pick(["…패인을 새겨라. 그것이 수행이다","…다시 서라. 그뿐이다","…약함을 알았으면 강해질 수 있다","…한 번의 패배는 아무것도 아니다","…분함은 두고 가라"]),0,1.5],
   record:d=>[d.w*2>=d.g?("…오늘 "+d.g+"전 "+d.w+"승. 좋은 수행이다"):("…오늘 "+d.g+"전 "+d.w+"승. 패배도 기록해 둬라"),0,1.5],
-  domLead:d=>[pick(["…승기가 보인다. 끊지 마라","…크게 앞섰다. 마무리를 생각해라"]),0,1.3],
-  domBehind:d=>[pick(["…열세. 조급함이 최대의 적이다","…버텨라. 한 수로 뒤집힌다"]),0,1.3],
-  halfHp2:d=>["…적, 절반. 순조롭다",0,1.2],
-  halfHp1:d=>["…피해가 크다. 호흡을 가다듬어라",0,1.2],
-  rush:d=>["…연격. 훌륭하다",1,1.5],
-  winScr:d=>[pick(["…승자의 이름이다. 새겨 둬라","…이겼다. 그러나 자만은 금물","…이 이름, 신조에게도 들려주고 싶군"]),1,2],
-  loseScr:d=>[pick(["…패배를 새겨라. 다음은 이긴다","…저 이름을 기억해라. 수행이 부족했다"]),0,2],
-  oppSp:d=>["……온다",0,1],
+  domLead:d=>[pick(["…승기가 보인다. 끊지 마라","…크게 앞섰다. 마무리를 생각해라","…흐름은 이쪽이다","…밀어붙여라"]),0,1.3],
+  domBehind:d=>[pick(["…열세. 조급함이 최대의 적이다","…버텨라. 한 수로 뒤집힌다","…밀리고 있다. 침착해라","…아직 길은 있다"]),0,1.3],
+  halfHp2:d=>[pick(["…적, 절반. 순조롭다","…절반이다","…반은 깎았다","…순조롭다","…계속 밀어라"]),0,1.2],
+  halfHp1:d=>[pick(["…피해가 크다. 호흡을 가다듬어라","…절반 잃었다","…호흡을 고쳐라","…깊게 맞았군","…버텨라"]),0,1.2],
+  rush:d=>[pick(["…연격. 훌륭하다","…몰아쳤군","…끊지 마라","…연격이다","…좋은 흐름이다"]),1,1.5],
+  winScr:d=>[pick(["…승자의 이름이다. 새겨 둬라","…이겼다. 그러나 자만은 금물","…이 이름, 신조에게도 들려주고 싶군","…이름이 남았군"]),1,2],
+  loseScr:d=>[pick(["…패배를 새겨라. 다음은 이긴다","…저 이름을 기억해라. 수행이 부족했다","…이 이름을 잊지 마라"]),0,2],
+  oppSp:d=>[pick(["……온다","…필살기다","…물러서라","…읽어라","…피해라"]),0,1],
+  flowSameMove:d=>[pick(["…같은 수에 세 번. 눈을 떠라","…"+(NM(d)||"같은 수")+"만 세 번이다","…수가 읽히고 있다","…같은 함정에 또 걸렸군"]),0,1.5],
+  flowTrade:d=>[pick(["…쉴 틈이 없군","…서로 물러서지 않는다","…"+d.n+"번을 주고받았다","…난타전이다"]),1,1.5],
+  flowOneSide:d=>[pick(["…한 대도 안 내줬다","…일방적이군","…"+d.n+"대. 흠이 없다","…완전히 잡았다"]),1,1.5],
+  flowChased:d=>[pick(["…맞고만 있다","…반격이 없다","…"+d.n+"대째다. 끊어라","…흐름을 빼앗겼군"]),0,1.5],
+  flowSpHeavy:d=>[pick(["…필살기만 네 번째다","…패턴이 보인다","…읽어라. 같은 수다","…"+d.n+"번째 비기다"]),0,1.5],
+  arcSweep:d=>[pick(["…두 판 모두. 흠이 없다","…연달아 두 판. 완벽하다","…한 판도 내주지 않았군","…빈틈이 없었다"]),1,2.5],
+  arcSwept:d=>[pick(["…두 판 모두 내줬다","…한 판도 못 땄군","…처음부터 밀렸다","…완패다. 새겨라"]),0,2],
+  arcComeback:d=>[pick(["…첫 판을 내주고 내리 두 판. 뒤집었군","…한 판 지고 두 판. 그것이 인내다","…밀린 뒤에 되찾았군","…뒤집었다. 훌륭하다"]),1,3],
+  arcSweat:d=>[pick(["…마지막 판까지 갔군. 진땀이다","…한 판씩 나눠 갖고, 끝을 잡았다","…끝판에서 갈렸군","…아슬아슬했다"]),1,2.5],
+  arcChoke:d=>[pick(["…먼저 한 판 따 놓고 내리 둘. 방심이다","…앞서다 놓쳤군","…흐름을 통째로 내줬다","…첫 판이 독이 됐군"]),0,2],
+  arcSlip:d=>[pick(["…따라붙고도 마지막을 놓쳤군","…끝판에서 갈렸다","…한 걸음이 모자랐다","…아깝다. 새겨 둬라"]),0,2],
   REL:{galford:"갈포드… 닌자의 길, 지켜보겠다",kazuki:"카자마의 불꽃인가",
        sogetsu:"물의 카자마…",hanzo:"…나인가. 재미있군",nakoruru:"자연의 아이인가",
        yuga:"저것이 원흉인가. …베어라"},
  },
  galford:{ /* 열혈 정의의 닌자 — 파피와 함께 */
   hello:"갈포드 참전! 정의의 해설, 시작한다!",
-  move:d=>d.sup?["비오의다!! 우오오!!",1,3]:null,
-  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+"빅히트다!!",1,2]:[(nm?nm+" ":"")+"히트다!",0,1.8];},
-  moveDown:d=>{const nm=NM(d); return [nm?nm+RO(nm)+" 테이크다운!":"테이크다운!",1,2];},
-  moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+"저스티스!!",1,4];},
-  hit:d=>d.dmg>=12?["나이스 샷!!",1,1.2]:null,
-  taken:d=>d.dmg>=12?["앗, 저건 아프다!",0,1.2]:null,
-  down:d=>["눕혔다! 파피도 신났다!",0,1.5],
-  downed:d=>["일어나! 아직 끝나지 않았어!",0,1.5],
-  low1:d=>["위기다! 하지만 포기는 없다!",1,2],
-  low2:d=>["마무리다!!",1,2],
-  reversal:d=>["대역전이다아!!",1,2],
-  ko:d=>["저스티스 이즈 윈!!",1,4],
-  koed:d=>["이럴 수가…! 다음엔 이긴다!",1,4],
-  dko:d=>["둘 다 쓰러졌다!?",1,4],
-  round:d=>["고고!!",0,1],
-  start:d=>[d.who+"! 파이트다!",1,2],
+  move:d=>d.sup?[pick(["비오의다!! 우오오!!","비오의! 이게 진짜 정의다!!","오의를 넘는 오의! 간다!!",
+    "파피, 눈 크게 떠라! 비오의다!!","비오의다!! 심장이 뛴다!!"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["빅히트다!!","빅히트! 굉장하다!!",
+    "엄청난 한 방이다!!","클린 히트!! 묵직하다!!","제대로 꽂혔다!!"]),1,2]
+    :[(nm?nm+" ":"")+pick(["히트다!","히트! 좋았어!","제대로 들어갔다!","맞았다! 나이스!","깔끔한 히트다!"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); const t=pick(["테이크다운!","다운이다! 나이스!","눕혔다! 파피, 봤냐!",
+    "완전히 넘어갔다!","멋진 마무리다!"]); return [nm?nm+RO(nm)+" "+t:t,1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+pick(["저스티스!!","피니시다!!","이게 정의의 일격이다!!",
+    "끝났다! 저스티스!!","완벽한 결착이다!!"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["나이스 샷!!","좋았어! 굿 히트!!","제대로다!! 파피도 짖는다!",
+    "크게 들어갔다!!","그거다!! 나이스!!"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["앗, 저건 아프다!","윽, 묵직하다…!","아프다! 하지만 버틴다!",
+    "좋은 한 방이었다… 인정한다","맞았다! 정신 차려라!"]),0,1.2]:null,
+  down:d=>[pick(["눕혔다! 파피도 신났다!","다운이다! 좋은 흐름이다!","눕혔다! 이대로 밀어붙여라!",
+    "쓰러뜨렸다! 나이스 워크!","다운! 파피, 하이파이브다!"]),0,1.5],
+  downed:d=>[pick(["일어나! 아직 끝나지 않았어!","넘어졌다! 하지만 다시 선다!","괜찮다! 히어로는 일어난다!",
+    "일어서라! 파피도 응원한다!","아직이다! 포기는 없다!"]),0,1.5],
+  low1:d=>[pick(["위기다! 하지만 포기는 없다!","체력이 얼마 없다! 침착해라!","위험하다! 한 방이면 끝난다!",
+    "벼랑 끝이다! 여기서 버텨라!","아직 안 끝났다! 히어로답게!"]),1,2],
+  low2:d=>[pick(["마무리다!!","한 방이다! 결정해라!!","저기다! 끝내라!!",
+    "찬스다! 놓치지 마라!!","마지막 한 방, 간다!!"]),1,2],
+  reversal:d=>[pick(["대역전이다아!!","뒤집었다!! 이게 정의다!!","믿고 있었다!! 역전이다!!",
+    "포기 안 한 자의 결과다!!","우오오! 완전히 뒤집었다!!"]),1,2],
+  ko:d=>[pick(["저스티스 이즈 윈!!","KO! 정의는 이긴다!!","끝났다!! 저스티스!!",
+    "승리다!! 파피, 만세!!","이게 히어로의 결말이다!!"]),1,4],
+  koed:d=>[pick(["이럴 수가…! 다음엔 이긴다!","졌다…! 하지만 여기서 끝이 아니다","분하다! 다음은 반드시 이긴다!",
+    "강했다… 인정한다. 다시 간다!","쓰러졌다! 하지만 일어난다!"]),1,4],
+  dko:d=>[pick(["둘 다 쓰러졌다!?","동시에 다운! 무승부다!","둘 다 끝까지 갔다! 대단하다!",
+    "이런 승부도 있는 거구나!","서로 쓰러졌다! 무승부다!"]),1,4],
+  round:d=>[pick(["고고!!","라운드 스타트! 가자!!","자, 간다! 준비됐나!",
+    "시작이다! 집중해라!","고고! 파피도 대기 중이다!"]),0,1],
+  start:d=>[d.who+pick(["! 파이트다!","! 정의의 승부다!","! 좋은 승부를 하자!",
+    "! 전력으로 간다!","! 파피도 보고 있다!"]),1,2],
   rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
-  charsel:d=>["누굴 고를 거냐! 두근두근이다!",0,1],
-  stylesel:d=>["수라냐 나찰이냐!",0,1],
-  title:d=>["타이틀이다! 버튼을 눌러 시작이다!",0,1],
-  cardsel:d=>[pick(["카드 타임! 뭐가 나올까!","레어 카드 나와라!","파피는 카드보다 간식파다!"]),0,1],
-  idle:d=>[pick(["정적이다… 폭풍 전의 고요인가!","파피도 하품하고 있다!","자, 슬슬 가보자고!"]),0,1],
-  menuIdle:d=>[pick(["메뉴 타임! 파피는 낮잠 중이다","골랐으면 고고다!"]),0,1],
+  charsel:d=>[pick(["누굴 고를 거냐! 두근두근이다!","파트너를 골라라! 신중하게!","누구든 좋다! 믿고 골라라!",
+    "고르는 것도 승부의 일부다!","파피는 벌써 정했다고 짖는다!"]),0,1],
+  stylesel:d=>[pick(["수라냐 나찰이냐!","수라와 나찰! 골라라!","유파 선택이다! 신중하게!",
+    "어느 쪽이든 정의는 정의다!","수라? 나찰? 두근거린다!"]),0,1],
+  title:d=>[pick(["타이틀이다! 버튼을 눌러 시작이다!","시작 버튼을 눌러라! 대기 중이다!","자, 모험의 입구다! 들어와라!",
+    "준비됐나! 버튼 하나면 된다!","파피도 시작을 기다리고 있다!"]),0,1],
+  cardsel:d=>[pick(["카드 타임! 뭐가 나올까!","레어 카드 나와라!","파피는 카드보다 간식파다!",
+    "카드도 정의의 힘이다!","좋은 걸 뽑아라! 기도한다!"]),0,1],
+  idle:d=>[pick(["정적이다… 폭풍 전의 고요인가!","파피도 하품하고 있다!","자, 슬슬 가보자고!",
+    "기다리는 것도 수행이다!","조용하군… 나쁘지 않다!"]),0,1],
+  menuIdle:d=>[pick(["메뉴 타임! 파피는 낮잠 중이다","골랐으면 고고다!","천천히 골라라! 기다린다!",
+    "고민도 즐거운 시간이다!"]),0,1],
   charselChat:d=>[pick(["한조 님도 계신다! 긴장된다!","나, 나코루루가 있다…! 시, 신경 쓰지 마라!",
     "파피도 좋은 선택이라고 짖고 있다!","히어로가 필요하면 나다!","다들 라이벌이자 친구다!",
     "리무루루도 있다! 자매가 다 검사라니!","유가는 무섭지만… 정의는 물러서지 않는다!",
-    "샤를로트의 검은 예술이다!"]),0,1],
-  vsq:d=>[pick(["정정당당! 저스티스다!!","명대사다! 불타오른다!"]),0,1],
-  storyChat:d=>[pick(["스토리 타임이다!","오오, 전개가 궁금하다!","파피도 귀 기울이고 있다!"]),0,1],
-  firstBlood:d=>["퍼스트 히트다! 좋았어!",0,1.2],
-  roundLead:d=>["한 판 리드다! 이 기세로!",0,1.5],
-  roundBehind:d=>["한 판 뺏겼다…! 반격 개시다!",0,1.5],
-  matchPoint:d=>["파이널 라운드다! 심호흡, 고!!",1,2],
-  doubleLow:d=>["둘 다 벼랑 끝이다!! 파피도 눈 가렸다!",1,2],
-  longFight:d=>["긴 승부다…! 끈기 대결이다!",0,1],
-  perfect:d=>["퍼펙트다!! 파피, 봤냐!!",1,2.5],
-  comeback:d=>["대역전!! 이게 히어로의 각본이다!!",1,2.5],
-  quickKo:d=>["초스피드 피니시!! 번개 같았다!",1,2],
-  revenge:d=>["리벤지 성공이다!! 통쾌하다!",1,2],
-  streak:d=>[d.n+"연승!! 연승 가도다!!",1,2],
-  oppInfo:d=>["스카우팅 정보다 — "+d.text,0,1.2],
+    "샤를로트의 검은 예술이다!","한조 님께 배운 걸 보여주겠다!","우쿄는 조용하지만 무섭다!",
+    "쥬베이 씨, 관록이 다르다!","겐주로는… 정의의 반대편이군!"]),0,1],
+  vsq:d=>[pick(["정정당당! 저스티스다!!","명대사다! 불타오른다!","말에도 각오가 담긴다!",
+    "좋은 말이다! 파피도 끄덕인다!"]),0,1],
+  storyChat:d=>[pick(["스토리 타임이다!","오오, 전개가 궁금하다!","파피도 귀 기울이고 있다!",
+    "이야기에도 정의가 있다!","다음이 궁금해서 못 참겠다!"]),0,1],
+  firstBlood:d=>[pick(["퍼스트 히트다! 좋았어!","선제 공격 성공! 나이스!","먼저 잡았다! 기세 좋다!",
+    "첫 타는 이쪽이다! 고고!","선수 필승! 밀어붙여라!"]),0,1.2],
+  roundLead:d=>[pick(["한 판 리드다! 이 기세로!","선취점이다! 좋은 흐름이다!","한 판 앞섰다! 방심은 금물!",
+    "리드 중이다! 집중 유지다!","한 판 땄다! 파피도 신났다!"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 뺏겼다…! 반격 개시다!","한 판 내줬다! 아직 괜찮다!","뒤졌다! 여기서부터가 히어로다!",
+    "한 판 뒤! 포기하기엔 이르다!","따라잡는다! 반격 개시다!"]),0,1.5],
+  matchPoint:d=>[pick(["파이널 라운드다! 심호흡, 고!!","마지막 판이다! 전부 걸어라!!","여기서 다 정해진다!! 집중!!",
+    "파이널! 파피도 숨을 죽였다!!","마지막 한 판! 후회 없이 가라!!"]),1,2],
+  doubleLow:d=>[pick(["둘 다 벼랑 끝이다!! 파피도 눈 가렸다!","서로 한 방이면 끝난다!!","둘 다 아슬아슬하다!! 우오오!!",
+    "한 방 승부다!! 눈을 못 떼겠다!","서로 벼랑 끝! 심장이 뛴다!!"]),1,2],
+  longFight:d=>[pick(["긴 승부다…! 끈기 대결이다!","오래 간다! 체력 관리도 실력이다","길어지고 있다! 집중 유지다!",
+    "지구전이다! 먼저 지치면 진다","파피도 슬슬 하품하겠다!"]),0,1],
+  perfect:d=>[pick(["퍼펙트다!! 파피, 봤냐!!","무피해 승리!! 완벽하다!!","한 대도 안 맞았다!! 대단하다!",
+    "퍼펙트! 이건 교과서다!!","흠 하나 없다!! 저스티스!!"]),1,2.5],
+  comeback:d=>[pick(["대역전!! 이게 히어로의 각본이다!!","벼랑 끝에서 뒤집었다!!","포기 안 했다! 그래서 이겼다!!",
+    "역전승!! 이게 정의의 힘이다!!","끝까지 간 자의 승리다!!"]),1,2.5],
+  quickKo:d=>[pick(["초스피드 피니시!! 번개 같았다!","순식간이다!! 눈 깜짝할 새다!","빠르다!! 파피도 못 봤다!",
+    "전광석화다!! 굉장하다!","눈을 깜빡이니 끝나 있었다!"]),1,2],
+  revenge:d=>[pick(["리벤지 성공이다!! 통쾌하다!","복수 완료! 확실히 갚아줬다!","지난 빚, 제대로 돌려줬다!",
+    "리벤지 매치 승리!! 시원하다!","다시 붙어서 이겼다! 최고다!"]),1,2],
+  streak:d=>[d.n+pick(["연승!! 연승 가도다!!","연승!! 멈출 줄을 모른다!!","연승 중! 이게 기세다!!",
+    "연승! 파피도 자랑스럽다!!","연승!! 이 흐름 놓치지 마라!!"]),1,2],
+  oppInfo:d=>[pick(["스카우팅 정보다 — ","상대 데이터다 — ","조사해 왔다 — ","파피가 물어온 정보다 — "])+d.text,0,1.2],
   survStreak:d=>{ if(d.rec) return [d.n+"연승 신기록!! 히스토리 메이커다!!",1,2];
     if(d.n>=10) return [d.n+"연승!! 레전드다!!",1,2];
     if(d.n>=7) return [d.n+"연승!! 폭주 기관차다!",1,1.8];
     if(d.n>=3) return [d.n+"연승 스트릭! 고고!!",0,1.5];
     return [d.n+"승째다! 다음 도전자 나와라!",0,1.3]; },
-  survEnd:d=>[d.n+"연승 스트릭 종료…! 멋진 도전이었다!",1,2],
-  storyStage:d=>{ if(d.n>=8) return ["종반전이다!! 여기서부터가 하이라이트다!",0,1.5];
-    if(d.n>=5) return ["벌써 "+d.n+"연전! 엔진 다 데워졌다!",0,1.4];
-    return [d.n+"연전째다! 다음 도전자, 어서 와라!",0,1.3]; },
-  quoteScr:d=>[pick(["명대사 타임이다!","뭐라고 하는 거냐! 두근두근!","말싸움도 승부의 일부다!"]),0,1.2],
-  ending:d=>["클리어다!! 오늘의 히어로는 너다!!",1,3],
-  winTalk:d=>[pick(["나이스 파이트! 파피도 꼬리 흔든다!","이게 정의의 승리다!","기세 좋다! 다음도 가자!","멋진 마무리였다! 하이파이브!"]),0,1.5],
-  muse:d=>{ if(d.ctx==="battle") return [pick(["파피, 대기다!","슬슬 한 방 가자!","집중, 집중이다!"]),0,1];
-    if(d.ctx==="quote") return [pick(["오오, 뭐라고 할까!","대사도 히어로의 일부다!"]),0,1];
-    return [pick(["파피, 앉아! …좋아, 착하지","정의는 쉬지 않는다! …조금은 쉬어도 되나?","심심한데 한판 더 어때!","오늘도 평화롭군!","해설도 훈련이다!"]),0,1]; },
-  loseTalk:d=>[pick(["히어로는 넘어져도 다시 선다!","다음 판에서 갚아주자!","분하지만 좋은 경기였다!","파피도 괜찮다고 짖고 있다!"]),0,1.5],
-  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승! 히어로의 하루다!"):("오늘 "+d.g+"전 "+d.w+"승… 재기의 스토리다!"),0,1.5],
-  domLead:d=>[pick(["압도하고 있다! 파피도 신났다!","이 기세, 멈추지 마라!"]),0,1.3],
-  domBehind:d=>[pick(["핀치다…! 하지만 히어로는 여기서 일어난다!","반격의 시간이다!"]),0,1.3],
-  halfHp2:d=>["하프라인 돌파다!",0,1.2],
-  halfHp1:d=>["반이나…! 여기서 리셋이다!",0,1.2],
-  rush:d=>["러시다!! 몰아쳐라!!",1,1.5],
-  winScr:d=>[pick(["위너다!! 파피, 만세!!","승자의 이름이 빛난다! 예이!!"]),1,2],
-  loseScr:d=>[pick(["히어로는 쓰러져도 일어난다! 다음이다!","분하다…! 하지만 좋은 승부였다!"]),0,2],
-  oppSp:d=>["위험해!",0,1],
+  survEnd:d=>[d.n+pick(["연승 스트릭 종료…! 멋진 도전이었다!","연승에서 멈췄다! 잘 싸웠다!",
+    "연승까지! 자랑스러운 기록이다","연승에서 끝! 다음은 더 간다!","연승! 여기까지도 대단하다!"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return [pick(["종반전이다!! 여기서부터가 하이라이트다!","마지막 고비다!! 힘을 남기지 마라!",
+      "종반이다! 파피도 긴장했다!"]),0,1.5];
+    if(d.n>=5) return ["벌써 "+d.n+pick(["연전! 엔진 다 데워졌다!","연전이다! 아직 팔팔하다!","연전! 흐름이 붙었다!"]),0,1.4];
+    return [d.n+pick(["연전째다! 다음 도전자, 어서 와라!","연전째! 몸이 풀렸다!","연전이다! 아직 시작이다!"]),0,1.3]; },
+  quoteScr:d=>[pick(["명대사 타임이다!","뭐라고 하는 거냐! 두근두근!","말싸움도 승부의 일부다!",
+    "각오가 담긴 말이다!"]),0,1.2],
+  ending:d=>[pick(["클리어다!! 오늘의 히어로는 너다!!","완주다!! 끝까지 포기 안 했다!!","엔딩이다!! 긴 여정이었다!!",
+    "해냈다!! 정의는 끝까지 간다!!","파피도 만세를 부르고 있다!!"]),1,3],
+  winTalk:d=>[pick(["나이스 파이트! 파피도 꼬리 흔든다!","이게 정의의 승리다!","기세 좋다! 다음도 가자!",
+    "멋진 마무리였다! 하이파이브!","좋은 승부였다! 상대에게도 박수!"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["파피, 대기다!","슬슬 한 방 가자!","집중, 집중이다!","숨 고르고 간다!"]),0,1];
+    if(d.ctx==="quote") return [pick(["오오, 뭐라고 할까!","대사도 히어로의 일부다!","말에 각오가 보인다!"]),0,1];
+    return [pick(["파피, 앉아! …좋아, 착하지","정의는 쉬지 않는다! …조금은 쉬어도 되나?","심심한데 한판 더 어때!",
+      "오늘도 평화롭군!","해설도 훈련이다!","한조 님이라면 뭐라 하실까!","파피, 간식은 훈련 끝나고다!"]),0,1]; },
+  loseTalk:d=>[pick(["히어로는 넘어져도 다시 선다!","다음 판에서 갚아주자!","분하지만 좋은 경기였다!",
+    "파피도 괜찮다고 짖고 있다!","진 이유를 알면 그건 수확이다!"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승! "+pick(["히어로의 하루다!","좋은 하루였다!","기록이 빛난다!"]))
+    :("오늘 "+d.g+"전 "+d.w+"승… "+pick(["재기의 스토리다!","다음 장이 있다!","여기서부터다!"])),0,1.5],
+  domLead:d=>[pick(["압도하고 있다! 파피도 신났다!","이 기세, 멈추지 마라!","흐름을 완전히 쥐었다!",
+    "좋다! 이대로 밀어붙여라!"]),0,1.3],
+  domBehind:d=>[pick(["핀치다…! 하지만 히어로는 여기서 일어난다!","반격의 시간이다!","밀리고 있다! 침착하게 가자!",
+    "여기서 버티면 흐름이 온다!"]),0,1.3],
+  halfHp2:d=>[pick(["하프라인 돌파다!","절반 깎았다! 좋은 페이스!","반이나 줄였다! 계속 가라!",
+    "하프라인! 여기서 더 밀어라!"]),0,1.2],
+  halfHp1:d=>[pick(["반이나…! 여기서 리셋이다!","절반 남았다! 신중하게 가자!","체력 반! 아직 충분하다!",
+    "반이 날아갔다! 정신 차려라!"]),0,1.2],
+  rush:d=>[pick(["러시다!! 몰아쳐라!!","연속 공격!! 멈추지 마라!!","파도처럼 몰아친다!! 좋다!!",
+    "러시 온! 파피도 흥분했다!!"]),1,1.5],
+  winScr:d=>[pick(["위너다!! 파피, 만세!!","승자의 이름이 빛난다! 예이!!","정의가 이겼다!! 기분 좋다!!",
+    "오늘의 히어로가 정해졌다!!"]),1,2],
+  loseScr:d=>[pick(["히어로는 쓰러져도 일어난다! 다음이다!","분하다…! 하지만 좋은 승부였다!",
+    "여기서 배운다! 다음은 다르다!","패배도 이야기의 한 장이다!"]),0,2],
+  oppSp:d=>[pick(["위험해!","조심해라! 필살기다!","온다! 피해라!",
+    "저건 위험하다! 거리를 벌려라!","가드다! 큰 게 온다!"]),0,1],
+  flowSameMove:d=>[pick([d.name+"에 벌써 세 번째다!","같은 수에 계속 걸린다! 읽어라!",
+    d.name+", 또 그거다! 대비해라!","패턴이 보인다! 같은 기술 세 번!",
+    "세 번이나 같은 걸로 당했다!"]),0,1.5],
+  flowTrade:d=>[pick(["쉴 틈 없이 오간다!! 난타전이다!","서로 물러서지 않는다!! 뜨겁다!!",
+    d.n+"번째 주고받기!! 대단하다!","치고받고 또 치고받는다!!","둘 다 물러설 생각이 없다!!"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 안 내주고 있다!!",d.n+"대 연속! 완전히 일방적이다!",
+    "흐름을 전부 쥐고 있다!!","반격할 틈을 안 주고 있다!!","이게 완벽한 공세다!! 굉장하다!"]),1,1.5],
+  flowChased:d=>[pick(["계속 맞기만 한다… 흐름을 끊어라","맞기만 "+d.n+"대째다! 받아쳐라!",
+    "일방적으로 밀리고 있다! 침착!","반격의 실마리를 찾아라!","이대로는 안 된다! 한 번 끊어라!"]),0,1.5],
+  flowSpHeavy:d=>[pick(["필살기만 네 번째다! 읽어라!","저쪽은 필살기 승부다! 대비해라!",
+    d.n+"번째 필살기! 타이밍을 봐라!","큰 기술이 계속 온다! 거리를!","필살기에 기대고 있다! 빈틈이다!"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리! 흠 하나 없는 매치다","한 판도 안 내줬다! 완전한 흐름!",
+    "시작부터 끝까지 이쪽 페이스였다","2-0! 한 번도 흔들리지 않았다","처음부터 끝까지 밀어붙였다!"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 연속… 흐름을 못 잡았다","0-2. 아무것도 못 해봤다…",
+    "시작부터 끝까지 상대 페이스였다","반격의 실마리가 없었다… 분하다","다음엔 첫 판부터 다르게 간다"]),0,2],
+  arcComeback:d=>[pick(["첫 판을 내주고 내리 두 판! 뒤집었다","벼랑 끝에서 두 판 연속! 굉장하다",
+    "포기하지 않은 자의 각본이다!!","0-1에서 2-1! 이게 히어로다!!","첫 판은 수업료였다! 완벽한 회수!"]),1,3],
+  arcSweat:d=>[pick(["한 판씩 주고받고 마지막 판! 진땀이다","끝까지 갔다! 손에 땀이 났다",
+    "마지막 판까지 알 수 없었다!","2-1! 종이 한 장 차이였다","파피도 끝까지 못 보고 있었다!"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 한 판 땄는데 내리 두 판…","앞서 있었다… 흐름을 놓쳤다",
+    "첫 판이 제일 좋았다니… 분하다","리드를 못 지켰다. 여기서 배운다","다 잡은 흐름이 손에서 빠졌다"]),0,2],
+  arcSlip:d=>[pick(["따라붙었는데 마지막 판을 놓쳤다","동점까지 갔다… 한 걸음이 모자랐다",
+    "2라운드까지는 완벽했는데…","마지막 판, 종이 한 장 차이였다","여기까지 왔으니 다음은 넘는다"]),0,2],
   REL:{nakoruru:"나, 나코루루다…! 머, 멋진 모습을 보여야 해!",hanzo:"한조 님이다! 오늘도 배우겠습니다!",
        galford:"오늘의 히어로는 나다! 파피, 가자!",rimururu:"리무루루도 왔구나!",
-       haohmaru:"하오마루 씨! 오늘도 호쾌하게 가자!"},
+       haohmaru:"하오마루 씨! 오늘도 호쾌하게 가자!",
+       genjuro:"저 사람은… 눈빛이 위험해. 조심해요!",
+       jubei:"쥬베이 씨, 두 자루라니 멋지다!",
+       charlotte:"샬롯 씨! 정의를 아는 사람이다!",
+       kazuki:"불꽃의 닌자라… 나도 지지 않아!"},
+ },
+ rimururu:{ /* 얼음 정령 코노루와 함께 — 밝은 반말, 감탄 많음 */
+  hello:"리무루루야! 코노루랑 같이 볼게",
+  move:d=>d.sup?[pick(["큰 거 온다! 피해!!","비오의야! 조심해!!","우와, 비오의를 꺼냈어!!","저거 진짜 세! 조심해!"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["제대로 들어갔어!","깊게 박혔어!","묵직하게 꽂혔어!"]),1,2]:[(nm?nm+" ":"")+pick(["맞았어!","들어갔어!","깔끔하게 맞췄어!"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔어!",nm+RO(nm)+" 쓰러뜨렸어!"]):pick(["잘 눕혔어!","깨끗하게 눕혔네!"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"! ":"")+pick(["이걸로 끝!","승부 났어!","여기서 끝냈어!"]),1,4];},
+  hit:d=>d.sup?[pick(["필살기가 꽂혔어!","큰 게 통했어!","코노루도 놀랄 한 방!"]),1,1.5]:(d.dmg>=12?[pick(["우와, 묵직해!","좋은 일격이야!","제대로 실렸어!","크게 한 방 들어갔어!"]),1,1.2]:null),
+  taken:d=>d.sup?[pick(["큰 걸 맞았어… 아프겠다","필살기에 당했어…"]),0,1.4]:(d.dmg>=12?[pick(["으윽, 아프겠다","저건 뼈에 울려","크윽, 제대로 맞았어","저걸 맞고 서 있네"]),0,1.2]:null),
+  down:d=>d.dmg>=12?[pick(["한 방에 눕혔어!","크게 눕혔네! 지금이야","묵직하게 넘어뜨렸어!"]),1,1.6]:[pick(["눕혔어! 몰아붙여!","넘어졌다! 지금이야","틈 주지 마!","일어나기 전에 붙어!"]),0,1.5],
+  downed:d=>d.dmg>=12?[pick(["세게 맞았어… 일어나!","크게 넘어졌어! 정신 차려"]),0,1.6]:[pick(["일어나! 아직이야","넘어졌네… 툭툭 털고 가자","아직 안 끝났어!","숨 고르고 일어나!"]),0,1.5],
+  low1:d=>d.sup?[pick(["필살기 한 방에 몰렸어!","큰 걸 맞고 벼랑 끝이야"]),1,2]:[pick(["위험해! 한 방이면 끝이야","얼음처럼 굳지 마, 움직여!","숨이 얕아졌어… 버텨!","벼랑 끝이야! 정신 차려"]),1,2],
+  low2:d=>d.sup?[pick(["필살기로 끝내 버려!","큰 걸로 마무리해!"]),1,2]:[pick(["끝내 버려!","한 걸음이야! 지금!","다리가 풀렸어, 지금이야!","마무리! 망설이지 마!"]),1,2],
+  reversal:d=>[pick(["우와, 판이 뒤집혔어!!","판이 확 돌았어!!","거꾸로 섰어! 대단해","이래서 승부는 모른대!"]),1,2],
+  ko:d=>d.sup?[pick(["필살기로 마무리! 멋져","큰 걸로 끝냈어!"]),1,4]:[pick(["이겼다! 잘했어!","깨끗하게 끝냈어!","해냈어! 대단해","승부 났어! 멋졌어"]),1,4],
+  koed:d=>d.sup?[pick(["필살기에 당했어…","큰 걸 맞고 졌어…"]),1,4]:[pick(["졌네… 다음엔 이기자","분해… 그래도 잘 싸웠어","앗, 당했어… 다음이야","여기까진가… 다음엔 안 져"]),1,4],
+  dko:d=>[pick(["둘 다 쓰러졌어!","같이 넘어갔네! 무승부야","서로 끝을 봤어","우와, 이런 것도 되는구나"]),1,4],
+  round:d=>[d.n>=3?pick([d.n+"라운드! 여기서 갈려","마지막 판이야, 정신 차려"]):pick(["가자, 코노루!","시작이야!","자, 붙어 봐!","한판 가자!"]),0,1],
+  start:d=>[pick([d.who+"… 재밌겠다!",d.who+"구나. 잘해 보자",d.who+"랑 붙네! 기대돼",d.who+"… 방심하면 안 돼"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["누구랑 싸울 거야?","마음에 드는 사람 골라","누구 고를래? 나도 있어","고민은 짧게!"]),0,1],
+  stylesel:d=>[pick(["수라? 나찰? 뭐가 좋을까","둘 다 세 보이는데","나찰은 사나운 쪽이래","수라는 정직한 쪽이지"]),0,1],
+  title:d=>[pick(["코노루, 준비됐어? 시작하자!","오늘도 좋은 승부를 보자!"]),0,1],
+  cardsel:d=>[pick(["카드다! 어떤 게 좋을까","이거 받아도 되는 거야?","카드도 골라야 하는구나"]),0,1],
+  idle:d=>[d.n>=5?pick(["한참을 노려보기만 하네","공기가 얼어붙겠어"]):pick(["서로 눈치만 보네","먼저 가도 되는데!","조심스러운 승부구나","숨소리까지 들려"]),0,1],
+  menuIdle:d=>[pick(["천천히 골라도 돼","고르는 것도 재밌지"]),0,1],
+  charselChat:d=>[pick(["언니랑 붙으면 좀 그런데…","겐주로 아저씨는 무서워","코노루가 아까부터 신났어",
+    "우쿄는 몸이 약하대. 검은 빠른데","갈포드네! 강아지도 같이 왔나","쿠로코까지 싸우는 거야?",
+    "샤를로트 검은 참 곧아","하오마루 아저씨는 늘 웃고 있어","눈 오는 날에 싸우면 내가 유리해"]),0,1],
+  vsq:d=>[pick(["멋진 말이네! 자, 가자","좋은 글귀야"]),0,1],
+  storyChat:d=>[pick(["오, 이야기가 이어지네","그래서 어떻게 되는 건데?","재밌다. 계속 들려줘"]),0,1],
+  firstBlood:d=>d.dmg>=12?[pick(["첫 방부터 크게 들어갔어!","선제타가 묵직해!"]),1,1.4]:[pick(["첫 방이야! 기선 잡았어","먼저 닿았어! 좋은 시작","선수를 잡았네","첫 일격이 갈랐어"]),0,1.2],
+  roundLead:d=>[pick(["한 판 먼저! 이대로 가자","선취야! 방심은 금물","앞서간다! 한 판 더","기세 좋아, 계속 밀어"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내줬네… 여기부터야","아직 안 끝났어!","한 판일 뿐이야, 힘내","검 고쳐 잡고 다시 가자"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이야! 전부 걸어","여기서 갈려! 집중해","이 판이 전부야","숨 고르고 가자, 마지막이야"]),1,2],
+  doubleLow:d=>[pick(["둘 다 한 방이면 끝이야!","서로 벼랑 끝! 먼저 닿는 쪽","숨도 못 쉬겠어!","이런 게 진짜 승부구나"]),1,2],
+  longFight:d=>[pick(["길어지네… 집중해","질긴 승부야. 팔이 무겁겠다","먼저 지치는 쪽이 져","오래 버티네, 대단해"]),0,1],
+  perfect:d=>[pick(["한 대도 안 맞았어! 완벽해","흠집 하나 없어! 우와","완승이야! 얼음처럼 깔끔해","이런 승부는 처음 봐!"]),1,2.5],
+  comeback:d=>[pick(["빈사에서 뒤집었어!!","다 죽어가다 살아났어!","벼랑 끝에서 해냈어!","한 방 남기고 뒤집었어!"]),1,2.5],
+  quickKo:d=>[pick(["순식간이야! 눈 깜짝할 새","한 방에 끝냈어! 빨라","숨 한 번에 승부 났어","우와, 너무 빠른데"]),1,2],
+  revenge:d=>[pick(["지난 빚 갚았어! 시원해","저번 패배를 되돌렸어","제대로 되갚아줬네","기다린 보람이 있어"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승! 아무도 못 막아":d.n+"연승! 오늘 손이 좋네",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이야!",1,2];
+    if(d.n>=10) return [d.n+"연승! 전설이 되겠어",1,2];
+    if(d.n>=7) return [d.n+"연승! 손이 뜨거워졌어",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중! 다음도 가자",0,1.5];
+    return [pick([d.n+"연승! 다음 상대야","좋아, "+d.n+"명째다"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명 상대로 여기까지야",d.n+"명이라니, 잘 버텼어",d.n+"명째에서 멈췄네","여기까지 "+d.n+"명. 대단해"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기까지 왔어… 이제 진짜배기야",0,1.5];
+    if(d.n>=5) return [d.n+"연전째. 손이 다 풀렸겠다",0,1.4];
+    return [pick([d.n+"연전째야. 계속 가자!","다음 상대야. 아직 멀었지?"]),0,1.3]; },
+  quoteScr:d=>[pick(["뭐라는 거야, 저 사람","말보다 검이지","입은 그만하고 덤벼!"]),0,1.2],
+  ending:d=>[pick(["끝까지 올라갔어! 대단해!","정상까지 해냈어!","마지막까지 검이 살아 있었어","다 이기고 올라섰어!"]),1,3],
+  winTalk:d=>[pick(["좋은 승부였어. 다음 가자","이런 승부라면 몇 번이든","코노루도 신났어","이길 때 이긴다, 그거면 돼"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…손이 근질거려","숨 고르는 것도 기술이야","슬슬 크게 가도 좋겠는데"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말은 됐고","길다, 말이"]),0,1];
+    return [pick(["…심심해","언니는 뭐 하고 있을까","좋은 승부가 그립다","눈이라도 내리면 좋겠는데","심심하면 한판 더 하자!"]),0,1]; },
+  loseTalk:d=>[pick(["진 판에서 배우는 게 많대","검이 무뎠나… 다시 잡자","한 번 더 하면 되지","분해할 시간에 한 번 더!"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승! 잘하고 있어"):("오늘 "+d.g+"전 "+d.w+"승… 다음엔 갚자"),0,1.5],
+  domLead:d=>[pick(["크게 벌렸어! 몰아붙여","판이 기울었어. 방심은 금물"]),0,1.3],
+  domBehind:d=>[pick(["밀리네… 한 방이면 뒤집혀","버텨! 끝까지 모르는 거야"]),0,1.3],
+  halfHp2:d=>[pick(["절반 넘겼어!","반은 깎았어, 계속 밀어","절반이야! 흐름 놓치지 마","반이나 깎았네"]),0,1.2],
+  halfHp1:d=>[pick(["반피 깎였어… 정신 차려","절반 잃었어. 호흡 고쳐","반이 날아갔어… 신중히","절반이야. 여기서부터 조여"]),0,1.2],
+  rush:d=>[pick(["연타야! 물 흐르듯 이어져","쉴 틈 없이 몰아쳐!","연속으로 꽂히네!","흐름 탔어! 계속 이어"]),1,1.5],
+  winScr:d=>[pick(["봐, 이긴 얼굴이야","이긴 사람 이름이 남는 거야"]),1,2],
+  loseScr:d=>[pick(["저 이름 기억해 두자","분한 얼굴도 나쁘지 않아"]),0,2],
+  oppSp:d=>[pick(["온다!","필살기야!","조심해, 큰 거!","저쪽이 크게 준비했어"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째야":"같은 수에 세 번째야",
+    nm?nm+RO(nm)+" 계속 당하네":"같은 수에 계속 당하네","아까부터 같은 수에 걸려",
+    "같은 걸 세 번은 안 되지","저 수를 못 읽고 있어"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오가네!","서로 "+d.n+"번씩 주고받았어","난타전이야! 대단해","둘 다 물러설 생각이 없네"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 안 내주고 있어!","일방적이야! "+d.n+"대째","완전히 흐름을 쥐었어","저쪽은 손도 못 대네"]),1,1.5],
+  flowChased:d=>[pick(["계속 맞기만 해… 끊어!","벌써 "+d.n+"대째야. 반격해!","숨 돌릴 틈이 없어","이대로 밀리면 위험해"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째야","큰 기술만 노리네","필살기를 아끼질 않아","이제 읽을 때가 됐어"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져갔어","한 판도 안 내줬어! 대단해","처음부터 끝까지 흐름을 쥐었어","빈틈 없는 두 판이었어"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내줬어… 아쉽다","한 판도 못 가져왔네","흐름을 한 번도 못 잡았어","이런 날도 있어. 다시 하자"]),0,2],
+  arcComeback:d=>[pick(["첫 판 내주고 내리 두 판!","밀리다가 돌아섰어!","한 판 지고도 안 흔들렸어","뒤에서 따라붙어 넘어섰어"]),1,3],
+  arcSweat:d=>[pick(["마지막 판까지 갔어… 손에 땀","한 판씩 나누고 끝판 승부","끝까지 갈린 판이야","마지막 한 판이 갈랐어"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판이라니","앞서다가 뒤집혔어…","좋은 출발이었는데 아쉽다","쥐었던 흐름을 놓쳤어"]),0,2],
+  arcSlip:d=>[pick(["따라붙었는데 마지막에 놓쳤어","끝판까지 갔는데 한 끗 모자라","거의 잡았던 판인데… 아깝다","여기까지 온 것도 잘한 거야"]),0,2],
+  REL:{nakoruru:"언니! 무리하면 안 돼",rimururu:"어? 나랑 똑같은 얼굴이야",
+       haohmaru:"하오마루 아저씨다! 목소리 커",galford:"갈포드! 강아지도 같이 왔어?",
+       hanzo:"닌자래… 진짜 사라지는 걸까",genjuro:"저 아저씨는 좀 무서워",
+       charlotte:"검이 참 곧아. 멋지다",kuroko:"심판이 왜 싸우는 거야?",
+       sogetsu:"물을 쓰네. 얼음이랑 사촌인가"},
+ },
+ genjuro:{ /* 카프카미 겐주로 — 냉소, 도박, 살기 */
+  hello:"카프카미 겐주로다. 시시한 판이면 깨우지 마라",
+  move:d=>d.sup?[pick(["비오의냐. 패를 다 깠군","크게 걸었군. 쿠쿡","마지막 패다. 감당은 되겠나","전부 걸었나. 재밌군"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["뼈까지 갔군","깊게 박혔다","제대로 파고들었군"]),1,2]:[(nm?nm+" ":"")+pick(["맞췄군","들어갔다. 그래서?","고작 그건가"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔군",nm+RO(nm)+" 재웠다"]):pick(["눕혔군. 쿠쿡","바닥에 재웠다"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"! ":"")+pick(["패는 끝났다","여기서 접어라","끝이다. 시시하군"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["묵직하군","제대로 실렸다","쿠쿡, 아프겠군","뼈가 울렸겠군"]),1,1.2]:(d.dmg>=3?[pick(["스쳤군","간지럽겠군","그 정도로 되겠나","잔돈이군"]),1,1.2]:null),
+  taken:d=>d.dmg>=12?[pick(["큭, 크게 물렸군","제대로 받았군","값비싼 한 방이군","그건 아팠겠군"]),0,1.2]:(d.dmg>=3?[pick(["긁혔군","잔돈은 내줄 만하지","그 정도는 견뎌라","싸게 막았군"]),0,1.2]:null),
+  down:d=>d.dmg>=12?[pick(["눕혔다. 밟아라","바닥이 어울리는군","일어나기 전에 끝내라","쿠쿡, 잘 넘어갔군"]),0,1.5]:[pick(["넘어졌군. 붙어라","틈을 주지 마라","지금 몰아라","숨 돌릴 틈을 주지 마"]),0,1.5],
+  downed:d=>d.dmg>=12?[pick(["꼴사납군. 일어나라","바닥 맛이 어떤가","그러고도 검을 잡나","쿠쿡, 볼만하군"]),0,1.5]:[pick(["일어나라. 아직 이르다","엎어져 있을 셈인가","패는 아직 남았다","그쯤에서 눕지 마라"]),0,1.5],
+  low1:d=>d.dmg>=12?[pick(["목숨이 잔돈만큼 남았군","한 방이면 끝이다","여기서 접을 텐가","숨이 얕아졌군"]),1,2]:[pick(["벼랑 끝이군. 재밌어졌다","남은 패가 없군","마지막 한 장이다","여기부터가 승부다"]),1,2],
+  low2:d=>d.dmg>=12?[pick(["끝내라. 지루하다","목을 따라","한 수면 된다","숨통을 끊어라"]),1,2]:[pick(["마무리해라","저건 이미 죽은 패다","망설이면 네가 죽는다","끝을 봐라"]),1,2],
+  reversal:d=>[pick(["판이 뒤집혔군","호오, 패가 돌았다","이래서 도박은 못 끊지","재밌어졌군. 쿠쿡"]),1,2],
+  ko:d=>d.dmg>=12?[pick(["끝났다. 시시하군","깨끗하게 땄군","패는 접혔다","쿠쿡, 죽었군"]),1,4]:[pick(["끝이다","여기까지군","승부는 났다","더 볼 것도 없군"]),1,4],
+  koed:d=>d.dmg>=12?[pick(["큭… 크게 잃었군","이번 판은 내줬다","값은 나중에 받지","베였군. 기억해 두마"]),1,4]:[pick(["졌다. 다음 판이 있다","운이 나빴을 뿐이지","잃은 만큼 되받는다","쿠쿡… 재밌군"]),1,4],
+  dko:d=>[pick(["둘 다 죽었나. 쿠쿡","무승부라니 시시하군","서로 목을 땄군","판돈만 날아갔다"]),1,4],
+  round:d=>d.n>=5?[pick(["시작해라","패를 까라","목을 내놔라","가자"]),0,1]:[pick(["시작이다","걸어라","베어라","해 보시지"]),0,1],
+  start:d=>[pick([d.who+"인가. 시시하군",d.who+"라… 얼마나 버티나",d.who+"냐. 재미는 있겠군",d.who+"… 운이 없군"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["골라라. 누구든 시시하다","패를 골라라","고민이 길군"]),0,1],
+  stylesel:d=>[pick(["수라든 나찰이든 베면 그만이다","나찰인가. 사나운 쪽이군","수라냐. 고지식하군"]),0,1],
+  title:d=>[pick(["쿠쿡… 죽고 싶은 놈이 왔군","시시한 판은 사양하지"]),0,1],
+  cardsel:d=>[pick(["카드에 기대나. 한심하군","공짜 패다. 받아 둬라","패에 기대는 검은 무디지"]),0,1],
+  idle:d=>d.n>=5?[pick(["시간 낭비군","겁먹었나","먼저 와라","서로 눈만 굴리는군"]),0,1]:[pick(["지루하군","덤비지 그러나","보고만 있을 텐가","숨만 쉬다 끝낼 셈인가"]),0,1],
+  menuIdle:d=>[pick(["오래 고민한다고 이기나","천천히 골라라. 결과는 같다"]),0,1],
+  charselChat:d=>[pick(["하오마루… 그놈만은 내 손으로 벤다","정의니 우정이니, 웃기는 소리군",
+    "약한 놈을 골라도 결과는 같다","쿠로코 녀석까지 검을 잡는 판이군","나코루루라… 아이 장난 같군",
+    "우쿄는 병든 몸으로 잘도 베는군","쥬베이는 늙었어도 검은 살아 있지","샤를로트, 기사도라니 우습군"]),0,1],
+  vsq:d=>[pick(["말은 됐다. 패를 까라","글귀로 이기나. 시시하군"]),0,1],
+  storyChat:d=>[pick(["이야기는 됐다","길군. 본론을 말해라","시시한 사연이군"]),0,1],
+  firstBlood:d=>d.dmg>=12?[pick(["첫 패부터 크게 땄군","선수를 크게 챙겼다","시작부터 깊게 박았군","첫 피가 진하군"]),0,1.2]:[pick(["먼저 닿았군","선수는 잡았다","첫 패는 네 것이군","기선은 챙겼다"]),0,1.2],
+  roundLead:d=>[pick(["한 판 챙겼군. 계속 걸어라","선취다. 방심은 죽음이지","앞섰다. 판을 키워라"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 잃었군. 판돈은 남았다","뒤졌다. 여기서 접을 텐가","내줬군. 되받아라"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이다. 전부 걸어라","이 판에 목이 걸렸다","여기서 갈린다. 쿠쿡","마지막 패다. 실수는 없다"]),1,2],
+  doubleLow:d=>[pick(["둘 다 한 방이군. 재밌어졌다","먼저 닿는 쪽이 산다","이런 판이 도박이지","숨소리까지 걸렸군"]),1,2],
+  longFight:d=>[pick(["길어지는군. 지루하다","먼저 지치는 쪽이 죽는다","질기군. 그래서 재밌나"]),0,1],
+  perfect:d=>[pick(["흠집 하나 없군. 쿠쿡","완전히 털어먹었다","상대가 시시했을 뿐이다","한 대도 안 내줬군"]),1,2.5],
+  comeback:d=>[pick(["죽다 살아 뒤집었군","벼랑에서 패를 뒤집었다","이런 맛에 도박을 하지","한 장 남기고 땄군"]),1,2.5],
+  quickKo:d=>[pick(["눈 깜짝할 새군","패를 깔 틈도 없었다","싱겁게 끝났군","한 수에 접혔다"]),1,2],
+  revenge:d=>[pick(["빚은 이자까지 받는다","지난 판을 되받았군","값을 치르게 했다","쿠쿡, 갚아줬군"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승이라. 적수가 없군":d.n+"연승. 아직 멀었다",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이군. 더 가라",1,2];
+    if(d.n>=10) return [d.n+"연승이라니. 쿠쿡",1,2];
+    if(d.n>=7) return [d.n+"연승. 손이 뜨겁군",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중이다. 다음 목이다",0,1.5];
+    return [pick([d.n+"연승. 다음 놈이다","고작 "+d.n+"명이군"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명 베고 여기까지군",d.n+"명이라. 나쁘진 않다",d.n+"명에서 패가 끊겼군","여기까지 "+d.n+"명. 다음엔 더 가라"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기부터는 진짜배기들이다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째군. 슬슬 재밌나",0,1.4];
+    return [pick([d.n+"연전째다. 계속해라","다음 목이다. 아직 멀었지"]),0,1.3]; },
+  quoteScr:d=>[pick(["말이 많군","입은 됐고 검을 뽑아라","시시한 소리군"]),0,1.2],
+  ending:d=>[pick(["끝까지 베고 올라섰군","전부 털어먹었다. 쿠쿡","정상에는 시체만 남는 법이지","마지막 패까지 네 것이군"]),1,3],
+  winTalk:d=>[pick(["다음 목이 기다린다","이 정도로 만족하나","시시하군. 계속해라"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…슬슬 피가 보고 싶군","손이 근질거린다","크게 한 판 걸어볼까"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말은 됐다","길군, 말이"]),0,1];
+    return [pick(["…지루하군","목이 마르는군","시시한 시간이다","패나 돌려라","심심하면 한 판 더 하지"]),0,1]; },
+  loseTalk:d=>[pick(["잃은 판은 잊어라. 다음이 있다","패가 나빴을 뿐이지","분해할 시간에 검을 갈아라"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승. 나쁘진 않군"):("오늘 "+d.g+"전 "+d.w+"승… 시시하군"),0,1.5],
+  domLead:d=>[pick(["크게 벌렸군. 밟아라","판이 기울었다. 끝내라"]),0,1.3],
+  domBehind:d=>[pick(["밀리는군. 패를 바꿔라","여기서 접을 텐가"]),0,1.3],
+  halfHp2:d=>[pick(["절반 베었군","반은 가져갔다","절반이다. 더 몰아라","반쯤 죽었군"]),0,1.2],
+  halfHp1:d=>[pick(["절반 잃었군","반이 날아갔다","호흡을 고쳐라","절반이다. 조심해라"]),0,1.2],
+  rush:d=>[pick(["쉴 틈 없이 꽂히는군","흐름을 쥐었다","연타다. 이어라","좋은 연격이군"]),1,1.5],
+  winScr:d=>[pick(["승자만 이름을 남긴다","봐라, 이긴 자의 얼굴이다"]),1,2],
+  loseScr:d=>[pick(["그 이름, 기억해 두마","진 놈 얼굴도 볼만하군"]),0,2],
+  oppSp:d=>[pick(["온다","크게 걸었군","큰 게 온다","조심해라"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 세 번째군":"같은 수에 세 번째군",
+    nm?nm+RO(nm)+" 계속 당하는군":"같은 수에 계속 당하는군","같은 패를 세 번 읽히다니",
+    "그 수를 못 읽나. 한심하군"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오가는군","서로 "+d.n+"번씩 주고받았다","난타전이군. 볼만하다","서로 물러설 생각이 없군"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 안 내주는군","일방적이다. "+d.n+"대째군","완전히 흐름을 쥐었군","저쪽은 손도 못 대는군"]),1,1.5],
+  flowChased:d=>[pick(["맞기만 하는군. 한 번 끊어라","벌써 "+d.n+"대째다","반격이 없군. 한심하다","이대로면 목이 날아간다"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째군","큰 패만 꺼내는군","그것만 믿는 모양이군","또 꺼냈다. 이제 읽어라"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 털었군","한 판도 안 내줬다","처음부터 끝까지 네 판이었다","빈틈 없는 두 판이군"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 뜯겼군","손도 못 써봤다","흐름을 한 번도 못 잡았군","전부 내준 판이다"]),0,2],
+  arcComeback:d=>[pick(["첫 판을 내주고 내리 두 판이군","밀리다 판을 뒤집었다","이래서 도박은 못 끊지","뒤에서 따라붙어 넘어섰군"]),1,3],
+  arcSweat:d=>[pick(["끝판까지 갔군. 진땀나는 판이다","한 판씩 나눠 갖고 마지막이었다","한 끗 차이로 갈렸군","이런 판이라야 재밌지"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판이라니","쥐었던 패를 흘렸군","좋은 출발에 시시한 끝이군","앞서다 뒤집혔다. 방심했나"]),0,2],
+  arcSlip:d=>[pick(["따라붙고도 마지막에 놓쳤군","끝판까지 갔지만 한 끗 모자랐다","거의 잡았던 판이다","막판에 미끄러졌군"]),0,2],
+  REL:{haohmaru:"하오마루…! 네놈만은 내 손으로 벤다",genjuro:"거울인가. 시시한 장난이군",
+       ukyo:"병든 몸으로 잘도 검을 잡는군",nakoruru:"아이 장난에 어울릴 생각은 없다",
+       hanzo:"닌자인가. 그림자는 취향이 아니군",charlotte:"기사도라니, 웃기는 소리군",
+       jubei:"늙은 검인가. 그래도 검은 검이지",kuroko:"심판 주제에 검을 잡나"},
+ },
+ ukyo:{ /* 병약한 미검사 — 나른한 반말, 기침, 꽃과 계절 */
+  hello:"타치바나 우쿄… 콜록. 조용히 봐 드리지",
+  move:d=>d.sup?[pick(["비오의인가… 조심하시길","큰 것이 오는군. 숨을 죽여","저 기세는 정면으로 받지 마","꽃이 크게 흔들리는군"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["깊게 들어갔군","제법 묵직했겠어","뼈까지 울렸겠지"]),1,2]:[(nm?nm+" ":"")+pick(["닿았군","곱게 들어갔어","가볍게 스쳤군"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔군",nm+RO(nm)+" 쓰러뜨렸어"]):pick(["눕혔군","곱게 눕혔어"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"… ":"")+pick(["여기까지군","꽃이 졌어","조용히 끝났군"]),1,4];},
+  hit:d=>d.dmg>=3?[d.dmg>=12?pick(["묵직하군… 잘 벴어","저건 뼈에 남겠어"]):pick(["가볍게 닿았군","스치듯 지나갔어"]),1,1.2]:null,
+  taken:d=>d.dmg>=3?[d.dmg>=12?pick(["아프겠군… 콜록","그건 좀 깊었어"]):pick(["얕게 스쳤군","가벼워… 다행이야"]),0,1.2]:null,
+  down:d=>[d.dmg>=12?pick(["눕혔군. 지금이야","깊게 넣고 눕혔어"]):pick(["가볍게 눕혔군","넘어갔어. 틈은 짧아"]),0,1.5],
+  downed:d=>[d.dmg>=12?pick(["…일어나요, 아직이야","넘어졌군. 숨을 고르길"]):pick(["가볍게 넘어갔군","천천히 일어나면 돼"]),0,1.5],
+  low1:d=>[d.dmg>=12?pick(["위험해… 한 방이면 져","숨이 얕아졌어. 버텨"]):pick(["벼랑 끝이군… 조심히","검 끝이 떨리는군"]),1,2],
+  low2:d=>[d.dmg>=12?pick(["끝낼 때야. 조용히","한 걸음이면 닿아"]):pick(["저쪽이 다 됐군","지금이야. 흐리지 말고"]),1,2],
+  reversal:d=>[pick(["…판이 뒤집혔군","흐름이 돌아섰어","재미있어졌군","바람이 방향을 바꿨어"]),1,2],
+  ko:d=>[d.dmg>=12?pick(["…끝났군. 꽃이 졌어","깨끗하게 베었어"]):pick(["여기까지군","조용히 끝났어"]),1,4],
+  koed:d=>[d.dmg>=12?pick(["…졌군. 콜록","베였어… 어쩔 수 없지"]):pick(["여기까지인가…","다음 계절에 다시"]),1,4],
+  dko:d=>[pick(["둘 다 쓰러졌군…","함께 졌어… 콜록","승부를 못 가렸군","이런 끝도 있군"]),1,4],
+  round:d=>[d.n>=5?pick(["…길어지는군. 가지","또 한 판인가… 좋아"]):pick(["…시작할까","가볍게 가지"]),0,1],
+  start:d=>[pick([d.who+"인가… 잘 부탁해",d.who+"라… 좋은 상대군",d.who+"군. 무리는 말고",d.who+"… 검을 보여 줘"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["누구를 고를 텐가","천천히 고르시길","마음 가는 대로 골라"]),0,1],
+  stylesel:d=>[pick(["수라냐 나찰이냐…","어느 쪽이든 검은 검이지","손에 익은 쪽으로 가"]),0,1],
+  title:d=>[pick(["…또 계절이 돌았군. 한판 할까","기다렸어. 천천히 가자"]),0,1],
+  cardsel:d=>[pick(["카드라… 나쁘진 않군","가져가. 짐은 아니니","기대면 검이 흐려지지"]),0,1],
+  idle:d=>[d.n>=5?pick(["정적이 기는군","바람만 지나가는군"]):pick(["…서로 눈치만 보는군","먼저 가도 좋아"]),0,1],
+  menuIdle:d=>[pick(["천천히 골라도 돼","…바람이나 쐬며 기다리지"]),0,1],
+  charselChat:d=>[pick(["하오마루… 그 기세는 못 따라가지","나코루루에게는 살살 해 주길",
+    "겐주로의 살기는 조금 버겁군","쥬베이 님은 노련해. 방심 말고","샤를로트… 곧은 검이지",
+    "쿠로코가 왜 검을 드는지 모르겠군","고르는 동안 꽃이나 보고 있지","콜록… 서두를 것 없어"]),0,1],
+  vsq:d=>[pick(["…좋은 글귀군","말은 짧을수록 좋지"]),0,1],
+  storyChat:d=>[pick(["…이야기가 이어지는군","그래서, 어떻게 됐지","긴 이야기군… 콜록"]),0,1],
+  firstBlood:d=>[d.dmg>=12?pick(["첫 피가 깊군","먼저, 크게 닿았어"]):pick(["먼저 닿았군","선수를 잡았어"]),0,1.2],
+  roundLead:d=>[pick(["한 판 챙겼군. 천천히","먼저 한 판이야","앞섰어. 서두르지 말고","한 판 접어 뒀군"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내줬군… 괜찮아","아직 끝난 게 아니야","숨을 고르고 다시 가","한 판일 뿐이지"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이군… 조용히 가자","이 판에서 갈려","여기서 끝나는군","숨을 고르고 마지막이야"]),1,2],
+  doubleLow:d=>[pick(["둘 다 한 방이군…","먼저 닿는 쪽이 이겨","숨소리까지 들리는군","한 수에 갈리겠어"]),1,2],
+  longFight:d=>[pick(["길어지는군… 콜록","먼저 지치는 쪽이 져","이런 승부도 나쁘지 않아","서로 잘 버티는군"]),0,1],
+  perfect:d=>[pick(["흠집 하나 없군","한 대도 안 맞았어","곱게 이겼군","이런 검은 드물지"]),1,2.5],
+  comeback:d=>[pick(["빈사에서 돌아섰군","다 진 판을 뒤집었어","…이런 걸 승부라 하지","꺼지기 직전에 살아났군"]),1,2.5],
+  quickKo:d=>[pick(["한 호흡에 끝났군","제비보다 빠르군","눈 깜짝할 새야","짧고 곱게 끝났어"]),1,2],
+  revenge:d=>[pick(["지난 빚을 갚았군","돌려줬어. 담담하게","기다린 보람이 있군","계절이 한 바퀴 돌았어"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승이군… 대단해":d.n+"연승. 검이 가볍군",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이군",1,2];
+    if(d.n>=10) return [d.n+"연승… 놀랍군",1,2];
+    if(d.n>=7) return [d.n+"연승. 검이 잘 드는군",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중이야. 계속 가",0,1.5];
+    return [pick([d.n+"연승. 다음 상대야","좋아, "+d.n+"명째군"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명에서 멈췄군",d.n+"명이라… 잘 버텼어","여기까지 "+d.n+"명. 훌륭해",d.n+"명이면 충분하지"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기까지 왔군… 이제부터야",0,1.5];
+    if(d.n>=5) return [d.n+"연전째. 손이 풀렸겠군",0,1.4];
+    return [pick([d.n+"연전째군. 가볍게 가자","다음 상대야. 아직 멀었어"]),0,1.3]; },
+  quoteScr:d=>[pick(["무슨 말을 하는 건지…","말이 기는군","말보다 검이지"]),0,1.2],
+  ending:d=>[pick(["끝까지 올라갔군… 훌륭해","정상이야. 조용히 축하하지","긴 여정이었어… 콜록","꽃이 다 피고 졌군"]),1,3],
+  winTalk:d=>[pick(["좋은 검이었어. 다음이야","천천히 가도 늦지 않아","숨 고르고 계속하지","이런 승부라면 볼 만해"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…검이 무거워지는군","콜록… 실례","숨을 고르지"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말이 기는군","그만하면 됐어"]),0,1];
+    return [pick(["…꽃이 지는군","콜록… 바람이 차군","그 사람은 잘 있을까","해설도 지치는군","심심하면 한 판 더 하지"]),0,1]; },
+  loseTalk:d=>[pick(["진 판에서 배우는 게 많지","괜찮아. 계절은 또 와","검을 다시 잡으면 돼","오늘은 바람이 나빴어"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승. 좋군"):("오늘 "+d.g+"전 "+d.w+"승… 다음이야"),0,1.5],
+  domLead:d=>[pick(["많이 벌렸군. 방심 말고","판이 기울었어"]),0,1.3],
+  domBehind:d=>[pick(["밀리는군… 한 방이면 돼","끝까지는 모르는 거야"]),0,1.3],
+  halfHp2:d=>[pick(["절반 베었군","반은 지웠어","절반이야. 흐름을 놓지 마","반쯤 왔군"]),0,1.2],
+  halfHp1:d=>[pick(["절반 잃었군","반이 날아갔어… 콜록","숨을 고쳐. 절반이야","반쯤 남았군"]),0,1.2],
+  rush:d=>[pick(["연타군. 흐르듯 이어져","쉴 틈이 없군","잘 이어지는군","물처럼 흐르는 검이야"]),1,1.5],
+  winScr:d=>[pick(["이긴 얼굴이군. 곱네","이름이 남는군"]),1,2],
+  loseScr:d=>[pick(["…저 이름, 기억해 두지","분한 얼굴도 나쁘지 않아"]),0,2],
+  oppSp:d=>[pick(["온다","큰 게 와","조심해","크게 준비했군"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째군":"같은 수에 세 번째군",
+    nm?nm+RO(nm)+" 또 당했군":"같은 수에 또 당했군","같은 검을 세 번은 곤란해",
+    "이제 읽을 때도 됐는데"]),0,1.5];},
+  flowTrade:d=>[pick(["서로 "+d.n+"번씩 오갔군","난타전이군… 콜록","물러설 생각이 없군","숨 돌릴 틈이 없어"]),1,1.5],
+  flowOneSide:d=>[pick(["일방적이군. "+d.n+"대째야","한 대도 안 내주는군","손도 못 대는군","흐름을 쥐고 있어"]),1,1.5],
+  flowChased:d=>[pick(["벌써 "+d.n+"대째군","한 번은 끊어야 해","되받아치질 못하는군","이대로면 위험해"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째군","큰 것만 노리는군","아끼질 않는군","그쯤이면 읽을 때야"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져갔군","한 판도 안 내줬어","처음부터 끝까지 제 흐름이야","빈틈이 없었군"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내줬군…","흐름을 한 번도 못 잡았어","이런 계절도 있는 거야","손도 못 써 봤군"]),0,2],
+  arcComeback:d=>[pick(["첫 판을 내주고 내리 두 판","밀리다 돌아섰군","흔들리지 않았어","뒤에서 따라붙어 넘어섰군"]),1,3],
+  arcSweat:d=>[pick(["끝판까지 갔군. 진땀나는 판이야","한 판씩 나눠 갖고 마지막이었어","한 끗이 갈랐군","숨이 찬 승부였어"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판이라니","쥐었던 흐름을 놓쳤군","출발은 좋았는데…","끝이 아쉬운 판이군"]),0,2],
+  arcSlip:d=>[pick(["따라붙었는데 마지막에 놓쳤군","한 끗이 모자랐어","거의 잡았던 판인데…","여기까지 온 것도 좋은 판이야"]),0,2],
+  REL:{haohmaru:"하오마루… 그 기세는 여전하군",genjuro:"겐주로. 그 살기는 좀 버겁군",
+       nakoruru:"나코루루. 숲 냄새가 나는군",charlotte:"샤를로트… 곧은 검이군",
+       jubei:"쥬베이 님. 검이 젊으시군",shiki:"시키… 눈을 오래 보면 안 되겠어",
+       rimururu:"리무루루. 얼음도 한 계절이지",kuroko:"심판이 검을 드는군…",
+       ukyo:"…또 하나의 나인가. 지루하군"},
+ },
+ charlotte:{ /* 프랑스 귀족 여검사 — 정중한 존대, 기사도와 예 */
+  hello:"샬롯 크리스틴 드 콜데입니다. 예를 갖춘 승부를 보여 주세요.",
+  move:d=>d.sup?[pick(["오의로군요! 정면으로 받으세요","큰 기술입니다. 자세를 낮추세요","혼신의 일격이 옵니다","비오의입니다. 간격을 재세요"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["깊이 찔러 들어갔습니다","훌륭히 파고들었습니다","묵직하게 닿았습니다"]),1,2]:[(nm?nm+" ":"")+pick(["정확히 닿았습니다","깨끗한 적중입니다","좋은 찌르기였습니다"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕히셨군요",nm+RO(nm)+" 쓰러뜨렸습니다"]):pick(["깨끗하게 눕히셨습니다","훌륭한 마무리 자세입니다"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+pick(["이것으로 끝입니다","승부가 갈렸습니다","여기서 끝내셨군요"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["훌륭한 일격입니다","깊이 들어갔습니다","제대로 실린 검입니다","좋은 찌르기였습니다"]),1,1.2]:(d.sup?[pick(["오의가 닿았습니다","큰 기술이 스쳤군요"]),0,1]:null),
+  taken:d=>d.dmg>=12?[pick(["아프시겠습니다…","뼈에 울리는 일격입니다","크게 허용하셨군요","자세가 무너졌습니다"]),0,1.2]:(d.sup?[pick(["오의에 스쳤습니다","큰 기술이 닿았군요"]),0,1]:null),
+  down:d=>d.dmg>=12?[pick(["큰 일격으로 눕히셨군요","묵직하게 쓰러뜨렸습니다"]),1,1.5]:[pick(["눕히셨습니다. 몰아붙이세요","쓰러뜨렸군요, 지금입니다","간격을 좁히세요","일어서기 전에 붙으세요"]),0,1.5],
+  downed:d=>d.dmg>=12?[pick(["큰 것을 허용하셨군요","묵직하게 당하셨습니다"]),0,1.5]:[pick(["일어나세요, 아직입니다","자세를 다시 잡으세요","숨을 고르고 일어서세요","검은 아직 부러지지 않았습니다"]),0,1.5],
+  low1:d=>d.dmg>=12?[pick(["큰 일격에 몰리셨습니다","한 번이면 무너집니다"]),1,2]:[pick(["위험합니다. 침착하세요","한 번이면 끝납니다","간격을 넓히세요","검 끝이 흔들립니다"]),1,2],
+  low2:d=>d.dmg>=12?[pick(["상대의 자세가 무너졌습니다","지금이 마무리입니다"]),1,2]:[pick(["끝내세요, 지금입니다","한 걸음입니다. 찌르세요","마무리를 망설이지 마세요","상대의 다리가 풀렸습니다"]),1,2],
+  reversal:d=>[pick(["판이 뒤집혔습니다","놀랍군요, 흐름이 돌았습니다","거꾸로 섰습니다. 훌륭합니다"]),1,2],
+  ko:d=>d.sup?[pick(["오의로 마무리하셨군요","훌륭한 큰 기술이었습니다"]),1,4]:[pick(["승부가 났습니다","훌륭한 검이었습니다","깨끗한 마무리입니다","예를 갖춘 승부였습니다"]),1,4],
+  koed:d=>d.sup?[pick(["큰 기술에 당했습니다","오의를 막지 못했군요"]),1,4]:[pick(["…훌륭한 상대였습니다","패배도 검의 일부입니다","깨끗하게 당했습니다","다음엔 제가 찌르겠습니다"]),1,4],
+  dko:d=>[pick(["동시에 닿았군요","둘 다 쓰러졌습니다","승부를 가리지 못했습니다"]),1,4],
+  round:d=>d.g>=2?[pick(["또 한 판입니다. 자세를 잡으세요","다시 마주 섰군요"]),0,1]:[pick(["시작합니다","앙 가르드, 준비하세요","자, 검을 드세요","정중히 겨루겠습니다"]),0,1],
+  start:d=>[pick([d.who+" 님, 잘 부탁드립니다",d.who+"… 좋은 승부를 바랍니다",d.who+" 님이군요. 예를 갖추죠",d.who+"와 겨루는군요"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["누구와 겨루시겠습니까","상대를 고르세요","마음에 드는 검을 고르세요"]),0,1],
+  stylesel:d=>[pick(["수라와 나찰, 어느 쪽인가요","제 손에 맞는 쪽을 고르세요","나찰이라면 사나운 검이지요"]),0,1],
+  title:d=>[pick(["검을 드세요. 예를 갖춘 승부를","기다렸습니다. 시작하시죠"]),0,1],
+  cardsel:d=>[pick(["카드로군요. 검이 무뎌지지 않기를","받아 두세요. 힘이 될 겁니다","기교보다 자세가 먼저입니다"]),0,1],
+  idle:d=>d.ctx==="menu"?[pick(["천천히 고르셔도 됩니다","기다리고 있겠습니다"]),0,1]:[pick(["서로 간격을 재는군요","먼저 들어가셔도 좋습니다","조용한 대치입니다","숨을 고르는 중이군요"]),0,1],
+  menuIdle:d=>[pick(["천천히 고르세요. 기다리겠습니다","고르는 것도 승부의 일부지요"]),0,1],
+  charselChat:d=>[pick(["겐주로 님의 검은 예를 모릅니다","쥬베이 님은 대선배이십니다",
+    "나코루루 님께는 부디 살살 부탁드려요","우쿄 님, 몸은 괜찮으신지요","고민되시면 저를 골라 주세요",
+    "쿠로코 님까지 겨루신다니 놀랍군요","하오마루 님의 검은 정직합니다"]),0,1],
+  vsq:d=>[pick(["좋은 글귀군요. 가시죠","정정당당히 부탁드립니다"]),0,1],
+  storyChat:d=>[pick(["이야기가 이어지는군요","그래서 어떻게 되나요","흥미로운 이야기입니다"]),0,1],
+  firstBlood:d=>d.dmg>=12?[pick(["큰 선제타입니다","첫 일격이 깊었습니다"]),0,1.2]:[pick(["선제타입니다. 좋은 시작이에요","먼저 닿았습니다","기선을 잡으셨군요","첫 찌르기가 갈랐습니다"]),0,1.2],
+  roundLead:d=>[pick(["한 판 선취입니다","앞서갑니다. 방심은 금물이에요","좋은 흐름입니다. 이어가세요"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내주셨군요","아직 끝나지 않았습니다","자세를 고쳐 잡으세요"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판입니다","여기서 갈립니다. 집중하세요","전부 거세요. 후회 없이"]),1,2],
+  doubleLow:d=>[pick(["둘 다 벼랑 끝입니다","한 수에 갈립니다","먼저 닿는 쪽이 이깁니다"]),1,2],
+  longFight:d=>[pick(["길어지는군요. 집중하세요","팔이 무거워질 때입니다","먼저 지치는 쪽이 집니다"]),0,1],
+  perfect:d=>[pick(["완승입니다. 흠 하나 없군요","한 대도 허용하지 않았습니다","훌륭한 방어였습니다"]),1,2.5],
+  comeback:d=>[pick(["벼랑 끝에서 뒤집었습니다","훌륭한 근성입니다","한 방 남기고 돌아서셨군요"]),1,2.5],
+  quickKo:d=>[pick(["순식간이었습니다","숨 한 번에 끝났군요","단 한 번의 찌르기입니다"]),1,2],
+  revenge:d=>[pick(["지난 빚을 갚으셨군요","되갚아 주셨습니다","기다린 보람이 있군요"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승입니다. 훌륭하군요":d.n+"연승이군요. 좋은 검입니다",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록입니다",1,2];
+    if(d.n>=10) return [d.n+"연승입니다. 전설이군요",1,2];
+    if(d.n>=7) return [d.n+"연승, 검이 뜨겁습니다",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중입니다. 계속하세요",0,1.5];
+    return [pick([d.n+"연승입니다. 다음 상대예요","좋습니다. "+d.n+"명째군요"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명을 상대로 여기까지입니다",d.n+"명이라니 훌륭합니다",d.n+"명째에서 멈추셨군요","여기까지 "+d.n+"명입니다"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기까지 오셨군요. 이제부터입니다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째입니다. 손이 풀리셨겠죠",0,1.4];
+    return [pick([d.n+"연전째입니다. 계속하시죠","다음 상대입니다. 아직 멀었어요"]),0,1.3]; },
+  quoteScr:d=>[pick(["말보다 검이 앞서야지요","한마디 하시는군요","입은 그만 두시고 겨루시죠"]),0,1.2],
+  ending:d=>[pick(["끝까지 올라가셨군요. 훌륭합니다","정상까지 검이 살아 있었습니다","긴 여정이었습니다. 축하드립니다"]),1,3],
+  winTalk:d=>[pick(["좋은 검이었습니다","다음 상대가 기다립니다","예를 갖춘 승부였습니다","숨을 고르고 가시죠"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…간격이 좋군요","호흡을 고르는 것도 검술입니다","슬슬 들어가도 좋겠습니다"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말은 그만","길군요, 말이"]),0,1];
+    return [pick(["…조국은 무사할까요","좋은 승부가 그립습니다","검을 손질할 시간이군요","한 판 더 하시겠어요"]),0,1]; },
+  loseTalk:d=>[pick(["진 판에서 배우는 법입니다","자세를 다시 잡으시죠","다음엔 찌르기가 닿을 겁니다"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승입니다"):("오늘 "+d.g+"전 "+d.w+"승… 다음에 갚으시죠"),0,1.5],
+  domLead:d=>[pick(["크게 벌리셨습니다","기울었습니다. 방심 마세요"]),0,1.3],
+  domBehind:d=>[pick(["밀리는군요. 한 번이면 뒤집힙니다","버티세요. 끝까지 모릅니다"]),0,1.3],
+  halfHp2:d=>[pick(["절반을 깎았습니다","반은 넘겼습니다","여기서 굳히세요","흐름을 놓지 마세요"]),0,1.2],
+  halfHp1:d=>[pick(["절반 잃으셨습니다","호흡을 고치세요","신중히 가세요","여기서부터 조이세요"]),0,1.2],
+  rush:d=>[pick(["연타가 이어집니다","쉴 틈 없이 몰아칩니다","흐름을 타셨군요","훌륭한 연격입니다"]),1,1.5],
+  winScr:d=>[pick(["승자의 얼굴입니다","이긴 자의 이름이 남지요"]),1,2],
+  loseScr:d=>[pick(["저 이름을 기억해 두세요","다음에 갚으면 됩니다"]),0,2],
+  oppSp:d=>[pick(["옵니다","큰 기술입니다","조심하세요","간격을 두세요"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째입니다":"같은 수에 세 번째입니다",
+    nm?nm+RO(nm)+" 계속 당하시는군요":"같은 수에 계속 당합니다","같은 검을 세 번은 안 됩니다",
+    "그 수를 읽으셔야 합니다"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오가는군요","서로 "+d.n+"번씩 주고받았습니다","물러설 생각이 없군요","격렬한 난타전입니다"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 내주지 않습니다","일방적입니다. "+d.n+"대째예요","완전히 흐름을 쥐셨군요","손도 대지 못하는군요"]),1,1.5],
+  flowChased:d=>[pick(["계속 맞기만 하는군요","벌써 "+d.n+"대째입니다","한 번 끊으셔야 합니다","반격이 없습니다"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 큰 기술 "+d.n+"번째군요","큰 기술만 노리는군요","이제 읽으실 때입니다","큰 것만 쓰면 빈틈이 생깁니다"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져가셨습니다","한 판도 내주지 않았군요","시종 흐름을 쥐셨습니다"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내주셨군요","흐름을 한 번도 못 잡았습니다","검을 다시 잡으시죠"]),0,2],
+  arcComeback:d=>[pick(["첫 판을 내주고 내리 두 판입니다","밀리다가 돌아서셨군요","끝내 흔들리지 않으셨습니다"]),1,3],
+  arcSweat:d=>[pick(["마지막 판까지 갔군요","한 판씩 나눠 갖고 끝판이었습니다","진땀나는 접전이었습니다"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판이라니","쥐었던 흐름을 놓치셨군요","출발은 좋았습니다만"]),0,2],
+  arcSlip:d=>[pick(["따라붙었는데 놓치셨군요","끝판까지 갔지만 한 끗이었습니다","여기까지도 좋은 승부였습니다"]),0,2],
+  REL:{charlotte:"거울 앞에 선 기분이군요",haohmaru:"하오마루 님, 좋은 승부를 부탁드립니다",
+       ukyo:"우쿄 님… 부디 무리하지 마세요",jubei:"쥬베이 님. 배울 것이 많습니다",
+       genjuro:"겐주로 님… 그 검에는 예가 없군요",nakoruru:"나코루루 님, 다치지 않으시길",
+       hanzo:"한조 님의 검은 그림자군요",galford:"갈포드 님. 정의를 아는 분이군요",
+       kuroko:"쿠로코 님까지 나서시는군요",yuga:"사악한 기운이 느껴집니다"},
+ },
+ jubei:{ /* 노련한 이도류 검호 — 점잖은 반말, 껄껄 웃는 여유 */
+  hello:"야규 쥬베이다. 좋은 검을 보여다오",
+  move:d=>d.sup?[pick(["비오의냐. 껄껄, 볼만하겠군","큰 것을 뽑았군. 잘 봐 두어라","혼신의 한 수다. 눈을 크게 떠라","여기가 갈림길이군. 받아 봐라"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["깊이 파고들었군","제대로 실렸다","뼈까지 울렸겠군"]),1,2]:[(nm?nm+" ":"")+pick(["닿았군","들어갔다","깨끗한 한 수군"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔군",nm+RO(nm)+" 무너뜨렸다"]):pick(["잘 눕혔군","군더더기 없이 눕혔다"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+". ":"")+pick(["여기서 끝났군","승부는 났다","한 수로 갈렸다"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["허어, 묵직한 베기군","좋은 수다. 잘 실렸다","수련이 몸에 뱄군","단단히 한 방 들어갔다"]),1,1.2]:d.sup?[pick(["스치기만 했군","큰 수가 얕게 닿았다","깊이 못 들어갔군"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["그건 아팠겠군","저건 오래 남는다","제대로 받아버렸군","맞고도 서 있군, 대단하다"]),0,1.2]:d.sup?[pick(["얕게 받았군. 운이 좋다","큰 것을 흘렸군"]),0,1.2]:null,
+  down:d=>[pick(d.dmg>=12?["크게 눕혔군. 지금이다","묵직하게 무너뜨렸다","저건 일어나기 버겁겠군","깊게 넣었군. 밀어붙여라"]:["눕혔군. 틈을 주지 마라","넘어갔다. 지금이 기회다","잘 무너뜨렸다. 이어가라","일어나기 전에 붙어라"]),0,1.5],
+  downed:d=>[pick(d.dmg>=12?["크게 당했군. 숨을 고르고 일어나라","묵직하게 받았다. 천천히 일어나라","넘어진 김에 호흡을 되찾아라","아직 검은 손에 있다"]:["일어나라. 아직 멀었다","넘어지는 것도 수련이다","털고 일어나면 그만이다","한 번 넘어졌을 뿐이다"]),0,1.5],
+  low1:d=>[pick(d.dmg>=12?["위태롭군. 검을 고쳐 잡아라","한 방이면 갈린다. 침착해라","여기서 흔들리면 끝이다","호흡부터 되찾아라"]:["숨이 얕아졌군. 버텨라","벼랑 끝이다. 눈을 감지 마라","여기서부터가 수련이다","급할수록 검을 낮춰라"]),1,2],
+  low2:d=>[pick(d.dmg>=12?["다리가 풀렸다. 지금이다","마무리해라. 망설이지 마라","저 몸으론 못 버틴다","끝을 봐라. 한 수면 된다"]:["한 걸음이다. 베어라","여기서 끝내는 게 예의다","마지막 한 수다. 곧게 뻗어라","숨을 죽이고 들어가라"]),1,2],
+  reversal:d=>[pick(["허어, 판이 뒤집혔군","이래서 승부는 끝까지 봐야지","순식간에 돌아섰군","포기하지 않은 자의 검이다","껄껄, 이런 걸 보려고 온다"]),1,2],
+  ko:d=>[pick(d.dmg>=12?["깨끗하게 끝냈군","훌륭한 마무리다","묵직한 한 수로 갈렸다","좋은 검이었다. 껄껄"]:["승부는 났다. 잘 싸웠다","여기까지군. 훌륭하다","끝났다. 예를 갖춰라","깔끔한 끝이군"]),1,4],
+  koed:d=>[pick(d.dmg>=12?["크게 당했군. 인정하마","제대로 베였다. 좋은 검이었다","이런 날도 있는 법이지","분함은 다음 수련으로 돌려라"]:["졌군. 뒤끝은 없다","한 수 배웠다","오늘은 저쪽이 위였다","다음엔 내가 벤다"]),1,4],
+  dko:d=>[pick(["둘 다 뻗었군, 껄껄","서로 끝을 봤다. 이런 판도 있지","승부를 못 가렸군. 아깝다","동시에 갈랐다. 대단하군"]),1,4],
+  round:d=>[pick(d.n>=5?["몇 판이든 좋다. 가자","길게 가는 승부군. 시작이다"]:["간다","자, 시작하지","검을 뽑아라","한 수 겨뤄 보자"]),0,1],
+  start:d=>[pick([d.who+"인가. 검을 보여다오",d.who+"라… 재미있겠군",d.who+"와 겨루는군. 사양 말아라",d.who+"… 정정당당히 가자"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["누구와 겨룰 테냐","마음 가는 검을 골라라","고민은 짧게 하는 게 좋다","누구든 좋다. 천천히 골라라"]),0,1],
+  stylesel:d=>[pick(["수라냐 나찰이냐. 결국은 검이다","제 손에 맞는 쪽이 옳다","나찰인가. 사나운 길이군","수라라면 정공법이지"]),0,1],
+  title:d=>[pick(["사무라이의 혼이 부르는군. 가자","기다렸다. 오늘도 한 수 겨루지"]),0,1],
+  cardsel:d=>[pick(["카드라. 세상 참 편해졌군","받아 두어라. 손해는 없다","기대면 검이 무뎌지는 법이다"]),0,1],
+  idle:d=>[pick(d.n>=5?["대치가 길군. 인내도 검술이다","서로 재고 있군. 나쁘지 않다","숨소리까지 읽는 시간이군"]:["서로 노려보는군","먼저 들어가도 좋다","신중한 승부군"]),0,1],
+  menuIdle:d=>[pick(["천천히 골라라. 기다리마","고르는 것도 수련의 일부다"]),0,1],
+  charselChat:d=>[pick(["하오마루는 좋은 술친구다. 검도 진짜지","겐주로의 검은 살기가 짙다. 조심해라",
+    "우쿄는 몸이 약하다. 그래도 검은 매섭지","나코루루는 어린데 검이 곧더군",
+    "리무루루도 나왔군. 언니를 닮았어","샤를로트의 검은 우리와 결이 다르지",
+    "젊은 검객이 많군. 대견하다","쿠로코까지 검을 잡는 판인가",
+    "딸들이 보면 뭐라 할지 모르겠군"]),0,1],
+  vsq:d=>[pick(["좋은 글귀군. 자, 가자","한판 승부다. 예를 갖춰라"]),0,1],
+  storyChat:d=>[pick(["호오, 이야기가 이어지는군","그래서 어찌 되는 거냐","들어 둘 만한 이야기군"]),0,1],
+  firstBlood:d=>[pick(d.dmg>=12?["첫 수부터 묵직하군","선제타가 깊게 들어갔다","시작부터 크게 갈랐군","첫 일격이 무거웠다"]:["먼저 닿았군. 좋은 시작이다","선수를 잡았다","첫 피군. 흐름을 쥐어라","기선을 잡았군"]),0,1.2],
+  roundLead:d=>[pick(["한 판 챙겼군. 기세를 이어라","선취다. 방심만 하지 마라","앞서간다. 한 판 더다","좋은 흐름이군"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내줬군. 여기부터다","뒤졌다. 검을 고쳐 잡아라","내줄 수도 있는 법이다","아직 끝나지 않았다"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이군. 여기서 갈린다","최종 라운드다. 전부 걸어라","이 판이 전부다. 숨을 골라라","후회 없이 베어라"]),1,2],
+  doubleLow:d=>[pick(["둘 다 벼랑 끝이군","한 수에 갈린다. 볼만하다","서로 빈사다. 먼저 닿는 쪽이 이긴다","이런 판이 진짜 승부지"]),1,2],
+  longFight:d=>[pick(["길어지는군. 팔이 무거울 때다","질긴 승부다. 집중이 갈린다","오래 끄는군. 호흡이 승부다","서로 잘 버틴다. 훌륭하군"]),0,1],
+  perfect:d=>[pick(["흠집 하나 없군. 훌륭하다","완승이다. 껄껄, 대단하군","한 대도 안 내줬다","이만한 검은 오랜만이군"]),1,2.5],
+  comeback:d=>[pick(["빈사에서 뒤집었군. 대단하다","벼랑 끝에서 베었다","한 방 남기고 돌아섰군","포기하지 않은 자의 승리다"]),1,2.5],
+  quickKo:d=>[pick(["순식간이군. 눈 깜짝할 새다","일격에 끝냈다. 빠르군","숨 한 번에 갈렸군","군더더기가 없었다"]),1,2],
+  revenge:d=>[pick(["지난 빚을 갚았군","되갚아줬다. 시원하겠지","기다린 보람이 있는 판이군","묵은 것을 털었군"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승이라. 손이 완전히 풀렸군":d.n+"연승. 오늘 검이 좋군",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이군. 대단하다",1,2];
+    if(d.n>=10) return [d.n+"연승이라. 전설이 되겠군",1,2];
+    if(d.n>=7) return [d.n+"연승. 검이 뜨거워졌군",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중이다. 계속 가라",0,1.5];
+    return [pick([d.n+"연승. 다음 상대다","좋다, "+d.n+"명째군"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명 베고 여기까지군. 훌륭하다",d.n+"명이라. 검이 잘 버텼다",d.n+"명 상대로 잘 싸웠다",d.n+"명째에서 멈췄군. 다음이 있다"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기까지 왔군. 이제 진짜배기들이다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째군. 손이 풀렸겠다",0,1.4];
+    return [pick([d.n+"연전째다. 계속 가자","다음 상대다. 아직 멀었지"]),0,1.3]; },
+  quoteScr:d=>[pick(["말이 많군, 저 친구","한마디 하는군. 검이 먼저다","입보다 검을 보여라"]),0,1.2],
+  ending:d=>[pick(["끝까지 올라섰군. 훌륭한 여정이다","마지막까지 검이 살아 있었다","다 베고 섰군. 대견하다","오늘은 내가 술을 사마"]),1,3],
+  winTalk:d=>[pick(["좋은 검이었다. 다음이 기다린다","벨 때 베는 것, 그거면 된다","이런 승부라면 몇 번이고 좋지","한 판마다 늘고 있군"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["호흡을 고르는 것도 검술이다","슬슬 크게 한 수 갈 때군","두 자루면 길이 둘이지"]),0,1];
+    if(d.ctx==="quote") return [pick(["말은 그만하고","길군, 말이"]),0,1];
+    return [pick(["좋은 승부가 그립군","해설도 목이 마르는 일이다","딸들은 잘 있으려나","이런 날엔 한잔이 제격이지","심심하면 한 수 겨루자"]),0,1]; },
+  loseTalk:d=>[pick(["진 판에서 배우는 게 더 많다","검이 무뎠나. 다시 잡아라","오늘 진 만큼 내일 는다","분함은 수련으로 갚는 거다"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승. 술맛 나는 날이군"):("오늘 "+d.g+"전 "+d.w+"승. 다음에 갚자"),0,1.5],
+  domLead:d=>[pick(["크게 벌렸군. 몰아붙여라","판이 기울었다. 방심만 마라"]),0,1.3],
+  domBehind:d=>[pick(["밀리는군. 한 수면 뒤집힌다","버텨라. 끝까지 모르는 게 승부다"]),0,1.3],
+  halfHp2:d=>[pick(["절반 깎았군. 계속 밀어라","반은 베었다. 여기서 굳혀라","절반이다. 흐름을 놓지 마라","반 넘겼군. 서두르지 마라"]),0,1.2],
+  halfHp1:d=>[pick(["반이 날아갔군. 호흡을 고쳐라","절반 잃었다. 신중히 가라","반피군. 여기서부터 조여라","절반이다. 검을 낮춰라"]),0,1.2],
+  rush:d=>[pick(["물 흐르듯 이어지는군","쉴 틈을 주지 않는다","연격이 좋군. 볼만하다","흐름을 탔다. 이어가라"]),1,1.5],
+  winScr:d=>[pick(["승자의 얼굴이군. 껄껄","이긴 자의 이름이 남는 법이지"]),1,2],
+  loseScr:d=>[pick(["저 이름을 기억해 두어라","분한 얼굴도 나쁘지 않군"]),0,2],
+  oppSp:d=>[pick(["온다","큰 것이 온다","필살기군. 조심해라","저쪽이 크게 준비했다","숨을 죽여라"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째군":"같은 수에 세 번째군",
+    nm?nm+RO(nm)+" 계속 당하는군":"같은 수에 계속 당하는군","같은 검을 세 번은 안 되지",
+    "저 수를 못 읽고 있군","읽지 못하면 또 당한다"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오가는군","서로 "+d.n+"번씩 주고받았다","난타전이군. 이래야 승부지","서로 물러설 생각이 없군"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 안 내주고 있군","일방적이다. "+d.n+"대째군","완전히 흐름을 쥐었다","저쪽은 손도 못 대는군"]),1,1.5],
+  flowChased:d=>[pick(["맞기만 하는군. 한 번 끊어라","벌써 "+d.n+"대째다. 반격이 없군","숨 돌릴 틈이 없군","이대로 밀리면 위험하다"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째군","큰 기술만 노리는군","아끼질 않는군. 이제 읽어라","큰 수만 쓰면 빈틈이 생긴다"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져갔군. 깔끔하다","한 판도 안 내줬다. 훌륭하군","처음부터 끝까지 제 흐름이었다","빈틈 없는 두 판이었다"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내줬군. 손을 못 썼다","흐름을 한 번도 못 잡았다","이런 날도 있는 법이다","처음부터 끝까지 밀렸군"]),0,2],
+  arcComeback:d=>[pick(["첫 판을 내주고 내리 두 판이군","밀리다가 돌아섰다. 대단하군","한 판 지고도 흔들리지 않았다","뒤에서 따라붙어 넘어섰군"]),1,3],
+  arcSweat:d=>[pick(["마지막 판까지 갔군. 진땀나는 판이다","한 판씩 나눠 갖고 끝판이었다","끝까지 갈린 판이군. 훌륭하다","마지막 한 판이 갈랐다"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판이라니","앞서다 뒤집혔군. 방심했나","좋은 출발이었는데 끝이 아쉽군","쥐었던 흐름을 놓쳤다"]),0,2],
+  arcSlip:d=>[pick(["따라붙었는데 막판에 놓쳤군","끝판까지 갔지만 한 끗 모자랐다","거의 잡았던 판이다. 아깝군","여기까지 온 것도 좋은 승부였다"]),0,2],
+  REL:{haohmaru:"하오마루냐. 한잔은 승부 뒤에 하지",genjuro:"겐주로… 그 검은 살기가 짙군",
+       nakoruru:"나코루루인가. 검이 곧더군",rimururu:"리무루루냐. 언니를 닮았군",
+       ukyo:"우쿄인가. 몸부터 챙겨라",charlotte:"샤를로트. 결이 다른 검이지",
+       hanzo:"한조인가. 그림자는 그대의 몫이군",kuroko:"심판이 왜 검을 잡는 거냐",
+       jubei:"허어, 늙은 얼굴이 둘이군"},
+ },
+ kazuki:{ /* 불꽃의 카자마 — 다혈질, 거친 반말 */
+  hello:"카자마 카즈키다. 불꽃, 보여주지.",
+  move:d=>d.sup?[pick(["비오의냐! 크게 터뜨려라!!","비오의다! 정면에서 태워라!!","큰 걸 꺼냈군! 터진다!!","비오의다! 다 태워버려라!!"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["제대로 터졌다!!","깊게 박혔다!!","묵직하게 꽂혔군!!"]),1,2]:[(nm?nm+" ":"")+pick(["맞췄다!","들어갔다!","깨끗하게 스쳤군!"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔다!",nm+RO(nm)+" 태워 눕혔군!"]):pick(["잘 눕혔다!","깔끔하게 눕혔군!"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+pick(["이걸로 끝이다!!","여기서 태워 끝냈다!!","승부는 끝이다!!"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["좋아! 제대로 터졌다!","묵직하게 박혔군!","크게 한 방 꽂았다!","시원하게 터뜨렸군!"]),1,1.2]:d.sup?[pick(["스쳤지만 불은 붙었다","가볍게 한 대 넣었군"]),0,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["크윽, 저건 아프겠군","저건 뼈까지 울린다","제대로 얻어맞았군","저걸 맞고도 서 있나"]),0,1.2]:d.sup?[pick(["긁혔군. 별거 아니다","살짝 스쳤다, 신경 꺼라"]),0,1.2]:null,
+  down:d=>d.sup?[pick(["큰 걸로 눕혔다! 밀어라","날려버렸군! 지금이다"]),0,1.5]:[pick(["눕혔다! 몰아붙여라","쓰러졌다! 지금 터뜨려라","넘어갔군! 틈 주지 마라","일어나기 전에 붙어라"]),0,1.5],
+  downed:d=>d.sup?[pick(["큰 거에 당했군… 일어나라","날아갔다… 털고 일어서라"]),0,1.5]:[pick(["일어나라, 아직 안 끝났다","넘어졌군… 빨리 일어나라","불은 아직 안 꺼졌다","엎어졌으면 튀어 올라라"]),0,1.5],
+  low1:d=>d.dmg>=12?[pick(["저 한 방에 훅 갔다! 버텨라","위험하다! 숨은 붙어 있냐"]),1,2]:[pick(["위험해! 한 방이면 끝이다","불이 꺼져간다, 정신 차려라","벼랑 끝이다! 물러서지 마라","숨이 얕다… 한 방을 노려라"]),1,2],
+  low2:d=>d.dmg>=12?[pick(["지금이다! 통째로 태워라","한 방 더! 끝내버려라"]),1,2]:[pick(["끝장내라! 태워버려!","한 걸음이다! 터뜨려라","다리가 풀렸다! 지금이야","마무리다! 망설이지 마라"]),1,2],
+  reversal:d=>[pick(["판이 뒤집혔다!","뒤집었다! 이래야 재밌지","순식간에 돌았군!","거꾸로 섰다! 대단하군"]),1,2],
+  ko:d=>d.sup?[pick(["크게 터뜨리고 끝냈다!","마지막까지 화려하군!"]),1,4]:[pick(["끝이다! 시원하게 터졌군","승부 났다! 깔끔하군","깨끗하게 끝냈다!","여기서 불이 꺼졌군"]),1,4],
+  koed:d=>d.sup?[pick(["큰 거에 당했다… 분하군","제대로 삼켜졌군"]),1,4]:[pick(["졌군. 불이 꺼졌다","당했다… 다음엔 내가 태운다","분하다. 이대로 안 끝난다","깨끗하게 졌다. 인정하마"]),1,4],
+  dko:d=>[pick(["둘 다 뻗었군!","동시에 터졌다!","둘 다 쓰러졌다! 무승부군","서로 끝을 봤군"]),1,4],
+  round:d=>[pick(d.n>=5?["불붙었다! 간다","자, 태우러 가자"]:["간다!","시작이다! 터뜨려라","자, 붙어라!","불 붙일 시간이다"]),0,1],
+  start:d=>[pick([d.who+"냐. 태워주마",d.who+"인가. 재밌겠군",d.who+"라… 각오해라",d.who+"와 붙는군. 사양 마라"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["누구랑 붙을 거냐","골라라, 빨리","마음에 드는 놈 골라"]),0,1],
+  stylesel:d=>[pick(["수라냐 나찰이냐, 골라","나찰이냐? 사나워서 좋군","수라냐? 그것도 나쁘진 않지"]),0,1],
+  title:d=>[pick(["불꽃이 부른다. 한판 가지","기다렸다. 태우러 가자"]),0,1],
+  cardsel:d=>[pick(["카드? 나는 불이면 된다","받아 둬라, 공짜다","잔재주는 딱 질색인데"]),0,1],
+  idle:d=>[pick(d.n>=5?["지루하다! 먼저 와라","눈싸움은 그만하지"]:["노려보기만 하는군","먼저 가라! 사양 마라","답답하군, 붙어라"]),0,1],
+  menuIdle:d=>[pick(["빨리 골라라, 손이 근질거린다","고르는 것도 승부다"]),0,1],
+  charselChat:d=>[pick(["형 소게츠… 그놈 얘기는 됐다","하즈키는 내가 찾는다. 반드시",
+    "겐주로? 성질 더러운 건 나도 안다","고민하지 마라, 나를 골라","쿠로코까지 싸운다고? 웃기는군",
+    "우쿄는 몸이 약하지만 검은 매섭다","쥬베이 영감은 만만치 않다","나코루루한테는 좀 살살 해라"]),0,1],
+  vsq:d=>[pick(["글귀는 됐고, 붙자","좋은 말이군. 가자"]),0,1],
+  storyChat:d=>[pick(["이야기가 이어지는군","…그래서 어떻게 되는데","길다. 본론만 말해라"]),0,1],
+  firstBlood:d=>d.dmg>=12?[pick(["첫 방부터 크게 터졌다","선제타! 세게 들어갔군"]),0,1.2]:[pick(["첫 피다! 불을 붙였군","선수 잡았다! 밀어라","먼저 닿았다. 좋은 시작","첫 방이 갈랐군"]),0,1.2],
+  roundLead:d=>[pick(["한 판 챙겼다! 밀어붙여라","선취다! 방심만 마라","앞서간다! 한 판 더","기세 탔군. 이어가라"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내줬군. 여기부터다","뺏겼다. 아직 안 끝났다","뒤졌군. 불을 더 키워라","다음 판에 다 갚아라"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이다! 전부 걸어라","최종 라운드! 다 태워라","이 판이 전부다! 가라","여기서 갈린다. 숨 고르고"]),1,2],
+  doubleLow:d=>[pick(["둘 다 한 방이면 끝난다","서로 벼랑 끝이군! 먼저 쳐라","둘 다 빈사다! 한 수에 갈린다","숨소리까지 들리는군"]),1,2],
+  longFight:d=>[pick(["길어지는군. 집중해라","질긴 승부다. 팔이 무겁겠군","오래 끄네. 먼저 지치면 진다","슬슬 끝을 봐라"]),0,1],
+  perfect:d=>[pick(["완승이다! 흠집 하나 없군","한 대도 안 맞았다!","무상처다! 훌륭하군","깔끔하게 태워버렸군"]),1,2.5],
+  comeback:d=>[pick(["빈사에서 뒤집었다!","다 죽어가다 살아났군!","벼랑 끝에서 터뜨렸다!","한 방 남기고 뒤집었군"]),1,2.5],
+  quickKo:d=>[pick(["순살이다! 눈 깜짝할 새군","일격에 끝냈다! 빠르군","숨 한 번에 끝났다","단숨에 태워버렸군"]),1,2],
+  revenge:d=>[pick(["지난 빚 갚았군! 시원하다","빚은 갚는 거다","저번 패배를 되돌렸군","제대로 되갚아줬다"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승! 아무도 못 막는군":d.n+"연승! 오늘 불이 좋군",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이다! 더 가자",1,2];
+    if(d.n>=10) return [d.n+"연승! 전설을 쓰는군",1,2];
+    if(d.n>=7) return [d.n+"연승! 불이 뜨거워졌다",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중! 다음 놈도 태워라",0,1.5];
+    return [pick([d.n+"연승! 다음 상대다","좋아, "+d.n+"명째다"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명 태우고 여기까지군",d.n+"명이라, 잘 버텼다",d.n+"명 상대로 잘 싸웠다",d.n+"명째에서 멈췄군"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기까지 왔군. 이제 진짜다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째. 손 완전히 풀렸겠군",0,1.4];
+    return [pick([d.n+"연전째다. 계속 가자","다음 상대다. 아직 멀었다"]),0,1.3]; },
+  quoteScr:d=>[pick(["뭐라는 거냐, 저놈","말은 됐고 덤벼라","입 그만 놀리고 와라"]),0,1.2],
+  ending:d=>[pick(["끝까지 태우고 올라갔군!","정상까지 밀어붙였다!","마지막까지 불이 살았군","다 태우고 올라섰다!"]),1,3],
+  winTalk:d=>[pick(["좋았다. 다음 상대 나와라","이런 승부라면 몇 번이고","불이 아직 안 꺼졌다. 가자","할 땐 화끈하게 하는 거다"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…손이 근질거린다","숨 고르는 것도 실력이지","슬슬 크게 한 방 가고 싶군"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말은 됐고","길다, 말이"]),0,1];
+    return [pick(["…심심하군","해설도 지루하다","좋은 승부가 그립군","한판 더 하자"]),0,1]; },
+  loseTalk:d=>[pick(["진 판에서 배우는 거다","불이 약했나. 다시 붙어라","분해할 시간에 한 번 더","다음엔 통째로 태운다"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승! 좋군"):("오늘 "+d.g+"전 "+d.w+"승… 갚아주지"),0,1.5],
+  domLead:d=>[pick(["크게 벌렸다! 몰아붙여라","판이 기울었군. 방심 마라"]),0,1.3],
+  domBehind:d=>[pick(["밀린다. 한 방이면 뒤집힌다","버텨라! 아직 안 끝났다"]),0,1.3],
+  halfHp2:d=>[pick(["절반 넘겼다! 계속 밀어라","반은 태웠군","절반이다! 흐름 놓지 마라","반피다! 여기서 굳혀라"]),0,1.2],
+  halfHp1:d=>[pick(["반피 깎였다. 정신 차려라","절반 잃었군. 호흡 고쳐라","반이 날아갔다. 신중히","절반이다. 여기서 조여라"]),0,1.2],
+  rush:d=>[pick(["연타다! 쉴 틈 없군","계속 몰아친다!","연속으로 꽂히는군","흐름 탔다! 이어가라"]),1,1.5],
+  winScr:d=>[pick(["봐라, 이긴 놈 얼굴이다","이긴 자 이름이 남는 거다"]),1,2],
+  loseScr:d=>[pick(["저 이름 기억해 둬라","분한 얼굴이군. 다음이다"]),0,2],
+  oppSp:d=>[pick(["온다!","필살기다!","큰 게 온다, 조심해","저놈이 크게 준비했다"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째다":"같은 수에 세 번째다",
+    nm?nm+RO(nm)+" 계속 당하는군":"같은 수에 계속 당한다","아까부터 같은 수에 걸린다",
+    "같은 걸 세 번 맞으면 안 되지"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오간다!","서로 "+d.n+"번씩 주고받았군","난타전이군! 이래야 재밌지","서로 물러설 생각이 없군"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 안 내주고 있다","일방적이군! "+d.n+"대째다","완전히 흐름을 쥐었군","저쪽은 손도 못 대는군"]),1,1.5],
+  flowChased:d=>[pick(["계속 맞기만 하는군","벌써 "+d.n+"대째다. 반격해라","숨 돌릴 틈이 없군","되받아치질 못한다"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째군","큰 기술만 노리는군","필살기를 아끼질 않네","또 꺼냈다. 이제 읽어라"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져갔군","한 판도 안 내줬다","처음부터 끝까지 태웠군","빈틈 없는 두 판이었다"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내줬군","한 판도 못 가져왔다","흐름을 한 번도 못 잡았다","이런 날도 있는 거다"]),0,2],
+  arcComeback:d=>[pick(["첫 판 내주고 내리 두 판!","밀리다가 돌아섰다!","한 판 지고도 안 흔들렸군","뒤에서 따라붙어 넘어섰다"]),1,3],
+  arcSweat:d=>[pick(["끝판까지 갔군. 진땀난다","한 판씩 나눠 갖고 끝판이었다","끝까지 갈린 판이군","마지막 한 판이 갈랐다"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판이라니","앞서다 뒤집혔군. 방심했나","좋은 출발이었는데 아쉽군","쥐었던 흐름을 놓쳤다"]),0,2],
+  arcSlip:d=>[pick(["따라붙었는데 막판에 놓쳤군","끝판까지 갔지만 한 끗 모자랐다","거의 잡았던 판인데","막판에 미끄러졌군. 다음이다"]),0,2],
+  REL:{sogetsu:"소게츠… 형 노릇은 됐다",kazuki:"내 얼굴이 왜 둘이냐!",
+       haohmaru:"하오마루냐. 세다는 건 안다",hanzo:"핫토리 한조… 이름은 들었다",
+       genjuro:"겐주로냐. 성질머리 한번 대단하군",nakoruru:"나코루루한테는 살살 해라",
+       rimururu:"동생이라… 나도 하나 있다",jubei:"쥬베이 영감… 만만치 않지",
+       charlotte:"샤를로트냐. 검이 매섭군",kuroko:"심판이 왜 나와서 싸우냐"},
+ },
+ sogetsu:{ /* 물의 카자마 — 냉정한 단문 반말 */
+  hello:"카자마 소게츠. 흐름을 읽겠다",
+  move:d=>d.sup?[pick(["비오의인가. 흐름이 바뀐다","비오의다. 거스르지 마라","큰 것이 온다. 물러서지 마라","물살이 크게 인다. 받아라"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["깊게 파고들었다","정확히 닿았다","물길이 뚫렸다"]),1,2]:[(nm?nm+" ":"")+pick(["적중이다","닿았다","깨끗하게 들어갔다"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔다",nm+RO(nm)+" 흐름을 끊었다"]):pick(["눕혔다","깨끗하게 눕혔다"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+". ":"")+pick(["여기서 끝이다","승부는 났다","흐름이 멎었다"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["무겁게 실렸다","제대로 닿았다","물살이 실린 일격이다","깊이 파고들었다"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["…저건 아프다","뼈까지 울렸다","제대로 맞았다","흐름을 내줬다"]),0,1.2]:null,
+  down:d=>[pick(["눕혔다. 몰아붙여라","쓰러졌다. 흐름을 쥐어라","넘어갔다. 틈을 주지 마라","일어서기 전에 붙어라"]),0,1.5],
+  downed:d=>[pick(["일어나라. 아직이다","넘어졌다. 숨을 고르고 서라","물은 넘어져도 흐른다","털고 일어서라"]),0,1.5],
+  low1:d=>[pick(["위험하다. 한 방이면 끝난다","숨이 얕다. 흐름을 끊어라","벼랑 끝이다. 버텨라","물살이 잦아든다. 정신 차려라"]),1,2],
+  low2:d=>[pick(["끝내라. 망설이지 마라","한 걸음이다. 베어라","다리가 풀렸다. 지금이다","흐름이 멎기 전에 끝내라"]),1,2],
+  reversal:d=>[pick(["판이 뒤집혔다","물길이 거꾸로 돌았다","흐름이 통째로 바뀌었다","거슬러 올라섰다"]),1,2],
+  ko:d=>[pick(["끝났다. 깨끗한 마무리다","승부는 났다","흐름이 여기서 멎었다","물이 잦아들었다. 끝이다"]),1,4],
+  koed:d=>[pick(["졌다. 흐름을 못 읽었다","베였다… 다음엔 내가 벤다","패배도 흐름의 하나다","분함은 남는다. 다음이다"]),1,4],
+  dko:d=>[pick(["둘 다 쓰러졌다","동시에 닿았다. 무승부다","서로 끝을 봤다","승부를 못 가렸다"]),1,4],
+  round:d=>[pick(["간다","시작이다","숨을 고르고 가라","흐름을 잡아라"]),0,1],
+  start:d=>[pick([d.who+"인가. 상대해 주지",d.who+"… 흐름을 보겠다",d.who+"인가. 방심은 없다",d.who+". 시작하지"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["상대를 골라라","누구와 겨룰 텐가","골라라. 흐름은 거기서 갈린다"]),0,1],
+  stylesel:d=>[pick(["수라인가, 나찰인가","어느 쪽이든 물은 흐른다","손에 맞는 쪽을 골라라"]),0,1],
+  title:d=>[pick(["…왔군. 시작하지","물은 늘 기다린다. 가지"]),0,1],
+  cardsel:d=>[pick(["카드인가. 기대지는 마라","받아 둬라. 손해는 없다","잔재주는 흐름을 흐린다"]),0,1],
+  idle:d=>[pick(["…정적이군","서로 재고 있다","먼저 움직이는 쪽이 흐름을 준다","잔잔하다. 오래는 못 간다"]),0,1],
+  menuIdle:d=>[pick(["…서두를 것 없다","고르는 것도 승부다"]),0,1],
+  charselChat:d=>[pick(["카즈키… 그놈은 내가 맡는다","불과 물이다. 섞이지 않는다",
+    "누구를 고르든 흐름은 하나다","…나를 고른다면 후회는 없다","핫토리 한조. 방심 못 할 상대다",
+    "우쿄는 몸이 약하다. 검은 매섭다","쿠로코가 왜 판에 서는 거지","유가… 저건 사람의 것이 아니다",
+    "겐주로는 급하다. 검은 진짜다"]),0,1],
+  vsq:d=>[pick(["…좋은 글귀다. 간다","말은 됐다. 가자"]),0,1],
+  storyChat:d=>[pick(["…이야기가 이어진다","…그래서 어떻게 됐나","길다. 본론만 말해라"]),0,1],
+  firstBlood:d=>[pick(["선제타다. 흐름을 잡았다","먼저 닿았다","첫 물살은 이쪽이다","선수를 잡았다. 이대로 가라"]),0,1.2],
+  roundLead:d=>[pick(["한 판 챙겼다. 밀어라","선취다. 방심은 마라","앞섰다. 흐름을 놓지 마라","좋은 물길이다. 이어가라"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내줬다. 여기부터다","뺏겼다. 아직 안 끝났다","흐름을 되돌려라","숨을 고쳐라. 한 판일 뿐이다"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이다. 전부 걸어라","최종 라운드다. 여기서 갈린다","이 판이 전부다","숨을 고르고 가라. 마지막이다"]),1,2],
+  doubleLow:d=>[pick(["둘 다 한 방이면 끝난다","서로 벼랑 끝이다","먼저 닿는 쪽이 남는다","물이 다 말랐다. 한 수다"]),1,2],
+  longFight:d=>[pick(["길어진다. 집중해라","먼저 지치는 쪽이 진다","긴 승부다. 호흡을 지켜라","물은 오래 흐르는 쪽이 이긴다"]),0,1],
+  perfect:d=>[pick(["완승이다. 흠집 하나 없다","한 대도 안 내줬다","물결 하나 일지 않았다","흐름을 처음부터 쥐었다"]),1,2.5],
+  comeback:d=>[pick(["빈사에서 뒤집었다","다 말라가다 돌아섰다","벼랑 끝에서 거슬러 올라섰다","한 방 남기고 뒤집었다"]),1,2.5],
+  quickKo:d=>[pick(["순식간이다","일격에 끝냈다. 빠르다","숨 한 번에 끝났다","물살이 닿기도 전에 끝났다"]),1,2],
+  revenge:d=>[pick(["지난 빚을 갚았다","되돌려 놓았다","저번 흐름을 뒤집었다","기다린 값은 했다"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승. 막을 자가 없다":d.n+"연승. 흐름이 좋다",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승. 신기록이다",1,2];
+    if(d.n>=10) return [d.n+"연승. 여기까지 온 자는 없다",1,2];
+    if(d.n>=7) return [d.n+"연승. 물살이 거세다",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중이다. 다음도 베어라",0,1.5];
+    return [pick([d.n+"연승. 다음 상대다","좋다. "+d.n+"명째다"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명 베고 여기까지다",d.n+"명이라. 잘 버텼다",d.n+"명 상대로 여기까지. 잘 싸웠다",d.n+"명째에서 멎었다. 다음이다"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기부터는 진짜배기들이다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째다. 몸은 풀렸겠지",0,1.4];
+    return [pick([d.n+"연전째다. 계속 간다","다음 상대다. 아직 멀었다"]),0,1.3]; },
+  quoteScr:d=>[pick(["…말이 많군","말보다 검이다","입은 그만 놀려라"]),0,1.2],
+  ending:d=>[pick(["끝까지 올라갔다. 훌륭하다","정상까지 흐름을 놓지 않았다","마지막까지 물은 마르지 않았다","끝을 봤다. 잘 싸웠다"]),1,3],
+  winTalk:d=>[pick(["좋은 승부였다. 다음이다","흐름을 잘 읽었다","벨 때 벤다. 그것뿐이다","이런 승부라면 몇 번이든 좋다"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…물이 잔잔하다","호흡을 고르는 것도 검술이다","슬슬 흐름을 바꿀 때다"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말은 됐다","길다, 말이"]),0,1];
+    return [pick(["…조용하군","좋은 승부가 그립다","물처럼 기다린다","해설도 목이 마른다","심심하면 한판 더 하지"]),0,1]; },
+  loseTalk:d=>[pick(["진 판에서 배우는 게 많다","검이 무뎠나. 다시 잡아라","숨을 고르고 다시 하자","분해할 시간에 한 번 더다"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승. 흐름이 좋다"):("오늘 "+d.g+"전 "+d.w+"승. 다음에 갚는다"),0,1.5],
+  domLead:d=>[pick(["크게 벌렸다. 몰아붙여라","판이 기울었다. 방심은 마라"]),0,1.3],
+  domBehind:d=>[pick(["밀린다. 한 방이면 뒤집힌다","버텨라. 끝까지 모른다"]),0,1.3],
+  halfHp2:d=>[pick(["절반 넘겼다","반은 깎았다. 계속 밀어라","절반이다. 흐름을 놓지 마라","물이 반쯤 줄었다"]),0,1.2],
+  halfHp1:d=>[pick(["반이 날아갔다. 정신 차려라","절반 잃었다. 호흡을 고쳐라","반피다. 신중히 가라","여기서부터 조여라"]),0,1.2],
+  rush:d=>[pick(["연타다. 물 흐르듯 이어진다","쉴 틈 없이 몰아친다","흐름을 탔다. 이어라","좋은 연격이다"]),1,1.5],
+  winScr:d=>[pick(["승자의 얼굴이다","이긴 자의 이름이 남는다"]),1,2],
+  loseScr:d=>[pick(["저 이름, 기억해 둬라","분함은 다음 판에 쓰는 거다"]),0,2],
+  oppSp:d=>[pick(["온다","필살기다","큰 게 온다. 조심해라","물살이 인다. 대비해라"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째다":"같은 수에 세 번째다",
+    nm?nm+RO(nm)+" 계속 당한다":"같은 수에 계속 당한다","같은 물살에 세 번 쓸렸다",
+    "저 수를 못 읽는다. 세 번째다"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오간다","서로 "+d.n+"번씩 주고받았다","난타전이다. 물러설 생각이 없군","둘 다 발을 안 뺀다"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 안 내주고 있다","일방적이다. "+d.n+"대째다","완전히 흐름을 쥐었다","저쪽은 손도 못 댄다"]),1,1.5],
+  flowChased:d=>[pick(["계속 맞기만 한다. 끊어라","벌써 "+d.n+"대째다. 반격이 없다","숨 돌릴 틈이 없다. 버텨라","물살에 밀린다. 되돌려라"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째다","큰 기술만 노린다","필살기를 아끼지 않는다","또 꺼냈다. 읽을 때다"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져갔다","한 판도 안 내줬다","처음부터 끝까지 흐름을 쥐었다","물결 하나 흐트러지지 않았다"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내줬다","한 판도 못 가져왔다","흐름을 한 번도 못 잡았다","처음부터 끝까지 밀렸다"]),0,2],
+  arcComeback:d=>[pick(["첫 판을 내주고 내리 두 판이다","밀리다 돌아섰다. 뒤집었다","한 판 지고도 흔들리지 않았다","거슬러 올라가 넘어섰다"]),1,3],
+  arcSweat:d=>[pick(["마지막 판까지 갔다","한 판씩 나눠 갖고 끝판이었다","끝까지 갈린 판이다","마지막 한 판이 갈랐다"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판이다","앞서다 뒤집혔다. 방심했나","쥐었던 흐름을 놓쳤다","출발은 좋았는데 끝이 아쉽다"]),0,2],
+  arcSlip:d=>[pick(["따라붙었는데 마지막에 놓쳤다","끝판까지 갔지만 한 끗 모자랐다","거의 잡았던 판이다","막판에 미끄러졌다. 다음이다"]),0,2],
+  REL:{kazuki:"카즈키… 결국 다시 마주 서는군",sogetsu:"…물에 비친 나인가",
+       hanzo:"핫토리 한조. 방심할 상대가 아니다",galford:"갈포드. 서양의 닌자인가",
+       nakoruru:"나코루루. 자연을 아는 자군",haohmaru:"하오마루. 소문은 들었다",
+       ukyo:"우쿄. 몸을 아껴라",genjuro:"겐주로. 위험한 검이다",
+       yuga:"유가… 저건 사람의 것이 아니다"},
+ },
+ asura:{ /* 명계에서 온 검사 — 낮고 느린 반말, 담담하고 무겁다 */
+  hello:"아수라다. …명계에서 왔다.",
+  move:d=>d.sup?[pick(["비오의인가… 혼을 걸었군","큰 것이 온다. 받아라","저건 목숨을 태우는 수다","업이 움직인다. 물러서지 마라"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["뼈까지 닿았다","깊다. 혼이 흔들렸군","묵직하게 박혔다"]),1,2]:[(nm?nm+" ":"")+pick(["닿았다","베였군","얕지만 남는다"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔다",nm+RO(nm)+" 쓰러뜨렸군"]):pick(["눕혔다","깨끗하게 쓰러뜨렸군"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"… ":"")+pick(["여기서 끊겼다","승부는 났다","숨이 멎었군"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["깊게 들어갔다","저건 혼까지 울린다","묵직하군. 뼈가 울었다","제대로 파고들었다"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["…아프겠군","그건 뼈에 남는다","저걸 맞고도 서 있군","숨이 끊길 뻔했다"]),0,1.2]:null,
+  down:d=>[pick(["눕혔다. 틈을 주지 마라","쓰러졌군. 지금이다","일어서기 전에 끝내라","넘어갔다. 숨통을 조여라"]),0,1.5],
+  downed:d=>[pick(["일어나라. 아직 끝이 아니다","쓰러졌군… 혼은 남아 있다","땅을 짚어라. 아직 살아 있다","여기서 끝날 업이 아니다"]),0,1.5],
+  low1:d=>[pick(["숨이 얕다… 경계에 섰군","한 걸음이면 저승이다","위험하다. 버텨라","검 끝이 흔들린다. 정신 차려라"]),1,2],
+  low2:d=>[pick(["끝내라. 망설이지 마라","저쪽은 이미 경계에 있다","한 수다. 뻗어라","숨통을 끊어라"]),1,2],
+  reversal:d=>[pick(["뒤집혔다… 승부는 모른다","판이 돌아섰군","죽음 앞에서 돌아왔군","흐름이 거꾸로 흘렀다"]),1,2],
+  ko:d=>[pick(["끝났다. 혼이 식는군","승부는 났다","경계를 넘겼군","여기까지다. 잘 베었다"]),1,4],
+  koed:d=>[pick(["…베였군. 이것도 업이다","졌다. 원망은 없다","저승 문턱까지 갔군","패배도 짊어질 뿐이다"]),1,4],
+  dko:d=>[pick(["둘 다 쓰러졌군","같이 경계를 넘었나","승부를 가리지 못했다","서로의 혼이 맞물렸군"]),1,4],
+  round:d=>[pick(["간다","시작이다","검을 뽑아라","…와라"]),0,1],
+  start:d=>[pick([d.who+"인가… 업이 얽혔군",d.who+"… 삶과 죽음이다",d.who+"라. 각오는 됐나",d.who+"… 검을 보여라"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["누구와 겨루려느냐","골라라. 시간은 짧다","누구를 베려느냐"]),0,1],
+  stylesel:d=>[pick(["수라냐, 나찰이냐","어느 쪽이든 피는 흐른다","제 혼에 맞는 쪽을 골라라"]),0,1],
+  title:d=>[pick(["…또 하나의 혼이 왔군","명계의 문이 열렸다. 오너라"]),0,1],
+  cardsel:d=>[pick(["카드라… 요행에 기대는군","받아 둬라. 언젠가 쓰인다","그것도 네 업의 일부다"]),0,1],
+  idle:d=>[pick(["서로 움직이지 않는군","정적이군… 나쁘지 않다","먼저 오는 쪽이 산다","숨소리만 오가는군"]),0,1],
+  menuIdle:d=>[pick(["천천히 골라라. 시간은 많다","…기다리는 건 익숙하다"]),0,1],
+  charselChat:d=>[pick(["유가… 그 이름은 잊히지 않는군","쥬베이는 산 자를 위해 검을 든다",
+    "나코루루는 나와 다른 곳을 본다","겐주로의 검에는 피가 배어 있다","우쿄는 스스로를 깎고 있군",
+    "산 자와 죽은 자, 경계는 얇다","고르는 것도 하나의 업이다","쿠로코마저 검을 드는군",
+    "시키… 저 눈은 어디를 보고 있나"]),0,1],
+  vsq:d=>[pick(["글귀에도 혼이 담기는군","말은 됐다. 검을 들어라"]),0,1],
+  storyChat:d=>[pick(["이야기는 이어지는군","…그 끝도 정해져 있겠지","산 자의 이야기인가"]),0,1],
+  firstBlood:d=>[pick(["첫 피다. 흐름을 잡았군","먼저 닿았군","선수를 잡았다. 이어라","피가 흘렀다. 시작이군"]),0,1.2],
+  roundLead:d=>[pick(["한 판 가져갔군. 방심 마라","앞섰다. 흐름을 놓지 마라","선취다. 아직 끝이 아니다","한 걸음 앞이군"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내줬군. 여기부터다","뒤졌다. 검을 고쳐 잡아라","밀렸을 뿐이다. 아직 있다","한 판이다. 끝은 아니다"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이다. 여기서 갈린다","이 판에 전부가 걸렸다","끝판이군. 숨을 고쳐라","여기서 삶과 죽음이 갈린다"]),1,2],
+  doubleLow:d=>[pick(["둘 다 경계에 섰군","한 수에 갈린다. 숨을 죽여라","서로 벼랑 끝이군","먼저 닿는 쪽이 산다"]),1,2],
+  longFight:d=>[pick(["길어지는군… 팔이 무거워진다","오래 끄는 승부다","먼저 지치는 쪽이 진다"]),0,1],
+  perfect:d=>[pick(["흠 하나 없군. 완벽한 검이다","한 대도 내주지 않았다","그림자처럼 베었군","무상처다. 훌륭하다"]),1,2.5],
+  comeback:d=>[pick(["저승 문턱에서 돌아왔군","빈사에서 뒤집었다","혼이 아직 꺼지지 않았군","죽음을 한 걸음 비껴갔다"]),1,2.5],
+  quickKo:d=>[pick(["숨 한 번에 끝났군","단칼이다","빠르군. 눈 깜짝할 새다","경계를 단번에 넘겼다"]),1,2],
+  revenge:d=>[pick(["지난 업을 갚았군","빚은 결국 돌아온다","저번의 빚을 되돌렸다","되갚았군. 이걸로 됐다"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승… 검이 식지 않는군":d.n+"연승. 계속 가라",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이다. 끝을 보자",1,2];
+    if(d.n>=10) return [d.n+"연승… 전설이 되는군",1,2];
+    if(d.n>=7) return [d.n+"연승. 검이 뜨겁군",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중이다. 다음도 베어라",0,1.5];
+    return [pick([d.n+"연승. 다음 상대다",d.n+"명째군. 계속 가라"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명 베고 여기까지군",d.n+"명이라… 잘 버텼다",d.n+"명 상대로 충분하다",d.n+"명째에서 멈췄군","여기까지 "+d.n+"명이다"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기까지 왔군. 이제부터가 진짜다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째군. 손이 풀렸겠지",0,1.4];
+    return [pick([d.n+"연전째다. 계속 가자","다음 상대다. 아직 멀었다"]),0,1.3]; },
+  quoteScr:d=>[pick(["말이 많군","…말로는 아무것도 안 끝난다","입은 됐다. 검을 들어라"]),0,1.2],
+  ending:d=>[pick(["끝까지 베고 올라섰군","정상에 닿았다. 훌륭하다","긴 업의 끝이군","마지막까지 혼이 살아 있었다"]),1,3],
+  winTalk:d=>[pick(["좋은 검이었다. 다음이 온다","베어야 할 때 벤다. 그뿐이다","잠시 숨을 고르고 가라","산 자의 검이군"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…검이 무겁군","호흡을 고르는 것도 검이다","슬슬 크게 가도 좋겠군"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말은 됐다","길군, 말이"]),0,1];
+    return [pick(["…조용하군","기다리는 건 익숙하다","산 자의 시간은 짧다","좋은 승부가 그립군","심심하면 한판 더 하지"]),0,1]; },
+  loseTalk:d=>[pick(["진 판에서 배우는 게 많다","검이 무뎠나. 다시 잡아라","패배도 업의 일부다","한숨 돌리고 다시 하자"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승. 나쁘지 않군"):("오늘 "+d.g+"전 "+d.w+"승… 다음에 갚아라"),0,1.5],
+  domLead:d=>[pick(["크게 벌렸군. 밀어붙여라","판이 기울었다. 방심 마라"]),0,1.3],
+  domBehind:d=>[pick(["밀리는군. 한 방이면 뒤집힌다","버텨라. 끝까지 모른다"]),0,1.3],
+  halfHp2:d=>[pick(["절반 깎았다. 계속 밀어라","반은 베었군","절반이다. 흐름을 놓지 마라","반을 넘겼다. 조여라"]),0,1.2],
+  halfHp1:d=>[pick(["반이 날아갔군. 정신 차려라","절반 잃었다. 호흡을 고쳐라","반피다. 신중히 가라","절반이군. 여기서부터다"]),0,1.2],
+  rush:d=>[pick(["연타다. 끊기질 않는군","쉴 틈이 없군","흐름을 탔다. 이어라","연격이 이어진다"]),1,1.5],
+  winScr:d=>[pick(["승자의 이름만 남는다","살아남은 쪽의 얼굴이군"]),1,2],
+  loseScr:d=>[pick(["…그 이름, 기억해 둬라","패배도 새겨 두면 검이 된다"]),0,2],
+  oppSp:d=>[pick(["온다","필살기다","큰 것이 온다. 조심해라","저놈이 혼을 실었군"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째군":"같은 수에 벌써 세 번째군",
+    nm?nm+RO(nm)+" 계속 당하는군":"같은 수에 계속 당하는군","같은 수에 세 번… 읽어라",
+    "같은 검을 세 번 맞으면 안 된다"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오가는군","서로 "+d.n+"번씩 주고받았다","난타전이군. 물러서지 않는다","서로 물러설 생각이 없군"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 안 내주고 있군","일방적이다. "+d.n+"대째군","완전히 흐름을 쥐었다","저쪽은 손도 못 대는군"]),1,1.5],
+  flowChased:d=>[pick(["맞기만 하는군. 한 번 끊어라","벌써 "+d.n+"대째다. 반격이 없다","숨 돌릴 틈이 없군. 버텨라","되받아치질 못하는군"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째군","큰 기술만 노리는군","필살기를 아끼질 않는다","또 꺼냈군. 이제 읽어라"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져갔군","한 판도 내주지 않았다","처음부터 끝까지 흐름을 쥐었군","빈틈 없는 두 판이었다"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내줬군","한 번도 흐름을 못 잡았다","손도 써 보지 못했군","이런 날도 있다. 검을 다시 잡아라"]),0,2],
+  arcComeback:d=>[pick(["첫 판을 내주고 내리 두 판이군","밀리다 돌아섰다","한 판 지고도 흔들리지 않았군","뒤에서 따라붙어 넘어섰군"]),1,3],
+  arcSweat:d=>[pick(["마지막 판까지 갔군","한 판씩 나눠 갖고 끝판이었다","끝까지 갈린 판이군","마지막 한 판이 갈랐다"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판이군","앞서다 뒤집혔군","쥐었던 흐름을 놓쳤다","좋은 출발이었는데 끝이 아쉽군"]),0,2],
+  arcSlip:d=>[pick(["따라붙었다가 놓쳤군","끝판까지 갔지만 한 끗 모자랐다","거의 잡았던 판이다","막판에 미끄러졌군"]),0,2],
+  REL:{asura:"…나와 같은 얼굴인가",yuga:"유가… 결국 여기서 만나는군",
+       shiki:"시키… 그 눈은 어디를 보나",haohmaru:"하오마루인가. 살아 있는 검이군",
+       nakoruru:"나코루루… 너는 산 자의 편이군",jubei:"쥬베이. 지킬 것이 있는 검이군",
+       genjuro:"겐주로… 그 검엔 피가 배었군",ukyo:"우쿄. 스스로를 깎고 있군",
+       kuroko:"심판마저 검을 드는가"},
+ },
+ shiki:{ /* 조종당하는 쌍검의 여검사 — 짧고 비어 있는 반말 */
+  hello:"…시키. 해설, 하라고 들었다",
+  move:d=>d.sup?[pick(["비오의… 큰 게 온다","…크게 온다. 물러서","저건 막지 못해","비오의다. 피할 수 없어"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["깊이 들어갔다","…깊게 베였어","뼈까지 닿았다"]),1,2]:[(nm?nm+" ":"")+pick(["닿았다","…맞았어","들어갔다"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔다",nm+RO(nm)+" 쓰러뜨렸다"]):pick(["눕혔다","…쓰러졌어"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"… ":"")+pick(["끝났다","끝. 더는 없어","여기서 끊겼다"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["…들어갔다","깊게 베였다","묵직했어","…뼈에 닿았다"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["…아프지 않아","맞았어. 상관없어","…조금, 흔들렸다","몸이 견딘다"]),0,1.2]:null,
+  down:d=>[pick(["눕혔다. 계속","쓰러졌어. 끝내","…지금 베어","일어나기 전에"]),0,1.5],
+  downed:d=>[pick(["…일어나. 아직이야","넘어졌다. 그뿐","몸이 다시 선다","…끝나지 않았어"]),0,1.5],
+  low1:d=>[pick(["…한 번이면 끝난다","위험해. 숨이 얕아","베이면 거기서 끝","…몸이 무거워졌다"]),1,2],
+  low2:d=>[pick(["…끝내. 지금","한 걸음. 베어","저건 곧 쓰러져","마지막이야. 뻗어"]),1,2],
+  reversal:d=>[pick(["…뒤집혔다","판이 돌아섰어","거꾸로 섰다","…이런 것도 있나"]),1,2],
+  ko:d=>[pick(["끝났다","…승부는 났어","베였다. 그뿐","조용해졌다"]),1,4],
+  koed:d=>[pick(["…졌다","베였어. 그뿐이야","…여기까지인가","몸이 멈춘다"]),1,4],
+  dko:d=>[pick(["둘 다 멈췄다","…같이 쓰러졌어","서로 끝을 봤다","가려지지 않았어"]),1,4],
+  round:d=>[pick(["…간다","시작","검을 뽑아","…움직인다"]),0,1],
+  start:d=>[pick([d.who+"…",d.who+". 벤다",d.who+"인가",d.who+"… 상관없어",d.who+". 명령대로"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["…골라","누구든 상관없어","고르면 벤다","…정해"]),0,1],
+  stylesel:d=>[pick(["수라. 나찰. 어느 쪽이든","…어느 쪽이든 벤다","골라. 검은 같아"]),0,1],
+  title:d=>[pick(["…또 부른다","검이 기다린다"]),0,1],
+  cardsel:d=>[pick(["카드… 나는 모른다","받아 둬","필요하면 써"]),0,1],
+  idle:d=>[pick(["…움직이지 않는군","서로 멈춰 있어","먼저 와도 좋아","…기다린다"]),0,1],
+  menuIdle:d=>[pick(["…기다린다","천천히 골라도 돼"]),0,1],
+  charselChat:d=>[pick(["아수라… 그 이름은 안다","유가. 그 목소리가 들려","나코루루는 다르다. 자유롭지",
+    "겐주로. 눈이 사납다","…나는, 누구였지","하오마루. 검이 곧다","쿠로코까지 싸우나",
+    "카즈키의 불은 뜨겁다","고민해도 돼. 나는 기다려"]),0,1],
+  vsq:d=>[pick(["…글귀인가","말은 모르겠어"]),0,1],
+  storyChat:d=>[pick(["…이야기인가","기억에 없다","…계속해"]),0,1],
+  firstBlood:d=>[pick(["먼저 닿았다","첫 피야","…선수를 잡았어","먼저 베었다"]),0,1.2],
+  roundLead:d=>[pick(["한 판 가져갔다","…앞섰어","먼저 한 판. 계속","기울었다"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내줬다","…뒤졌어. 아직이야","뺏겼다. 다음","돌아서면 돼"]),0,1.5],
+  matchPoint:d=>[pick(["…마지막 판","여기서 갈린다","전부 걸어","이 판이 끝이야"]),1,2],
+  doubleLow:d=>[pick(["둘 다 한 방이야","…먼저 닿는 쪽","서로 벼랑 끝이다","숨이 들린다"]),1,2],
+  longFight:d=>[pick(["…길어졌다","팔이 무거워질 때야","오래 끄는군","먼저 지치면 진다"]),0,1],
+  perfect:d=>[pick(["…한 대도 안 맞았다","흠집이 없어","깨끗했다","…완전했어"]),1,2.5],
+  comeback:d=>[pick(["…빈사에서 뒤집었다","다 죽어가다 섰어","벼랑 끝에서 베었다","…살아남았다"]),1,2.5],
+  quickKo:d=>[pick(["…빨랐다","한 수로 끝났어","눈 깜짝할 새다","숨 한 번이야"]),1,2],
+  revenge:d=>[pick(["지난 빚을 갚았다","…되돌렸어","저번 것을 갚았다","기다린 값이야"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승… 멈추지 않아":d.n+"연승. 계속",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승. 신기록이다",1,2];
+    if(d.n>=10) return [d.n+"연승… 끝이 없어",1,2];
+    if(d.n>=7) return [d.n+"연승. 손이 뜨겁다",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중. 다음도 벤다",0,1.5];
+    return [pick([d.n+"연승. 다음 상대",d.n+"명째다. 계속 간다"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명. 여기까지야",d.n+"명 베고 멈췄다",d.n+"명 상대로 버텼다","여기까지 "+d.n+"명이다"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["…여기부터가 진짜다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째. 손이 풀렸다",0,1.4];
+    return [pick([d.n+"연전째다. 계속","다음 상대. 아직이야"]),0,1.3]; },
+  quoteScr:d=>[pick(["…무슨 말이지","말은 모르겠다","입보다 검이야"]),0,1.2],
+  ending:d=>[pick(["…끝까지 올라갔다","정상이다. 조용하군","마지막까지 베었어","…끝을 봤다"]),1,3],
+  winTalk:d=>[pick(["좋은 검이었어","…다음이 기다린다","벨 때 벤다. 그뿐","계속 가"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…손이 근질거린다","숨을 고른다","…속이 비어 있어"]),0,1];
+    if(d.ctx==="quote") return [pick(["…길다","말은 됐어"]),0,1];
+    return [pick(["…나는, 누구였지","이름이 떠오르지 않아","조용하군","…명령이 없다","한판 더 해도 돼"]),0,1]; },
+  loseTalk:d=>[pick(["…진 판에서도 배운다","검이 무뎠나","다시 잡아","분해할 시간에 한 번 더"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승. 나쁘지 않아"):("오늘 "+d.g+"전 "+d.w+"승… 다음에 갚아"),0,1.5],
+  domLead:d=>[pick(["크게 벌렸다. 몰아붙여","기울었어. 방심 마"]),0,1.3],
+  domBehind:d=>[pick(["밀린다… 한 방이면 뒤집혀","버텨. 아직 몰라"]),0,1.3],
+  halfHp2:d=>[pick(["절반 베었다","반은 깎았어","…절반이다","여기서 굳혀"]),0,1.2],
+  halfHp1:d=>[pick(["절반 잃었다","반이 날아갔어","…호흡을 고쳐","절반이야. 조여"]),0,1.2],
+  rush:d=>[pick(["연타다","쉴 틈이 없군","이어진다. 계속","흐름을 탔어"]),1,1.5],
+  winScr:d=>[pick(["…이긴 얼굴이다","이름이 남는다"]),1,2],
+  loseScr:d=>[pick(["…저 이름, 기억해 둬","다음에 갚으면 돼"]),0,2],
+  oppSp:d=>[pick(["온다","…큰 게 온다","조심해","저놈이 준비했다"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 세 번째다":"같은 수에 세 번째다",
+    nm?nm+RO(nm)+" 계속 당한다":"같은 수에 계속 당한다","아까부터 같은 수야",
+    "세 번은 안 되지","그 수를 못 읽는군"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오간다","서로 "+d.n+"번씩 주고받았다","난타전이군","물러설 생각이 없어"]),1,1.5],
+  flowOneSide:d=>[pick(["한 대도 안 내줬다","일방적이야. "+d.n+"대째","흐름을 쥐었다","손도 못 대는군"]),1,1.5],
+  flowChased:d=>[pick(["계속 맞고만 있다","벌써 "+d.n+"대째야","반격이 없어","한 번 끊어"]),0,1.5],
+  flowSpHeavy:d=>[pick(["필살기 "+d.n+"번째다","큰 기술만 노린다","또 꺼냈어. 읽을 때야","아끼질 않는군"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져갔다","한 판도 안 내줬어","처음부터 끝까지 쥐었다","빈틈이 없었다"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내줬다","한 판도 못 가져왔어","흐름을 못 잡았다","…이런 날도 있어"]),0,2],
+  arcComeback:d=>[pick(["첫 판 내주고 내리 두 판","밀리다 돌아섰다","한 판 지고도 안 흔들렸어","뒤에서 넘어섰다"]),1,3],
+  arcSweat:d=>[pick(["마지막 판까지 갔다","한 판씩 나눠 갖고 끝판","끝까지 갈린 판이야","한 판이 갈랐다"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판","앞서다 뒤집혔다","쥐었던 흐름을 놓쳤어","…끝이 아쉽군"]),0,2],
+  arcSlip:d=>[pick(["따라붙었다 놓쳤다","끝판까지 갔지만 한 끗","거의 잡았던 판이야","막판에 미끄러졌어"]),0,2],
+  REL:{yuga:"…유가. 그 목소리가 또 들린다",asura:"아수라… 그 이름만 남아 있어",
+       shiki:"…나와 같은 얼굴. 어느 쪽이 나지",haohmaru:"하오마루. 곧은 검이군",
+       nakoruru:"나코루루… 너는 자유롭구나",genjuro:"겐주로. 눈이 사납다",
+       charlotte:"샤를로트. 흔들리지 않는 검이야",kazuki:"카즈키. 그 불은 뜨겁다",
+       kuroko:"…심판도 검을 드나"},
+ },
+ morozumi:{ /* 붓 한 자루의 화가 — 탐미적, 들뜬 존대와 나긋한 반말 */
+  hello:"모로즈미 타무리키. 이 판, 제가 그려 드리죠",
+  move:d=>d.sup?[pick(["비오의… 아, 큰 획이 옵니다","저 한 획, 놓치지 마시길","붓이 크게 젖혀졌습니다","화면 전체를 쓸 생각이군요"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["깊게 박혔군요. 좋은 획입니다","선이 굵게 남았습니다","단숨에 그어졌군요"]),1,2]:[(nm?nm+" ":"")+pick(["닿았습니다. 곱군요","얕지만 정확한 획","한 점 찍혔습니다"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔군요. 좋은 구도","한 획, "+nm+RO(nm)+" 마무리"]):pick(["눕혔습니다. 선이 곱군요","깨끗하게 눕혔습니다"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+pick(["여기서 붓을 놓습니다","이 한 획으로 완성","마지막 선이 그어졌군요"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["아, 굵은 획입니다","선이 깊게 파였군요","묵직한 붓질이었습니다","보기 좋게 그어졌군요"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["저건 화면이 찢어졌군요","아까운 선이 뭉개졌습니다","색이 확 번졌군요","저 한 대는 아프겠습니다","곱던 자세가 무너졌군요"]),0,1.2]:null,
+  down:d=>[pick(["눕혔습니다. 여백을 채우시죠","쓰러졌군요. 지금 덧칠하세요","좋은 각도로 넘어갔습니다","일어나기 전에 한 획 더","넘어진 자세도 곱군요"]),0,1.5],
+  downed:d=>[pick(["엎어졌군요. 다시 서세요","일어나야 그림이 됩니다","아직 화면은 비어 있습니다","붓을 놓기엔 이릅니다","숨 고르고 다시 잡으시죠"]),0,1.5],
+  low1:d=>[pick(["위태롭군요… 선이 떨립니다","한 획이면 지워집니다","색이 옅어졌습니다. 버티세요","벼랑 끝의 구도로군요","여백이 너무 넓어졌습니다"]),1,2],
+  low2:d=>[pick(["마지막 한 획입니다!","여기서 완성하세요!","붓을 뻗으세요, 지금!","한 점만 더 찍으면 됩니다","끝을 그으세요!"]),1,2],
+  reversal:d=>[pick(["아아, 구도가 뒤집혔습니다!","화면이 통째로 돌아섰군요","이런 반전, 참 아름답습니다","색이 완전히 갈렸습니다!","보십시오, 판이 뒤집혔어요"]),1,2],
+  ko:d=>[pick(["완성입니다. 아름답군요","붓을 놓습니다. 훌륭해요","마지막 획까지 곱군요","이걸로 한 폭이 끝났습니다"]),1,4],
+  koed:d=>[pick(["…제 그림이 지워졌군요","졌습니다. 선이 모자랐어요","좋은 획이었습니다. 인정하죠","화면을 내주었군요","분하군요. 다시 그리겠습니다"]),1,4],
+  dko:d=>[pick(["둘 다 지워졌군요. 묘합니다","서로의 획이 겹쳤습니다","같이 무너진 구도로군요","이런 결말도 아름답습니다","승부를 못 그렸군요"]),1,4],
+  round:d=>[pick(["시작하죠","붓을 드세요","화면이 비었습니다","첫 획을 긋죠","자, 그려 봅시다"]),0,1],
+  start:d=>[pick([d.who+"… 좋은 소재군요",d.who+"인가요. 그려 보죠",d.who+"라… 색이 궁금합니다",d.who+"와 한 폭 그립니다",d.who+"… 기대되는 구도"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["누구를 그리시겠습니까","마음에 드는 색을 고르세요","고르는 것도 구도입니다","어느 붓이 좋으신가요","천천히, 고르세요"]),0,1],
+  stylesel:d=>[pick(["수라냐 나찰이냐… 색이 다릅니다","수라는 곧은 선이지요","나찰은 거친 붓질입니다","손에 맞는 붓을 잡으세요","둘 다 나름의 미가 있습니다"]),0,1],
+  title:d=>[pick(["빈 화면이 저를 부르는군요","오늘은 어떤 그림이 될까요"]),0,1],
+  cardsel:d=>[pick(["카드라… 색이 곱군요","한 장 고르시죠. 취향대로","그림 없는 카드는 재미없죠"]),0,1],
+  idle:d=>[pick(["둘 다 멈췄군요. 이 여백도 좋습니다","누가 먼저 그을까요","아름다운 정적이군요"]),0,1],
+  menuIdle:d=>[pick(["천천히 고르세요. 급할 것 없죠","기다리는 시간도 밑그림입니다"]),0,1],
+  charselChat:d=>[pick(["나코루루… 저 색은 참 곱습니다","우쿄의 선은 가늘고 예리하죠",
+    "겐주로는 색이 탁합니다만, 강렬하죠","샤를로트의 자세는 균형이 좋군요","시키의 붉은 색은 위험합니다",
+    "쿠로코까지 붓을 들다니, 재미있군요","유가… 저건 그리고 싶지 않은 색","쥬베이는 화면을 넓게 쓰는군요",
+    "하오마루의 선은 굵고 시원합니다"]),0,1],
+  vsq:d=>[pick(["좋은 글귀군요. 획이 곱습니다","말도 하나의 그림이지요"]),0,1],
+  storyChat:d=>[pick(["이야기에도 색이 있군요","…계속 들려주시죠","다음 장면이 궁금합니다"]),0,1],
+  firstBlood:d=>[pick(["첫 획입니다. 곱게 그였군요","첫 점이 찍혔습니다","시작하는 선이 좋군요","먼저 닿았습니다. 기분 좋은 시작","첫 색이 올랐습니다"]),0,1.2],
+  roundLead:d=>[pick(["한 폭 먼저 완성했군요","앞서갑니다. 붓을 놓지 마세요","좋은 밑그림입니다","한 판 챙겼군요. 계속 그리죠","흐름이 곱습니다"]),0,1.5],
+  roundBehind:d=>[pick(["한 폭 내주었군요. 아직입니다","화면은 아직 남았습니다","덧칠할 여지가 있습니다","한 판일 뿐이죠. 다시 잡으세요","구도를 고쳐 봅시다"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 화면입니다","이 한 폭에 전부 거세요","끝판이군요. 색을 다 쓰시길","여기서 갈립니다. 신중히","마지막 획을 준비하세요"]),1,2],
+  doubleLow:d=>[pick(["둘 다 지워지기 직전이군요","서로 선이 떨립니다. 아름답군요","한 획에 갈립니다","이 긴장이 참 곱습니다","숨소리마저 구도의 일부군요"]),1,2],
+  longFight:d=>[pick(["길어지는군요. 화면이 빽빽합니다","오래 그리는 그림도 있지요","붓이 무거워질 때입니다","서로 잘 버팁니다. 볼만하군요","질긴 구도로군요"]),0,1],
+  perfect:d=>[pick(["흠 하나 없군요. 완벽합니다","티끌도 안 묻었습니다. 아름다워요","무결한 한 폭이군요","이런 화면을 보고 싶었습니다","선 하나 흐트러지지 않았군요"]),1,2.5],
+  comeback:d=>[pick(["지워지기 직전에 되살렸군요","꺼진 색이 다시 올랐습니다","벼랑 끝의 한 획이었습니다","아아, 이런 반전이 아름답죠","다 지워진 화면을 되찾았군요"]),1,2.5],
+  quickKo:d=>[pick(["단 한 획이군요. 시원합니다","눈 깜짝할 새 완성됐습니다","붓을 적실 새도 없었군요","빠른 선이 곱습니다","순식간에 그려졌군요"]),1,2],
+  revenge:d=>[pick(["지웠던 그림을 되찾았군요","묵은 자국을 덮었습니다","되갚은 한 획이군요","기다린 보람이 있는 색입니다","이제야 구도가 맞았군요"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승. 화면이 눈부시군요":d.n+"연승. 붓이 잘 나갑니다",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록입니다. 아름답군요",1,2];
+    if(d.n>=10) return [d.n+"연승… 한 폭의 전설이군요",1,2];
+    if(d.n>=7) return [d.n+"연승. 색이 뜨겁습니다",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중. 계속 그리시죠",0,1.5];
+    return [pick([d.n+"연승. 다음 소재입니다",d.n+"명째군요. 이어 갑시다"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명. 훌륭한 연작이었습니다",d.n+"명이라… 붓이 잘 버텼군요",d.n+"명에서 멈췄군요. 곱습니다",d.n+"명까지. 좋은 화면이었어요","여기까지 "+d.n+"명. 남을 그림입니다"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기까지 왔군요. 색이 짙어집니다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째. 손이 다 풀렸겠군요",0,1.4];
+    return [pick([d.n+"연전째입니다. 계속 그리죠","다음 소재군요. 아직 멀었습니다"]),0,1.3]; },
+  quoteScr:d=>[pick(["말이 많군요. 획으로 하시죠","한마디 하는군요","입보다 붓이 정직합니다"]),0,1.2],
+  ending:d=>[pick(["끝까지 그려냈군요. 아름답습니다","마지막 화면까지 곱습니다","완성입니다. 한 폭의 절경이군요","붓을 놓아도 좋겠습니다","이 여정, 그대로 남기고 싶군요"]),1,3],
+  winTalk:d=>[pick(["좋은 획이었습니다. 다음 화면으로","이런 그림이라면 몇 폭이든","색이 잘 올랐군요. 계속하죠","그릴 때 그린다 — 그거면 됩니다"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…붓이 근질거립니다","이 여백, 참 곱군요","슬슬 큰 획을 긋고 싶은데"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말은 됐습니다","길군요, 문장이"]),0,1];
+    return [pick(["…먹이 말랐군요","해설도 눈이 심심합니다","아름다운 판이 그립습니다","이런 날엔 한 폭 그리고 싶죠","심심하면 한판 더 하시죠"]),0,1]; },
+  loseTalk:d=>[pick(["망친 그림에서 배우는 법이죠","선이 흐렸군요. 다시 잡으세요","덧칠하면 됩니다","분해할 새에 한 획 더 그으시죠"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승. 색이 잘 올랐군요"):("오늘 "+d.g+"전 "+d.w+"승… 덧칠이 필요합니다"),0,1.5],
+  domLead:d=>[pick(["화면을 다 차지했군요","크게 벌렸습니다. 방심은 금물"]),0,1.3],
+  domBehind:d=>[pick(["밀립니다… 한 획이면 뒤집혀요","버티세요. 여백은 아직 있습니다"]),0,1.3],
+  halfHp2:d=>[pick(["절반을 지웠군요","반쯤 칠했습니다. 계속하죠","절반입니다. 흐름을 놓지 마세요","반은 그렸군요. 굳히시죠"]),0,1.2],
+  halfHp1:d=>[pick(["절반이 지워졌군요","반이 날아갔습니다. 신중히","색이 반쯤 빠졌습니다","절반입니다. 선을 고쳐 잡으세요"]),0,1.2],
+  rush:d=>[pick(["연타군요. 붓이 흐르듯 갑니다","쉴 틈 없이 그어집니다","선이 이어집니다. 좋군요","흐름을 탔군요. 계속","리듬이 참 곱습니다"]),1,1.5],
+  winScr:d=>[pick(["승자의 얼굴, 그리고 싶군요","이긴 자의 색이 남습니다"]),1,2],
+  loseScr:d=>[pick(["그 얼굴도 좋은 소재입니다","분한 표정… 색이 진하군요"]),0,2],
+  oppSp:d=>[pick(["옵니다","큰 획이 옵니다","조심하세요, 붓이 젖혀졌습니다","크게 준비했군요","한 방 옵니다"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째군요":"같은 획에 벌써 세 번째",
+    nm?nm+RO(nm)+" 계속 당하는군요":"같은 붓질에 계속 당합니다","아까부터 같은 선입니다",
+    "같은 획을 세 번은 곤란하죠","저 붓질을 못 읽는군요"]),0,1.5];},
+  flowTrade:d=>[pick(["쉴 틈 없이 오가는군요","서로 "+d.n+"번씩 주고받았습니다","난타전이군요. 색이 뒤엉킵니다","치고받는 구도가 곱군요","둘 다 물러설 생각이 없군요"]),1,1.5],
+  flowOneSide:d=>[pick(["한 획도 안 내주는군요","일방적입니다. "+d.n+"대째","완전히 화면을 쥐었군요","저쪽은 붓도 못 댑니다","이대로면 흠집도 없겠군요"]),1,1.5],
+  flowChased:d=>[pick(["맞기만 하는군요. 한 번 끊으세요","벌써 "+d.n+"대째. 반격이 없습니다","숨 돌릴 여백이 없군요","되받아치질 못합니다","이대로면 지워집니다"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째군요","큰 획만 노리는군요","붓을 아끼질 않는군요","또 꺼냈습니다. 읽을 때죠","큰 것만 쓰면 여백이 생기죠"]),0,1.5],
+  arcSweep:d=>[pick(["두 폭 내리 완성했군요. 깔끔합니다","한 획도 안 내주었습니다","처음부터 끝까지 제 화면이었군요","군더더기 없는 두 폭이었습니다","이런 구도를 보고 싶었습니다"]),1,2.5],
+  arcSwept:d=>[pick(["두 폭 내리 내주었군요","한 폭도 못 그렸습니다","흐름을 한 번도 못 쥐었군요","이런 날도 있죠. 다시 그리세요","처음부터 끝까지 밀렸습니다"]),0,2],
+  arcComeback:d=>[pick(["첫 폭을 내주고 내리 둘. 뒤집었군요","밀리다 돌아섰습니다. 아름답군요","한 판 지고도 선이 안 흔들렸군요","뒤에서 따라붙어 넘어섰습니다","이런 반전이 참 곱습니다"]),1,3],
+  arcSweat:d=>[pick(["끝판까지 갔군요. 진땀나는 구도","한 폭씩 나눠 갖고 마지막이었죠","끝까지 갈린 화면입니다","마지막 한 획이 갈랐군요","이런 접전은 색이 진합니다"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 한 폭 따 놓고 내리 둘이라니","앞서다 뒤집혔군요. 방심했나요","좋은 밑그림이었는데 아쉽습니다","쥐었던 화면을 놓쳤군요","다 그려 놓고 흘려보낸 판이군요"]),0,2],
+  arcSlip:d=>[pick(["따라붙었는데 끝에서 놓쳤군요","끝판까지 갔지만 한 획 모자랐죠","거의 잡았던 화면입니다","막판에 선이 미끄러졌군요","여기까지 온 것도 고운 구도였죠"]),0,2],
+  REL:{morozumi:"제 얼굴이 하나 더… 흥미로운 구도군요",
+       haohmaru:"하오마루. 굵고 시원한 선입니다",
+       nakoruru:"나코루루… 그 색은 참으로 곱군요",
+       ukyo:"우쿄인가요. 가늘고 예리한 획이지",
+       charlotte:"샤를로트. 자세의 균형이 아름답습니다",
+       genjuro:"겐주로… 탁하지만 강렬한 색이군요",
+       shiki:"시키. 그 붉은 색은 위험합니다",
+       yuga:"유가… 저건 그리고 싶지 않은 색이군",
+       kuroko:"심판이 붓을 들다니, 재미있군요"},
+ },
+ yuga:{ /* 이 소동의 흑막 — 우아하고 서늘한 반말, 내려다보는 웃음 */
+  hello:"유가다. 어디 즐겁게 해보아라",
+  move:d=>d.sup?[pick(["비오의라… 후후, 좋구나","오의를 꺼냈군. 재미있다","그 큰 힘, 보여 보아라","후후, 마지막 발버둥인가"]),1,3]:null,
+  moveHit:d=>{const nm=NM(d); return d.dmg>=12?[(nm?nm+", ":"")+pick(["깊이 파고들었구나","묵직하게 박혔군","가엾게도 크게 당했다"]),1,2]:[(nm?nm+" ":"")+pick(["닿았군","맞았구나","가볍게 스쳤군"]),0,1.8];},
+  moveDown:d=>{const nm=NM(d); return [nm?pick([nm+RO(nm)+" 눕혔군",nm+RO(nm)+" 쓰러뜨렸구나"]):pick(["잘 눕혔군","깨끗하게 눕혔구나"]),1,2];},
+  moveKo:d=>{const nm=NM(d); return [(nm?nm+"!! ":"")+pick(["여기서 끝이군","막을 내렸구나","승부는 났다. 후후"]),1,4];},
+  hit:d=>d.dmg>=12?[pick(["훌륭한 일격이군","후후, 좋은 광경이다","제대로 들어갔구나","보기 좋은 한 수다"]),1,1.2]:null,
+  taken:d=>d.dmg>=12?[pick(["아프겠구나. 가엾은 것","저건 견디기 힘들겠군","어리석은 실수였다","후후, 좋은 비명이었다"]),0,1.2]:null,
+  down:d=>[pick(["넘어졌군. 밟아 두어라","일어나기 전에 끝내라","좋은 광경이다. 이어라","쓰러졌군. 자비는 마라"]),0,1.5],
+  downed:d=>[pick(["일어나라. 아직 지루하다","엎어졌군. 볼품없구나","그 정도로 눕는 것이냐","일어서라. 구경은 아직이다"]),0,1.5],
+  low1:d=>[pick(["숨이 얕구나. 가엾어라","벼랑 끝이군. 후후","여기서 스러질 셈이냐","끝이 보이는군. 재미있다"]),1,2],
+  low2:d=>[pick(["끝내라. 그것이 자비다","마지막이다. 베어라","숨통을 끊어라","이제 막을 내려라"]),1,2],
+  reversal:d=>[pick(["뒤집혔군. 흥미롭구나","호오, 판이 돌았다","이래서 구경이 즐겁지"]),1,2],
+  ko:d=>[pick(["끝이군. 후후, 훌륭했다","막이 내렸다","잘 놀아 주었구나","이 정도면 볼만했다"]),1,4],
+  koed:d=>[pick(["졌군. 그럴 수도 있지","가엾게도 여기까지인가","후후, 이 또한 광경이다","패했구나. 흥미롭군"]),1,4],
+  dko:d=>[pick(["둘 다 쓰러졌군. 후후","함께 스러졌구나","우스운 결말이다"]),1,4],
+  round:d=>[pick(["시작이다","자, 보여다오","막이 오른다","어디 즐겁게 해라"]),0,1],
+  start:d=>[pick([d.who+"인가. 흥미롭군",d.who+"라… 어디 보자",d.who+"군. 즐겁게 해라",d.who+"… 가엾구나"]),1,2],
+  rel:d=>[d.text,0,2], lore:d=>[d.text,0,2],
+  charsel:d=>[pick(["누구를 고를 테냐","어리석은 자를 골라라","마음대로 골라 보아라"]),0,1],
+  stylesel:d=>[pick(["수라냐 나찰이냐. 후후","어느 쪽이든 상관없다","제 그릇에 맞게 골라라"]),0,1],
+  title:d=>[pick(["또 인간들이 모이는군","자, 구경거리를 시작하지"]),0,1],
+  cardsel:d=>[pick(["카드에 기대는 것이냐","가져가라. 큰 차이는 없다","그런 것에 매달리는군"]),0,1],
+  idle:d=>[pick(["서로 재기만 하는군","지루하구나. 움직여라","눈치만 보는 것이냐","후후, 겁이 났는가"]),0,1],
+  menuIdle:d=>[pick(["천천히 골라라. 기다리마","고민이 길구나"]),0,1],
+  charselChat:d=>[pick(["시키… 그 아이는 내 것이다","아수라라. 성가신 인연이군","인간의 검이란 가엾구나","누굴 고르든 결말은 같다",
+    "쿠로코까지 나서는 판이군","한조도 결국은 인간이다","저들은 모르지, 이 놀음을","고르는 손끝이 떨리는군"]),0,1],
+  vsq:d=>[pick(["글귀 따위로 뭐가 변하나","좋은 문장이군. 후후"]),0,1],
+  storyChat:d=>[pick(["이야기가 이어지는군","그래서 어찌 될 것 같으냐","인간의 이야기란 가엾지"]),0,1],
+  firstBlood:d=>[pick(["첫 피군. 좋은 시작이다","먼저 닿았구나","선수를 잡았군. 후후","첫 일격이다. 흥미롭군"]),0,1.2],
+  roundLead:d=>[pick(["한 판 챙겼군. 이어가라","앞섰구나. 방심은 마라","선취다. 계속 즐겁게 해라"]),0,1.5],
+  roundBehind:d=>[pick(["한 판 내줬군. 가엾어라","뒤졌구나. 아직 남았다","내줬군. 그래야 재미있지"]),0,1.5],
+  matchPoint:d=>[pick(["마지막 판이다. 후후","이 판이 전부다","여기서 갈리는군. 즐겁다"]),1,2],
+  doubleLow:d=>[pick(["둘 다 벼랑 끝이군","한 수에 갈린다. 훌륭해","이런 광경이 보고 싶었다"]),1,2],
+  longFight:d=>[pick(["질기구나. 지루해진다","오래 끄는군. 가엾어라","길다… 나쁘진 않지"]),0,1],
+  perfect:d=>[pick(["흠집 하나 없군. 훌륭해","완벽하구나. 후후","손끝 하나 안 닿았다","무결한 승리군. 재미있다"]),1,2.5],
+  comeback:d=>[pick(["빈사에서 뒤집었군","벼랑 끝에서 살아났다","이래서 구경을 못 끊지"]),1,2.5],
+  quickKo:d=>[pick(["순식간이군. 싱겁구나","눈 깜짝할 새다","너무 빨라 아쉽군"]),1,2],
+  revenge:d=>[pick(["지난 빚을 갚았군","되갚았구나. 후후","기다린 보람이 있었다"]),1,2],
+  streak:d=>[d.n>=5?d.n+"연승이라니. 훌륭하군":d.n+"연승이군. 계속해 보아라",1,2],
+  oppInfo:d=>["상대 정보 — "+d.text,0,1.2],
+  survStreak:d=>{ if(d.rec) return [d.n+"연승, 신기록이군. 후후",1,2];
+    if(d.n>=10) return [d.n+"연승이라니. 훌륭하다",1,2];
+    if(d.n>=7) return [d.n+"연승이군. 흥미롭다",1,1.8];
+    if(d.n>=3) return [d.n+"연승 중. 계속 해보아라",0,1.5];
+    return [pick([d.n+"연승이군. 다음이다","좋구나, "+d.n+"명째다"]),0,1.3]; },
+  survEnd:d=>[pick([d.n+"명에서 멈췄군","여기까지 "+d.n+"명인가",d.n+"명이라. 볼만했다",d.n+"명 상대라니 가엾구나"]),1,2],
+  storyStage:d=>{ if(d.n>=8) return ["여기까지 왔군. 흥미롭다",0,1.5];
+    if(d.n>=5) return [d.n+"연전째군. 지치지 마라",0,1.4];
+    return [pick([d.n+"연전째다. 계속 가라","다음 상대다. 아직 멀었지"]),0,1.3]; },
+  quoteScr:d=>[pick(["말이 많구나","입은 그만 놀려라","무슨 소리를 하는 것이냐"]),0,1.2],
+  ending:d=>[pick(["끝까지 올라섰군. 훌륭해","정상까지 갔구나. 후후","좋은 구경거리였다"]),1,3],
+  winTalk:d=>[pick(["좋은 검이었다. 다음이다","이 정도는 되어야지","계속 즐겁게 해다오"]),0,1.5],
+  muse:d=>{ if(d.ctx==="battle") return [pick(["…지루하구나","조금 더 보여다오","이대로는 심심하다"]),0,1];
+    if(d.ctx==="quote") return [pick(["…말이 길군","그만하면 됐다"]),0,1];
+    return [pick(["인간이란 참 가엾지","심심하군. 한판 더 하지","좋은 광경이 그립구나","놀잇거리가 떨어졌군"]),0,1]; },
+  loseTalk:d=>[pick(["진 것도 하나의 광경이다","가엾구나. 다시 해보아라","분해할 것 없다. 또 있지"]),0,1.5],
+  record:d=>[d.w*2>=d.g?("오늘 "+d.g+"전 "+d.w+"승. 볼만하군"):("오늘 "+d.g+"전 "+d.w+"승. 가엾구나"),0,1.5],
+  domLead:d=>[pick(["크게 벌렸군. 몰아붙여라","판이 기울었다. 후후"]),0,1.3],
+  domBehind:d=>[pick(["밀리는군. 가엾어라","버텨 보아라. 아직이다"]),0,1.3],
+  halfHp2:d=>[pick(["절반 깎았군. 계속해라","반은 베었다. 좋구나","절반이다. 흐름을 놓지 마라","반이 날아갔군. 훌륭해"]),0,1.2],
+  halfHp1:d=>[pick(["절반 잃었군. 가엾어라","반이 깎였다. 정신 차려라","절반이다. 조여 오는군","반피군. 여기서부터다"]),0,1.2],
+  rush:d=>[pick(["연격이군. 볼만하다","쉴 틈 없이 이어지는군","흐름을 탔구나. 후후"]),1,1.5],
+  winScr:d=>[pick(["승자의 얼굴이군. 후후","이긴 자만 이름이 남지"]),1,2],
+  loseScr:d=>[pick(["가엾은 얼굴이군","그 이름, 곧 잊히겠지"]),0,2],
+  oppSp:d=>[pick(["온다","큰 것이 오는군","조심해라. 온다","무언가 준비했군"]),0,1],
+  flowSameMove:d=>{const nm=NM(d); return [pick([nm?nm+"에 벌써 세 번째군":"같은 수에 벌써 세 번째군",
+    nm?nm+RO(nm)+" 또 당하는군":"같은 수에 또 당하는군","같은 수에 세 번이라니",
+    "어리석구나. 세 번째다","그 수를 못 읽는군"]),0,1.5];},
+  flowTrade:d=>[pick(["서로 "+d.n+"번씩 주고받는군","난타전이군. 즐겁구나","물러설 생각이 없구나","치고받는 광경이라"]),1,1.5],
+  flowOneSide:d=>[pick(["일방적이군. "+d.n+"대째다","한 대도 못 돌려주는군","완전히 기울었구나","저쪽은 손도 못 대는군"]),1,1.5],
+  flowChased:d=>[pick(["벌써 "+d.n+"대째군. 가엾어라","맞기만 하는군. 끊어라","반격이 없구나","숨 돌릴 틈도 없군"]),0,1.5],
+  flowSpHeavy:d=>[pick(["벌써 필살기 "+d.n+"번째군","큰 것만 노리는군","아끼질 않는구나","또 꺼냈군. 읽힐 때다"]),0,1.5],
+  arcSweep:d=>[pick(["두 판 내리 가져갔군","한 판도 안 내줬구나","처음부터 흐름을 쥐었군","빈틈 없는 두 판이었다"]),1,2.5],
+  arcSwept:d=>[pick(["두 판 내리 내줬군","손도 못 썼구나. 가엾어라","흐름을 한 번도 못 잡았다","처음부터 끝까지 밀렸군"]),0,2],
+  arcComeback:d=>[pick(["첫 판을 내주고 뒤집었군","밀리다 돌아섰구나","이런 판이 보고 싶었다"]),1,3],
+  arcSweat:d=>[pick(["끝판까지 갔군. 훌륭해","한 판씩 나눠 갖고 끝판이라","마지막 한 판이 갈랐군"]),1,2.5],
+  arcChoke:d=>[pick(["먼저 따 놓고 내리 두 판","앞서다 뒤집혔군. 가엾어라","쥐었던 흐름을 놓쳤구나"]),0,2],
+  arcSlip:d=>[pick(["따라붙었다 놓쳤군","끝판까지 갔으나 한 끗이군","거의 잡았던 판이었다"]),0,2],
+  REL:{shiki:"시키… 이리 오너라. 너는 내 것이다",asura:"아수라인가. 또 내 앞을 막느냐",
+       yuga:"나와 같은 얼굴이 둘이라니, 재미있군",haohmaru:"하오마루라. 그저 검을 휘두르는 인간이군",
+       nakoruru:"나코루루… 그 작은 것이 무엇을 지킨다고",kuroko:"심판까지 끼어드는 판이라니. 후후",
+       genjuro:"겐주로냐. 짖는 소리가 요란하구나",hanzo:"한조라. 그림자도 결국은 인간이지",
+       morozumi:"모로즈미… 그 눈에 무엇이 보이느냐"},
  },
 };
 function commPanelVis(){
@@ -2976,12 +4093,98 @@ function sideArt(){
 }
 function sideArtRefresh(){ sideArt(); }
 const commSeen={moves:{},sys:{}};   /* 세션당 1회 (기술 첫 호명·시스템 설명) */
+/* v0.7: 실제로 나간 이벤트 키를 남긴다.
+   회귀 검사가 **문장 낱말**로 확인하던 탓에, 대사를 늘릴 때마다 멀쩡한 검사가 깨졌다.
+   이제는 "그 이벤트가 나갔느냐"로 본다 — 문안을 몇 개로 늘리든 안 깨진다. */
+/* ═══ v0.7 짝꿍 — 큰 장면에서 다른 한 명이 받아친다 ═══════════════
+   해설이 심심했던 이유 하나는 **한 명이 혼자 떠들기** 때문이었다.
+   실황이 사건을 부르면, 짝꿍이 짧게 받는다. 받는 말은 길면 안 된다 —
+   한 호흡이어야 주고받는 맛이 난다.
+   짝은 고정이다: 하오마루↔나코루루, 한조↔갈포드. */
+const DUO_PAIR={haohmaru:"nakoruru",nakoruru:"haohmaru",hanzo:"galford",galford:"hanzo",
+  rimururu:"nakoruru", genjuro:"haohmaru", ukyo:"haohmaru", charlotte:"nakoruru",
+  jubei:"haohmaru", kazuki:"galford", sogetsu:"hanzo", asura:"hanzo",
+  shiki:"nakoruru", morozumi:"galford", yuga:"hanzo"};
+/* 받아치는 말(REPLIES)은 아직 원래 넷 것만 있다. 새 화자를 고르면
+   그 넷 중 어울리는 사람이 짝으로 붙는다 — 표가 없는 사람이 짝이 되면 조용해지므로. */
+function duoOf(){ const p=DUO_PAIR[cfg.commSpk||"haohmaru"]; return (p&&REPLIES[p])?p:null; }
+/* 이벤트 → 받아칠 갈래. 여기 없는 이벤트는 받지 않는다(잔반응까지 받으면 시끄럽다) */
+const EV_CAT={
+  ko:"ko", moveKo:"ko", koed:"ko", dko:"ko", perfect:"ko", quickKo:"ko",
+  move:"sup",
+  low1:"crisis", low2:"crisis", doubleLow:"crisis", matchPoint:"crisis",
+  reversal:"turn", comeback:"turn",
+  arcSweep:"arc", arcSwept:"arc", arcComeback:"arc", arcSweat:"arc", arcChoke:"arc", arcSlip:"arc",
+  flowSameMove:"flow", flowTrade:"flow", flowOneSide:"flow", flowChased:"flow", flowSpHeavy:"flow",
+  start:"start"
+};
+const REPLIES={
+ haohmaru:{
+  ko:["훌륭하다!","좋은 마무리다","그래, 그거다!","깨끗하군!"],
+  sup:["오오, 큰 게 온다!","받아 낼 수 있겠나","저건 못 막지"],
+  crisis:["아슬아슬하군…","여기서 갈린다","숨을 골라라"],
+  turn:["판이 뒤집혔다!","호오, 재미있어졌군","흐름이 넘어갔군"],
+  arc:["좋은 승부였다","이런 판이 술맛을 낸다","오래 남을 판이군"],
+  flow:["나도 그렇게 봤다","눈이 좋군","맞는 말이다"],
+  start:["좋아, 보자","한잔 들고 보지","기대해 보마"]},
+ nakoruru:{
+  ko:["…끝났군요","바람이 멎었습니다","조용해졌네요"],
+  sup:["큰 힘이 모입니다","조심하세요","위험합니다"],
+  crisis:["부디 무사히…","숨이 얕아졌어요","위태로워요"],
+  turn:["흐름이 바뀌었어요","바람의 방향이 달라졌습니다","되돌아왔네요"],
+  arc:["좋은 싸움이었어요","마음에 남는 판이네요","서로 다치지 않았으면"],
+  flow:["저도 그렇게 느꼈어요","잘 보셨습니다","그러네요"],
+  start:["시작이네요","지켜보겠습니다","부디 조심히"]},
+ hanzo:{
+  ko:["…끝났다","확실하군","군더더기가 없다"],
+  sup:["…온다","막을 수 있나","크다"],
+  crisis:["…위험하다","한 수다","버텨라"],
+  turn:["…뒤집혔다","흐름이 바뀌었다","읽었군"],
+  arc:["…좋은 판이었다","새겨 둘 만하다","기억해 둬라"],
+  flow:["…같은 생각이다","맞다","그렇군"],
+  start:["…시작이다","보자","조용히 하지"]},
+ galford:{
+  ko:["대단해요!","이게 정의의 힘!","파피도 짖고 있어요!"],
+  sup:["큰 거 온다!","우와, 저건 위험해요!","조심해!"],
+  crisis:["포기하면 안 돼요!","아직 끝나지 않았어!","힘내요!"],
+  turn:["뒤집혔어요!","이게 승부의 묘미!","흐름이 왔어요!"],
+  arc:["좋은 승부였어요!","박수를 보냅니다!","멋진 경기였어요!"],
+  flow:["저도 봤어요!","정확해요!","맞아요!"],
+  start:["자, 갑니다!","기대되네요!","파피, 잘 봐!"]}
+};
+let duoAt=-1e7, duoBigAt=-1e7;
+function duoReply(ev,prio){
+  if(!cfg.commDuo) return false;
+  const cat=EV_CAT[ev]; if(!cat) return false;
+  const p=duoOf(); if(!p) return false;
+  /* duoAt 은 "아직 한 번도 안 받아쳤다"를 0 이 아니라 **음수**로 둔다.
+     0 으로 두면 performance.now() 가 6000 이 되기 전 —— 즉 페이지를 연 뒤 6초 동안 ——
+     쿨다운에 걸려 아무 말도 못 받는다. 실제로 그 버그를 여기서 잡았다. */
+  /* 승부가 나는 순간(ko)과 매치 총평(arc)은 **드물고 중요하다** — 잔반응 쿨다운에 묻히면 안 된다.
+     그 둘만 짧은 간격(2초)을 따로 쓴다. 나머지는 6초에 한 번. */
+  /* 잔반응과 **승부 순간**은 시계를 따로 쓴다.
+     하나로 두면 시작 멘트에 한 번 받아친 것 때문에 정작 KO 를 못 받는다 (실제로 그랬다). */
+  const big=(cat==="ko"||cat==="arc");
+  const t=performance.now();
+  if(t-(big?duoBigAt:duoAt)<(big?2000:6000)) return false;
+  const tbl=REPLIES[p], a=tbl&&tbl[cat]; if(!a||!a.length) return false;
+  /* 2.9 상한: annPush 는 prio>=3 이면 큐를 비운다. 받는 말이 방금 부른 말을 지우면 안 된다.
+     대신 트리거 바로 아래에 붙도록 0.3 만 낮춘다 — 사이에 다른 말이 끼면 주고받기로 안 들린다. */
+  if(!annPush(pick(a),0,Math.min(2.9,Math.max(1,(prio||1)-0.3)),"neutral",p)) return false;
+  if(big) duoBigAt=t; else duoAt=t;          /* 실제로 큐에 들어갔을 때만 쿨다운을 쓴다 */
+  commEvLog.push("duo:"+cat);
+  return true;
+}
+let commEvLog=[];
 function commEmit(ev,d,kind,cd){
   if((cfg.commMode||"off")==="off"||editing) return false;
   const tbl=SPEAKERS[cfg.commSpk]||SPEAKERS.haohmaru; const fn=tbl&&tbl[ev]; if(!fn) return false;
   const r=fn(d||{}); if(!r) return false;
   if(kind&&!commOK(kind,cd||900)) return false;
-  annPush(r[0],r[1],r[2],EV_MOOD[ev]||"neutral"); return true;
+  annPush(r[0],r[1],r[2],EV_MOOD[ev]||"neutral");
+  commEvLog.push(ev); if(commEvLog.length>60) commEvLog.shift();
+  duoReply(ev,r[2]);
+  return true;
 }
 function commSub(t,big){ showSub(t,big,big?2400:1800); }   /* 설정 화면 즉시 표시용 */
 
@@ -3005,6 +4208,63 @@ function pendFlush(){
 }
 function pendTake(){ const d=pendMove; pendMove=null; clearTimeout(pendT); return d; }
 
+/* ── v0.7 관전 기억 — 한 판을 통째로 보고 「흐름」을 읽는다 ─────────
+   지금까지 해설은 **방금 일어난 일**에만 반응했다. 그래서 두 판만 해도 같은 말이 돈다.
+   여기서는 매치가 시작된 시점부터 관찰을 쌓아 두고, 쌓인 모양이 어떤 형태가 되면
+   그때 한 마디 한다 — "아까부터 같은 수에 걸리는군", "첫 판을 내주고 뒤집었다" 같은 것.
+   순수 누적 상태라 합성 검사(14장)에서도 그대로 몰아 볼 수 있다. */
+const flowMem={rounds:[],said:{},mvAll:{}};
+function flowReset(newMatch){
+  flowMem.hit=0;            /* 이번 라운드 내가 넣은 유효타 */
+  flowMem.tak=0;            /* 이번 라운드 내가 맞은 유효타 */
+  flowMem.alt=0;            /* 주고받은 횟수(때린 뒤 맞고, 맞은 뒤 때리고) */
+  flowMem.lastBy=0;         /* 1 = 마지막이 내 타격, 2 = 마지막이 피격 */
+  flowMem.mv={};            /* 이번 라운드 기술명별 적중 수 */
+  flowMem.oppSp=0;          /* 상대가 필살기를 낸 횟수 */
+  flowMem.rSaid={};         /* 라운드 단위 1회 제한 */
+  if(newMatch){ flowMem.rounds=[]; flowMem.said={}; flowMem.mvAll={}; }
+}
+flowReset(true);
+function flowHit(name){
+  flowMem.hit++;
+  if(flowMem.lastBy===2) flowMem.alt++;
+  flowMem.lastBy=1;
+  if(name&&name!=="필살기"){
+    const n=(flowMem.mv[name]=(flowMem.mv[name]||0)+1);
+    flowMem.mvAll[name]=(flowMem.mvAll[name]||0)+1;
+    if(n===3&&!flowMem.rSaid.same){ flowMem.rSaid.same=1;
+      commEmit("flowSameMove",{name:name,n:n},"flow",12000); return; }
+  }
+  flowCheck();
+}
+function flowTake(){ flowMem.tak++; if(flowMem.lastBy===1) flowMem.alt++; flowMem.lastBy=2; flowCheck(); }
+function flowOppSp(){
+  if(++flowMem.oppSp===4&&!flowMem.rSaid.sp){ flowMem.rSaid.sp=1;
+    commEmit("flowSpHeavy",{n:4},"flow",15000); }
+}
+/* 쌓인 모양이 임계에 닿으면 한 마디. 라운드당 한 종류씩만 나간다. */
+function flowCheck(){
+  if(flowMem.alt>=5&&!flowMem.rSaid.trade){ flowMem.rSaid.trade=1;
+    commEmit("flowTrade",{n:flowMem.alt},"flow",12000); return; }
+  if(flowMem.hit>=6&&flowMem.tak===0&&!flowMem.rSaid.one){ flowMem.rSaid.one=1;
+    commEmit("flowOneSide",{n:flowMem.hit},"flow",12000); return; }
+  if(flowMem.tak>=6&&flowMem.hit===0&&!flowMem.rSaid.chase){ flowMem.rSaid.chase=1;
+    commEmit("flowChased",{n:flowMem.tak},"flow",12000); }
+}
+/* 라운드 결과를 쌓는다. 'w' = 내가 딴 판, 'l' = 내준 판, 'd' = 더블KO */
+function flowRound(r){ if(flowMem.rounds.length<9) flowMem.rounds.push(r); }
+/* 매치가 끝났을 때 **판 전체의 모양**을 한 단어로 읽는다.
+   winTalk 자리에 이게 먼저 나가고, 모양이 없을 때만 원래 승패 한마디로 넘어간다. */
+function flowArc(){
+  const r=flowMem.rounds.join("");
+  if(r==="ww")  return "arcSweep";     /* 내리 두 판 */
+  if(r==="ll")  return "arcSwept";     /* 내리 두 판 내줌 */
+  if(r==="lww") return "arcComeback";  /* 첫 판 내주고 뒤집음 */
+  if(r==="wlw") return "arcSweat";     /* 한 판 내주고 진땀승 */
+  if(r==="wll") return "arcChoke";     /* 먼저 따 놓고 내리 두 판 */
+  if(r==="lwl") return "arcSlip";      /* 따라붙었다가 놓침 */
+  return null;
+}
 const commSt={p1:-1,p2:-1,a1:0,a2:0,mode:-1,offAt:0,ko:false,low1:false,low2:false,lead:0,revN:0};
 /* v0.3 세션 기억 — 연승·설욕 (페이지 세션 한정) */
 let sessStreak=0, sessLastLossOpp=null, sessWins=0, sessGames=0, sessSurvBest=0;
@@ -3041,6 +4301,9 @@ function commStep(sn){
       const done=(st.myR>=2||st.opR>=2);
       if(!st.resultDone&&done&&(st.won||st.lost)){ st.resultDone=true;
         commEmit(st.won?"winScr":"loseScr",{},"res",8000);
+        /* v0.7: 판 전체의 **모양**을 먼저 읽는다. 모양이 안 잡히면 원래 한마디로. */
+        const arc=flowArc();
+        (arc&&commEmit(arc,{},"res2",7000))||
         commEmit(st.won?"winTalk":"loseTalk",{},"res2",7000);   /* 승패 후 한마디 더 */
         if(sessGames>=3&&sessGames%3===0) commEmit("record",{w:sessWins,g:sessGames},"rec",6000);
         commHush=performance.now()+10000; }
@@ -3061,6 +4324,7 @@ function commStep(sn){
       /* ── 새 매치 — 라운드 전적 리셋 (v0.3) */
       st.myR=0; st.opR=0; st.roundN=1; st.fb=false; st.longSaid=false; st.dblLow=false; st.half1=st.half2=false; st.h2t=[];
       st.roundStartAt=performance.now();
+      flowReset(true);                                    /* v0.7 관전 기억 — 매치 통째로 리셋 */
       autoDetectChar();
       const opp=readOpp();
       st.oppId=opp&&opp.id;
@@ -3083,6 +4347,7 @@ function commStep(sn){
       /* ── 라운드 재개 (v0.3) — 전적 맥락 라인: 매치포인트 > 선취 > 열세 > 일반 */
       st.roundN=(st.roundN||1)+1; st.fb=false; st.longSaid=false; st.dblLow=false; st.half1=st.half2=false; st.h2t=[];
       st.roundStartAt=performance.now();
+      flowReset(false);                                   /* v0.7 라운드 단위 관찰만 리셋 */
       if(st.myR===1&&st.opR===1) commEmit("matchPoint",{},"roundCtx",2500);
       else if(st.myR===1&&st.opR===0) commEmit("roundLead",{},"roundCtx",2500);
       else if(st.myR===0&&st.opR===1) commEmit("roundBehind",{},"roundCtx",2500);
@@ -3168,22 +4433,25 @@ function commStep(sn){
     if(supHit) commEmit("move",pendMove,"sup",1500);
     clearTimeout(pendT); pendT=setTimeout(pendFlush,450);
   }
-  if(live&&a2>=0x180&&st.a2<0x180) commEmit("oppSp",{},"osp",2200);
+  if(live&&a2>=0x180&&st.a2<0x180){ flowOppSp(); commEmit("oppSp",{},"osp",2200); }
   /* ── 한 틱에서 한 번만 결정: 더블KO > 기술KO > 기술다운(히트 포함) > 기술적중 > 일반다운 > 일반히트 */
   const hit2=p2<st.p2, hit1=p1<st.p1;
+  /* v0.7 관전 기억 — 유효타만 센다. pendMove 가 살아 있으면 그 기술로 친 것이다 */
+  if(hit2&&(st.p2-p2)>=4) flowHit(pendMove&&pendMove.name);
+  if(hit1&&(st.p1-p1)>=4) flowTake();
   /* v0.3 선제타 — 매치 1라운드의 첫 유효타(내 것·비KO·기술 결합 없음)만 한 마디 */
   if(!st.fb&&(hit1||hit2)){ st.fb=true;
     if(hit2&&!hit1&&st.roundN===1&&p2>0&&!pendMove&&(st.p2-p2)>=4) commEmit("firstBlood",{},"fb",30000);
   }
   const down2=a2>=0x13C&&a2<=0x154&&!(st.a2>=0x13C&&st.a2<=0x154);
-  if(hit1&&hit2&&p1<=0&&p2<=0&&!st.ko){ st.ko=true; pendTake(); commEmit("dko",{},"ko",4000); }
+  if(hit1&&hit2&&p1<=0&&p2<=0&&!st.ko){ st.ko=true; pendTake(); flowRound("d"); commEmit("dko",{},"ko",4000); }
   else{
     if(hit2&&p2<=0&&!st.ko){
       st.ko=true; st.won=true; st.lost=false; const pm=pendTake();
       if(pm) commEmit("moveKo",pm,"ko",4000); else commEmit("ko",{},"ko",4000);
       /* v0.3 후속 한 마디 — 역전승 > 완승 > 순살 > (매치 승리 시) 설욕 > 연승. 한 개만.
          commEmit이 false(쿨다운·라인 없음)면 다음 후보로 넘어간다 */
-      st.myR=(st.myR||0)+1;
+      st.myR=(st.myR||0)+1; flowRound("w");
       const mw=st.myR>=2, nowK=performance.now();
       if(mw){ sessStreak++; sessWins++; sessGames++; }
       (st.low1&&commEmit("comeback",{},"cbk",15000))||
@@ -3207,7 +4475,7 @@ function commStep(sn){
     if(hit1){ const d=st.p1-p1;
       if(p1<=0&&!st.ko){ st.ko=true; st.lost=true; st.won=false; commEmit("koed",{},"ko",4000);
         if(sn.surv>0) commEmit("survEnd",{n:sn.surv},"surv2",10000);  /* 서바이벌 기록 결산 */
-        st.opR=(st.opR||0)+1;
+        st.opR=(st.opR||0)+1; flowRound("l");
         if(st.opR>=2){ sessStreak=0; sessLastLossOpp=st.oppId||null; sessGames++; } /* 설욕 대상 기억 */
       }
       else if(d>=4) commEmit("taken",{dmg:d},"tk",900);
@@ -3642,10 +4910,21 @@ $("#testClose").onclick=()=>{ $("#testModal").hidden=true; };
 $("#sheet").addEventListener("click",e=>{ if(e.target===$("#sheet")){ saveCfg(); refreshSpButtons(); $("#sheet").hidden=true; } });
 
 /* ═══════════════ 설정 · 배치 커스텀 ═══════════════ */
+/* 해설자 버튼은 SPK_KO 에서 만든다 — 화자를 늘려도 여기를 안 고쳐도 된다 */
+function buildSpkSeg(){
+  const box=$("#commSpkSeg"); if(!box||box.childElementCount===SPK_ORDER.length) return;
+  box.innerHTML="";
+  for(const id of SPK_ORDER){
+    const b=document.createElement("button");
+    b.dataset.spk=id; b.textContent=SPK_KO[id]; box.appendChild(b);
+  }
+}
 function renderSettings(){
   $("#langSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.l===cfg.lang));
   $("#commSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.cm===(cfg.commMode||"off")));
+  buildSpkSeg();
   $("#commSpkSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.spk===(cfg.commSpk||"haohmaru")));
+  $("#commDuoSeg")&&$("#commDuoSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.duo===(cfg.commDuo?1:0)));
   $("#hudSeg")&&$("#hudSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.h===(cfg.hud?1:0)));
   $("#capSeg")&&$("#capSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.cap===(cfg.cap||"off")));
   $("#dummySeg")&&$("#dummySeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",+b.dataset.dum===(cfg.dummy?1:0)));
@@ -3716,10 +4995,28 @@ $("#commSeg").addEventListener("click",e=>{
          if(c==="off") annClear();
          else annPush(SPK_KO[cfg.commSpk]+" 해설, 시작합니다",0,2); }
 });
-$("#commSpkSeg").addEventListener("click",e=>{
-  const v=e.target.dataset.spk;
-  if(v){ cfg.commSpk=v; renderSettings(); saveCfg(); annClear(); commPanelVis();
-         const sp=SPEAKERS[v]; annPush(sp.hello,0,2); }
+$("#commDuoSeg")&&$("#commDuoSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  cfg.commDuo=+b.dataset.duo; renderSettings(); saveCfg(); duoAt=duoBigAt=-1e7;
+});
+/* v0.7: 해설자 바꾸기를 한 군데로 모았다 — 설정에서도, 해설창 얼굴을 눌러서도 같은 길을 탄다 */
+function setSpeaker(v){
+  if(!v||!SPEAKERS[v]) return;
+  cfg.commSpk=v; renderSettings(); saveCfg(); annClear(); commPanelVis();
+  duoAt=duoBigAt=-1e7;
+  annPush(SPEAKERS[v].hello,0,2,"neutral",v);
+}
+function nextSpeaker(step){
+  const i=SPK_ORDER.indexOf(cfg.commSpk||"haohmaru");
+  setSpeaker(SPK_ORDER[((i<0?0:i)+(step||1)+SPK_ORDER.length)%SPK_ORDER.length]);
+}
+$("#commSpkSeg").addEventListener("click",e=>{ setSpeaker(e.target.dataset.spk); });
+/* 해설창의 **얼굴을 누르면 다음 해설자**. 설정을 열지 않고 판 중에 바로 바꾼다.
+   해설이 꺼져 있으면 아무 일도 하지 않는다. */
+$("#commFace")&&$("#commFace").addEventListener("click",e=>{
+  e.stopPropagation();
+  if((cfg.commMode||"off")==="off") return;
+  nextSpeaker(1);
 });
 $("#langSeg").addEventListener("click",e=>{
   const l=e.target.dataset.l;
@@ -3912,7 +5209,8 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
       SP_GATE_MS, SP_AIR_MS, bumpInput, get inputSeq(){return inputSeq;},
       harvestFaces, get faceStore(){return faceStore;},
       get romFaces(){return romFaces;}, buildRomFaces,
-      readOpp, oppTrait, commStep, commPend:()=>pendMove, SPEAKERS, get annQ(){return ANN.q.length;},
+      readOpp, oppTrait, commStep, commPend:()=>pendMove, SPEAKERS, SPK_ORDER, SPK_KO,
+      renderSettings, nextSpeaker, setSpeaker, get annQ(){return ANN.q.length;},
       get commSynth(){return commSynth;}, set commSynth(v){commSynth=!!v;},
       commReset:()=>{ annClear();
         for(const k in commCD) delete commCD[k];
@@ -3921,7 +5219,7 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
           myR:0,opR:0,roundN:1,fb:false,longSaid:false,dblLow:false,roundStartAt:0,oppId:null});
         sessStreak=0; sessLastLossOpp=null; sessWins=0; sessGames=0; sessSurvBest=0;
         Object.assign(commSt,{half1:false,half2:false,h2t:[]});
-        commLast=""; commHush=0; museAt=0; },
+        commLast=""; commHush=0; museAt=0; commEvLog=[]; duoAt=duoBigAt=-1e7; flowReset(true); },
       get sessStreak(){return sessStreak;}, set sessStreak(v){sessStreak=v;},
       get sessLastLossOpp(){return sessLastLossOpp;}, set sessLastLossOpp(v){sessLastLossOpp=v;},
       get commIdleMs(){return commIdleMs;}, set commIdleMs(v){commIdleMs=v;},
@@ -3938,6 +5236,9 @@ drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) acceptF
       touchStamp:()=>{ lastTouchT=performance.now(); }, alignCommPanel,
       fitFont,
       commSub, get commLast(){return commLast;}, get commLastAt(){return commLastAt;},
+      get commEvs(){return commEvLog.slice();}, evClear(){commEvLog=[];},
+      get commLastSpk(){return commLastSpk;}, get duoOf(){return duoOf();},
+      get flowMem(){return flowMem;},
       get clashDbg(){return compileMove.dbg;},
       get dbg(){return {prevApplied:prevApplied.slice(),lastLeftAt,lastRightAt,now:performance.now(),userDir:userDir.slice()};},
       clearCommandBuffer,
@@ -4118,7 +5419,7 @@ async function benchRun(){
   const b=await seg("② 조작 중","디패드를 좌우로 계속 문지르세요",8);
   cancelAnimationFrame(raf);
   const row=(nm,r)=>nm+"  fps "+r.fps.toFixed(1)+"  간격 "+r.p50.toFixed(0)+"/"+r.p95.toFixed(0)+"/"+r.max.toFixed(0)+"ms  끊김 "+r.hitch;
-  const txt=["SS2 SP 성능 측정 · v0.6 (app "+APP_VER+")",...benchEnv(),"",
+  const txt=["SS2 SP 성능 측정 · v0.7 (app "+APP_VER+")",...benchEnv(),"",
              row("무입력",a),row("조작중",b),
              "","(간격 = 중앙값/p95/최대, 끊김 = 33ms 초과 횟수)"].join("\n");
   phase.textContent="측정 끝"; big.textContent=b.fps.toFixed(0); hint.textContent="조작 중 fps";
