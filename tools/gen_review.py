@@ -1,0 +1,370 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""검수 페이지 생성기 — 대사표·픽셀 폰트·초상 주소를 C 헤더에서 뽑아
+   브라우저에서 열리는 review.html 한 장을 만든다.
+
+     python3 tools/gen_review.py <ss2-sp-core/src 경로> <출력 review.html>
+
+   왜 있나: 검수를 사람이 게임을 다 돌려 보며 할 수는 없다. 이 페이지는
+   APK 와 **같은 폰트·같은 줄바꿈·같은 띠 규격**으로 대사를 전부 그려 보여 준다.
+   롬 파일을 넣으면 초상도 실물로 뜬다(파일은 브라우저 안에서만 읽는다 — 어디로도
+   전송되지 않고, 페이지에는 그림이 아니라 주소 숫자만 들어 있다)."""
+import io, json, os, re, sys
+
+D   = sys.argv[1] if len(sys.argv) > 1 else "."
+OUT = sys.argv[2] if len(sys.argv) > 2 else "review.html"
+def rd(fn): return io.open(os.path.join(D, fn), encoding="utf-8").read()
+lines_h = rd("ss2comm_lines.h"); comm_c = rd("ss2comm.c")
+f11_h = rd("ss2comm_font11.h"); f8_h = rd("ss2comm_font.h")
+icon_h = rd("ss2comm_icon.h")
+STR = r'"((?:[^"\\]|\\.)*)"'
+
+# ── 폰트 ──
+F11 = [[int(m[0],16), int(m[1])] + [int(x,16) for x in m[2].split(",")]
+       for m in re.findall(r"\{0x([0-9A-Fa-f]{4}),\s*(\d+),\{([^}]*)\}\}", f11_h)]
+F8  = [[int(m[0],16)] + [int(x,16) for x in m[1].split(",")]
+       for m in re.findall(r"\{0x([0-9A-Fa-f]{4}),\{([^}]*)\}\}", f8_h)]
+
+# ── 화자·이벤트·대사표 ──
+ev_blk = re.search(r"enum \{(.*?)EV_N", lines_h, re.S).group(1)
+EV = [x.strip()[3:] for x in re.sub(r"/\*.*?\*/","",ev_blk,flags=re.S).replace("\n"," ").split(",") if x.strip()]
+SPK_KO = re.findall(STR, re.search(r"SPK_NAME\[SS2COMM_SPK_N\] = \{(.*?)\};", lines_h, re.S).group(1))
+m = re.search(r"LINES\[SS2COMM_SPK_N\]\[EV_N\]\[EVMAXV\] = \{(.*)\n\};", lines_h, re.S)
+SPK_ID = re.findall(r"\n \{ /\* (\w+) \*/", m.group(1))
+LINES = []
+for blk in re.split(r"\n \{ /\* \w+ \*/", m.group(1))[1:]:
+    d = {}
+    for name, body in re.findall(r"/\* ([A-Z0-9_]+)\s*\*/ \{(.*?)\},\n", blk):
+        d[name] = re.findall(STR, body)
+    LINES.append(d)
+CHARNAME = re.findall(STR, re.search(r"CHARNAME\[15\] = \{(.*?)\};", comm_c, re.S).group(1))
+EVHIT = dict(re.findall(r"\[EV_(\w+)\s*\]\s*=\s*(\d+)", re.search(r"EVHIT\[EV_N\] = \{(.*?)\n\};", comm_c, re.S).group(1)))
+
+def table2(name, src):
+    mm = re.search(r"static const char \*%s\[SS2COMM_SPK_N\]\[\d+\] = \{(.*?)\n\};" % name, src, re.S)
+    out = []
+    for row in re.findall(r"\{(.*?)\},\s*/\* \w+ \*/", mm.group(1), re.S):
+        cells, cur, inq, esc = [], "", False, False
+        for ch in row:
+            if esc: cur += ch; esc = False; continue
+            if ch == "\\": cur += ch; esc = True; continue
+            if ch == '"': inq = not inq; cur += ch; continue
+            if ch == "," and not inq: cells.append(cur.strip()); cur = ""; continue
+            cur += ch
+        cells.append(cur.strip())
+        out.append([re.match(STR, c).group(1) if c.startswith('"') else None for c in cells])
+    return out
+def table1(name, src):
+    mm = re.search(r"static const char \*%s\[SS2COMM_SPK_N\] = \{(.*?)\n\};" % name, src, re.S)
+    return [ (re.match(STR, c.strip()).group(1) if c.strip().startswith('"') else None)
+             for c in re.findall(r"\n\s*(.+?),\s*/\* \w+ \*/", mm.group(1)) ]
+RELOPP = table2("RELOPP", lines_h); RELME = table2("RELME", lines_h)
+WEAPV  = table2("WEAPV",  lines_h); RELYOU = table2("RELYOU", lines_h)
+RELSELF = table1("RELSELF", lines_h); RELGAND = table1("RELGAND", lines_h)
+def tblN(name):
+    mm = re.search(r"static const char \*%s\[\d+\]\[\d+\] = \{(.*?)\n\};" % name, lines_h, re.S)
+    return [re.findall(STR, row) for row in re.findall(r"\{(.*?)\},", mm.group(1), re.S)]
+ANEC = tblN("ANEC"); WEAPF = tblN("WEAP")
+HELLO = re.findall(STR, re.search(r"HELLO\[SS2COMM_SPK_N\] = \{(.*?)\};", lines_h, re.S).group(1))
+REF_ROUND = re.findall(STR, re.search(r"REF_ROUND\[3\] = \{(.*?)\};", comm_c, re.S).group(1))
+CHARFULL  = re.findall(STR, re.search(r"CHARFULL\[15\] = \{(.*?)\};", comm_c, re.S).group(1))
+
+# ── 초상 주소 ──
+flat = icon_h.replace("\\\n", " ")
+ICON = []
+for mm in re.finditer(r"\{\s*(\d+),\s*\{([\d,\s]+)\},\s*\{([^}]*)\},\s*\{([^}]*)\}\s*\},?\s*/\* (\w+) \*/", flat):
+    ICON.append(dict(bg=int(mm.group(1)),
+                     fg=[int(x) for x in mm.group(2).split(",")],
+                     palF=[int(x,16) for x in mm.group(3).split(",")],
+                     palB=[int(x,16) for x in mm.group(4).split(",")]))
+def nums(name):
+    t = re.search(name + r"\[16\] = \{(.*?)\}", comm_c, re.S).group(1)
+    t = re.sub(r"/\*.*?\*/", "", t, flags=re.S)
+    return [int(x) for x in t.replace("\n", " ").split(",") if x.strip()]
+KBG = nums("KUROKO_BG"); KFG = nums("KUROKO_FG")
+KPF = [int(x,16) for x in re.search(r"KUROKO_PAL_FG\[4\] = \{(.*?)\}", comm_c).group(1).split(",")]
+KPB = [int(x,16) for x in re.search(r"KUROKO_PAL_BG\[4\] = \{(.*?)\}", comm_c).group(1).split(",")]
+FACE = [[int(a), int(b)] for a, b in
+        re.findall(r"\{\s*(\d+),\s*\{[^}]*\},\s*(\d+)\s*\}", re.search(r"SS2COMM_FACE_ROM_INIT \{(.*?)\n\n", lines_h, re.S).group(1))]
+
+DATA = dict(F11=F11, F8=F8, EV=EV, EVHIT=EVHIT, SPK_ID=SPK_ID, SPK_KO=SPK_KO,
+            LINES=LINES, CHARNAME=CHARNAME, RELOPP=RELOPP, RELME=RELME, WEAPV=WEAPV,
+            RELYOU=RELYOU, RELSELF=RELSELF, RELGAND=RELGAND, ANEC=ANEC, WEAPF=WEAPF,
+            HELLO=HELLO, REF_ROUND=REF_ROUND, CHARFULL=CHARFULL,
+            ICON=ICON, KBG=KBG, KFG=KFG, KPF=KPF, KPB=KPB, FACE=FACE)
+
+HTML = r'''<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SS2 해설 검수</title>
+<style>
+ body{background:#14161c;color:#dde;font:15px/1.5 system-ui,sans-serif;margin:0;padding:12px}
+ h1{font-size:17px;margin:4px 0 10px} .mut{color:#89a}
+ .tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+ .tabs button{background:#232735;color:#dde;border:1px solid #39405a;border-radius:8px;padding:8px 14px;font-size:15px}
+ .tabs button.on{background:#3450a0;border-color:#5878d8}
+ select,input[type=text]{background:#1b1f2b;color:#dde;border:1px solid #39405a;border-radius:6px;padding:6px 8px;font-size:15px;max-width:46vw}
+ button.sm{background:#2a3042;color:#dde;border:1px solid #39405a;border-radius:6px;padding:6px 10px;font-size:14px}
+ canvas{image-rendering:pixelated;display:block;margin:6px 0;border:1px solid #2a3042;max-width:100%}
+ .list{max-height:44vh;overflow:auto;border:1px solid #2a3042;border-radius:8px;margin-top:8px}
+ .list div{padding:6px 10px;border-bottom:1px solid #20242f;cursor:pointer}
+ .list div:active,.list div.on{background:#2c3a5e}
+ .cell{padding:6px 8px;border-bottom:1px solid #20242f;cursor:pointer}
+ .k{color:#8fb0ff;margin-right:6px}
+ .grid{max-height:52vh;overflow:auto;border:1px solid #2a3042;border-radius:8px}
+ .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+ .ok{color:#7fd88f}.bad{color:#ff8f8f}
+ #icons{display:flex;flex-wrap:wrap;gap:8px}
+ #icons figure{margin:0;text-align:center;font-size:12px;color:#9ab}
+ .note{font-size:13px;color:#89a;margin:6px 0}
+</style></head><body>
+<h1>SS2 해설 검수 <span class="mut">— APK와 같은 폰트·줄바꿈·띠 규격으로 그립니다</span></h1>
+<div class="row"><label>롬 파일(선택): <input type="file" id="rom"></label> <span id="romst" class="mut">없으면 초상 자리만 표시</span></div>
+<div class="note">롬은 이 브라우저 안에서만 읽습니다 — 어디로도 전송되지 않습니다. 페이지에는 그림이 아니라 주소 숫자만 들어 있습니다.</div>
+<div class="tabs">
+ <button data-t="t1" class="on">대사표</button><button data-t="t2">관계·썰</button>
+ <button data-t="t3">한 판 재생</button><button data-t="t4">초상</button>
+</div>
+
+<div id="t1">
+ <div class="row">
+  <select id="s1"></select><select id="e1"></select>
+  <input type="text" id="q1" placeholder="검색 (전체 화자·이벤트)">
+  <button class="sm" id="auto1">▶ 전부 훑기</button>
+ </div>
+ <canvas id="c1" width="480" height="96"></canvas>
+ <div class="list" id="l1"></div>
+</div>
+
+<div id="t2" hidden>
+ <div class="row"><select id="s2"></select> <span class="mut">화자를 고르면 상대 15명에 대한 관계·내편·무기·썰이 전부 나옵니다. 줄을 누르면 위 띠에 그립니다.</span></div>
+ <canvas id="c2" width="480" height="96"></canvas>
+ <div class="grid" id="g2"></div>
+</div>
+
+<div id="t3" hidden>
+ <div class="row">
+  <label>해설 <select id="s3"></select></label>
+  <label>내 캐릭 <select id="m3"></select></label>
+  <label>상대 <select id="o3"></select></label>
+  <button class="sm" id="play3">▶ 재생</button>
+  <button class="sm" data-sp="1">×1</button><button class="sm" data-sp="2">×2</button><button class="sm" data-sp="4">×4</button>
+ </div>
+ <div class="mut">위 = 해설창 · 아래 = 심판 칸. 유가·간다라전에는 심판이 서지 않습니다.</div>
+ <canvas id="c3" width="480" height="192"></canvas>
+ <div id="log3" class="list" style="max-height:30vh"></div>
+</div>
+
+<div id="t4" hidden>
+ <div class="note">롬을 넣으면 15명 + 쿠로코 초상이 실물로 뜹니다. 체크섬이 안 맞으면 그 캐릭터는 건너뜁니다.</div>
+ <div id="icons"></div>
+</div>
+
+<script>
+const D = __DATA__;
+/* ── 폰트 ── */
+const F11={},F8={};
+for(const g of D.F11) F11[g[0]]=[g[1],g.slice(2)];
+for(const g of D.F8)  F8[g[0]]=g.slice(1);
+const adv11=cp=>F11[cp]?F11[cp][0]:(cp<128?6:11);
+const adv8 =cp=>cp<128?4:8;
+const cps=s=>[...s].map(c=>c.codePointAt(0));
+function wrap(s,maxw,adv){
+  const seg=[]; let cur="",w=0,sp=-1,spw=0;
+  for(const ch of s){
+    const a=adv(ch.codePointAt(0));
+    if(w+a>maxw && cur){
+      if(sp>0){ seg.push(cur.slice(0,sp)); cur=cur.slice(sp).replace(/^ /,""); w=0; for(const c2 of cur) w+=adv(c2.codePointAt(0)); }
+      else { seg.push(cur); cur=""; w=0; }
+      sp=-1;
+      if(seg.length>=3) break;
+    }
+    cur+=ch; w+=a; if(ch===" "){sp=cur.length; spw=w;}
+  }
+  if(cur && seg.length<3) seg.push(cur);
+  return seg;
+}
+const c565=v=>[((v>>11)&31)*255/31|0,((v>>5)&63)*255/63|0,(v&31)*255/31|0];
+const WHITE=[255,255,255],GOLD=c565(0xFEA0),REF=c565(0x9E7F);
+function drawGlyph(img,W,x,y,cp,col,small,shadow){
+  if(small){ const g=F8[cp]; if(!g)return;
+    for(let j=0;j<8;j++)for(let i=0;i<8;i++) if(g[j]&(0x80>>i)) px(img,W,x+i,y+j,col);
+  }else{ const g=F11[cp]; if(!g)return;
+    for(let j=0;j<13;j++)for(let i=0;i<12;i++) if(g[1][j]&(0x8000>>i)){
+      if(shadow) px(img,W,x+i+1,y+j+1,[0,0,0]); else px(img,W,x+i,y+j,col); }
+  }
+}
+function px(img,W,x,y,c){ if(x<0||x>=W||y<0||y>=img.h)return; const o=(y*W+x)*4;
+  img.d[o]=c[0];img.d[o+1]=c[1];img.d[o+2]=c[2];img.d[o+3]=255; }
+/* 띠 한 장(160x32) 그리기 — C 의 draw 경로 그대로 */
+function renderStrip(text,{icon=null,color=WHITE}={}){
+  const W=160,H=32,img={d:new Uint8ClampedArray(W*H*4),h:H};
+  for(let i=3;i<W*H*4;i+=4) img.d[i]=255;
+  if(icon){ for(let j=0;j<32;j++)for(let i=0;i<32;i++){ const c=icon[j*32+i]; if(c) px(img,W,2+i,j,c);} }
+  else { for(let j=0;j<32;j+=2){px(img,W,2,j,[70,80,110]);px(img,W,33,j,[70,80,110]);}
+         for(let i=2;i<34;i+=2){px(img,W,i,0,[70,80,110]);px(img,W,i,31,[70,80,110]);} }
+  const tx0=37,x1=W-3,maxw=x1-tx0-4;
+  let segs=wrap(text,maxw,adv11),small=false;
+  if(segs.length>2){ segs=wrap(text,maxw,adv8); small=true; }
+  const lh=small?9:13, ty=(H-segs.length*lh)/2|0;
+  segs.forEach((sg,i)=>{
+    const adv=small?adv8:adv11;
+    let lw=0; for(const cp of cps(sg)) lw+=adv(cp);
+    let x=tx0+(((x1-tx0)-lw)/2|0); if(x<tx0)x=tx0;
+    if(!small) { let xx=x; for(const cp of cps(sg)){ drawGlyph(img,W,xx,ty+i*lh,cp,color,false,true); xx+=adv11(cp);} }
+    let xx=x;
+    for(const cp of cps(sg)){ drawGlyph(img,W,xx,ty+i*lh+(small?1:0),cp,color,small,false); xx+=adv(cp); if(xx>x1-4)break; }
+  });
+  return img;
+}
+function blit(cv,imgs){ const W=160,S=3,H=imgs.reduce((a,b)=>a+b.h,0);
+  cv.width=W*S; cv.height=H*S; const g=cv.getContext("2d"); g.imageSmoothingEnabled=false;
+  const off=document.createElement("canvas"); off.width=W; off.height=H;
+  const og=off.getContext("2d"); let y=0;
+  for(const im of imgs){ og.putImageData(new ImageData(im.d,W,im.h),0,y); y+=im.h; }
+  g.drawImage(off,0,0,W*S,H*S); }
+/* ── 조사 보정(미리보기용) + 서식 채움 ── */
+function batchim(s){ const c=s.charCodeAt(s.length-1); if(c<0xAC00||c>0xD7A3)return -1; return (c-0xAC00)%28; }
+const JOSA=[["로","으로"],["가","이"],["를","을"],["는","은"],["와","과"],["야","아"]];
+function fill(fmt,ev){
+  let out=fmt;
+  if(out.includes("%s")){ const nm=(ev==="START")?"하오마루 대 겐주로":"츠바메가에시", i=out.indexOf("%s");
+    let rest=out.slice(i+2); const b=batchim(nm);
+    if(b>=0) for(const [a,bb] of JOSA){
+      if(rest.startsWith(a)||rest.startsWith(bb)){
+        const noB=(b===0)||(a==="로"&&b===8);
+        rest=(noB?a:bb)+rest.slice(rest.startsWith(a)?a.length:bb.length); break; } }
+    out=out.slice(0,i)+nm+rest; }
+  out=out.replace("%d","3").replace("%d","1");
+  return out;
+}
+/* ── 롬 → 초상 ── */
+let ROM=null, ICONS=null, KICON=null;
+function tile(off){ const t=[]; for(let j=0;j<8;j++){ const w=ROM[off+j*2]|(ROM[off+j*2+1]<<8);
+  const r=[]; for(let i=0;i<8;i++) r.push((w>>((7-i)*2))&3); t.push(r);} return t; }
+const p444=v=>[ (v&15)*17, ((v>>4)&15)*17, ((v>>8)&15)*17 ];
+function buildIcons(){
+  ICONS=[];
+  for(const ic of D.ICON){
+    const im=new Array(32*32).fill(null);
+    if(ic.bg && ic.bg+256<=ROM.length){
+      for(let k=0;k<16;k++){ const t=tile(ic.bg+k*16),ox=(k&3)*8,oy=(k>>2)*8;
+        for(let j=0;j<8;j++)for(let i=0;i<8;i++){ const c=t[j][i]; if(c) im[(oy+j)*32+ox+i]=p444(ic.palB[c]); } }
+      for(let k=0;k<16;k++){ const of=ic.fg[k]; if(!of)continue; const t=tile(of),ox=(k&3)*8,oy=(k>>2)*8;
+        for(let j=0;j<8;j++)for(let i=0;i<8;i++){ const c=t[j][i]; if(c) im[(oy+j)*32+ox+i]=p444(ic.palF[c]); } } }
+    ICONS.push(im);
+  }
+  KICON=new Array(32*32).fill(null);
+  for(let k=0;k<16;k++){ const tb=tile(D.KBG[k]),ox=(k&3)*8,oy=(k>>2)*8;
+    const tf=D.KFG[k]?tile(D.KFG[k]):null;
+    for(let j=0;j<8;j++)for(let i=0;i<8;i++){
+      const cf=tf?tf[j][i]:0, cb=tb[j][i], p=(oy+j)*32+ox+i;
+      if(cf) KICON[p]=p444(D.KPF[cf]);
+      else if(cb&&cb!==3) KICON[p]=p444(D.KPB[cb]); } }
+}
+document.getElementById("rom").onchange=async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  ROM=new Uint8Array(await f.arrayBuffer());
+  let ok=0; for(const [off,sum] of D.FACE){ let s=0; for(let i=0;i<64;i++)s=(s+ROM[off+i])&0xFFFF; if(s===sum)ok++; }
+  const st=document.getElementById("romst");
+  if(ok===15){ st.textContent="롬 확인 15/15 — 초상 실물로 그립니다"; st.className="ok"; buildIcons(); drawIconsTab(); redraw(); }
+  else { st.textContent=`이 롬이 아닙니다 (초상 체크섬 ${ok}/15) — 초상 없이 계속`; st.className="bad"; ROM=null; }
+};
+/* ── UI ── */
+const $=id=>document.getElementById(id);
+for(const b of document.querySelectorAll(".tabs button"))
+  b.onclick=()=>{ for(const x of document.querySelectorAll(".tabs button"))x.classList.remove("on");
+    b.classList.add("on"); for(const t of ["t1","t2","t3","t4"]) $(t).hidden=(t!==b.dataset.t); };
+function opts(sel,arr){ sel.innerHTML=arr.map((n,i)=>`<option value="${i}">${n}</option>`).join(""); }
+opts($("s1"),D.SPK_KO); opts($("s2"),D.SPK_KO);
+/* REL·LORE 는 문장이 통째로 들어오는 통과용 칸(표에는 "%s" 뿐)이라 목록에서 뺀다 — 내용은 「관계·썰」 탭에 있다 */
+$("e1").innerHTML=D.EV.map((n,i)=>({n,i})).filter(o=>o.n!=="REL"&&o.n!=="LORE").map(o=>`<option value="${o.i}">${o.n}</option>`).join("");
+opts($("s3"),D.SPK_KO); opts($("m3"),D.CHARNAME);
+$("o3").innerHTML=D.CHARNAME.map((n,i)=>`<option value="${i}">${n}</option>`).join("")+`<option value="-1">간다라(표 밖)</option>`;
+$("s3").value=0; $("m3").value=2; $("o3").value=3;
+let cur1=null;
+function show1(text,ev,spk){ cur1=[text,ev,spk];
+  const gold=D.EVHIT[ev]==="1"||D.EVHIT[ev]===1;
+  blit($("c1"),[renderStrip(fill(text,ev),{icon:ICONS?ICONS[spk]:null,color:gold?GOLD:WHITE})]); }
+function list1(){
+  const s=+$("s1").value, ev=D.EV[+$("e1").value], q=$("q1").value.trim();
+  const l=$("l1"); l.innerHTML="";
+  const add=(t,e2,sp)=>{ const d=document.createElement("div");
+    d.textContent=(q? D.SPK_KO[sp]+" · "+e2+" — " : "")+t;
+    d.onclick=()=>{show1(t,e2,sp); for(const x of l.children)x.classList.remove("on"); d.classList.add("on");};
+    l.appendChild(d); };
+  if(q){ D.LINES.forEach((tbl,sp)=>{ for(const e2 in tbl) for(const t of tbl[e2]) if(t.includes(q)) add(t,e2,sp); }); }
+  else for(const t of (D.LINES[s][ev]||[])) add(t,ev,s);
+  if(l.firstChild) l.firstChild.click(); else blit($("c1"),[renderStrip("(이 이벤트에는 대사가 없습니다)",{})]);
+}
+$("s1").onchange=$("e1").onchange=list1; $("q1").oninput=list1;
+let auto=null;
+$("auto1").onclick=()=>{ if(auto){clearInterval(auto);auto=null;$("auto1").textContent="▶ 전부 훑기";return;}
+  $("auto1").textContent="⏸ 멈춤"; const l=$("l1");
+  auto=setInterval(()=>{ const on=l.querySelector(".on"); let nx=on&&on.nextSibling;
+    if(!nx){ const e=$("e1"); if(+e.value+1<D.EV.length){e.value=+e.value+1;}
+      else { e.value=0; $("s1").value=(+$("s1").value+1)%15; } list1(); return; }
+    nx.click(); nx.scrollIntoView({block:"center"}); },1300); };
+function grid2(){
+  const s=+$("s2").value, g=$("g2"); g.innerHTML="";
+  const add=(k,t)=>{ if(!t)return; const d=document.createElement("div"); d.className="cell";
+    d.innerHTML=`<span class="k">${k}</span>${t}`;
+    d.onclick=()=>blit($("c2"),[renderStrip(fill(t),{icon:ICONS?ICONS[s]:null})]); g.appendChild(d); };
+  D.CHARNAME.forEach((nm,c)=>{
+    add(nm+" · 맞은편",D.RELOPP[s][c]); add(nm+" · 내 편",D.RELME[s][c]); add(nm+" · 무기",D.WEAPV[s][c]);
+    (D.ANEC[c]||[]).forEach((t,i)=>add(nm+" · 썰"+(i+1),t)); });
+  add("미러전",D.RELSELF[s]); add("간다라",D.RELGAND[s]);
+  (D.RELYOU[s]||[]).forEach((t,i)=>add("당신에게 "+(i+1),t));
+}
+$("s2").onchange=grid2;
+/* ── 한 판 재생 ── */
+let SPEED=1,playT=null;
+for(const b of document.querySelectorAll('[data-sp]')) b.onclick=()=>SPEED=+b.dataset.sp;
+const pick=a=>a&&a.length?a[Math.random()*a.length|0]:null;
+$("play3").onclick=()=>{
+  const s=+$("s3").value,m=+$("m3").value,o=+$("o3").value,L=D.LINES[s];
+  const boss=(o===14||o===-1);
+  const rel=o===-1?D.RELGAND[s]:(o===m?D.RELSELF[s]:D.RELOPP[s][o]);
+  const seq=[]; const B=(t,txt,ev)=>txt&&seq.push({t,lane:0,txt:fill(txt),gold:ev&&(D.EVHIT[ev]==1)});
+  const R=(t,txt)=>!boss&&txt&&seq.push({t,lane:1,txt});
+  B(0.0,o>=0?pick(D.ANEC[o]):pick(L.MUSE_M));
+  R(1.0,D.REF_ROUND[0]); B(1.05,rel);
+  B(4.5,Math.random()<.5&&o>=0?D.WEAPV[s][o]:pick(L.FIRSTBLOOD),"FIRSTBLOOD");
+  B(9.0,pick(L.FLOWTRADE),"FLOWTRADE"); B(13.5,pick(L.HIT),"HIT");
+  B(18.0,pick(L.KO),"KO"); B(18.9,pick(L.PERFECT),"PERFECT");
+  R(20.5,D.CHARFULL[m]+" — 훌륭하오!"); B(21.3,pick(L.WINSCR),"WINSCR"); B(23.6,pick(L.ARCSWEEP),"ARCSWEEP");
+  $("log3").innerHTML=seq.map(e=>`<div>${e.t.toFixed(1)}s ${e.lane?"〔심판〕":""} ${e.txt}</div>`).join("");
+  if(playT)cancelAnimationFrame(playT);
+  const t0=performance.now();
+  const step=()=>{
+    const now=(performance.now()-t0)/1000*SPEED;
+    let band=null,ref=null;
+    for(const e of seq){ if(now>=e.t){ if(e.lane===0&&now-e.t<2.5)band=e; if(e.lane===1&&now-e.t<3.0)ref=e; } }
+    const a=band?renderStrip(band.txt,{icon:ICONS?ICONS[s]:null,color:band.gold?GOLD:WHITE})
+               :renderStrip("",{icon:ICONS?ICONS[s]:null});
+    const b=ref?renderStrip(ref.txt,{icon:KICON,color:REF})
+              :{d:new Uint8ClampedArray(160*32*4).map((_,i)=>i%4===3?255:0),h:32};
+    blit($("c3"),[a,b]);
+    if(now<26) playT=requestAnimationFrame(step);
+  }; step();
+};
+/* ── 초상 탭 ── */
+function drawIconsTab(){
+  const box=$("icons"); box.innerHTML="";
+  const mk=(im,label)=>{ const f=document.createElement("figure");
+    const cv=document.createElement("canvas"); cv.width=128; cv.height=128;
+    const g=cv.getContext("2d"); g.imageSmoothingEnabled=false;
+    const off=document.createElement("canvas"); off.width=32;off.height=32;
+    const og=off.getContext("2d"), id=og.createImageData(32,32);
+    for(let p=0;p<32*32;p++){ const c=im&&im[p]; if(c){id.data[p*4]=c[0];id.data[p*4+1]=c[1];id.data[p*4+2]=c[2];id.data[p*4+3]=255;} }
+    og.putImageData(id,0,0); g.drawImage(off,0,0,128,128);
+    f.appendChild(cv); f.appendChild(document.createTextNode(label)); box.appendChild(f); };
+  if(!ICONS){ box.innerHTML='<div class="mut">롬을 넣으면 여기에 초상이 뜹니다.</div>'; return; }
+  D.SPK_KO.forEach((n,i)=>mk(ICONS[i],n)); mk(KICON,"쿠로코(심판)");
+}
+function redraw(){ list1(); grid2(); drawIconsTab(); }
+redraw();
+</script></body></html>'''
+
+html = HTML.replace("__DATA__", json.dumps(DATA, ensure_ascii=False, separators=(",",":")))
+io.open(OUT, "w", encoding="utf-8").write(html)
+print("썼다:", OUT, "(%.0fKB)" % (len(html.encode())/1024))
