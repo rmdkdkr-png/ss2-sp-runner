@@ -245,6 +245,7 @@ function parseHeader(txt) {
   const REL_OPPX  = litFrom(srcText, 'REL_OPP');     /* 화자 → 맞은편 (빈칸 메움) */
   const REL_MEX   = litFrom(srcText, 'REL_ME');      /* 화자 → 내 편 */
   const REL_YOUX  = litFrom(srcText, 'REL_YOU');     /* 화자 → 사람 */
+  const WEAP_V    = litFrom(srcText, 'WEAP_VOICE');  /* 무기 소회 — 화자 목소리 */
   const REL_GAND  = litFrom(srcText, 'REL_GANDHARA'); /* 표 밖 개체 */
   const CHAR_WEAP = litFrom(srcText, 'CHAR_WEAP');   /* 무기 소회 */
   const FACE_ROM = litFrom(srcText, 'FACE_ROM');
@@ -495,6 +496,7 @@ function parseHeader(txt) {
   order.forEach((sp, i) => { relSrc[sp] = relObjs[i] || {}; });   /* 페이지에서 이미 떠 온 것 */
   rel2('RELOPP', REL_OPPX, relSrc);
   rel2('RELME',  REL_MEX,  null);
+  rel2('WEAPV',  WEAP_V,   null);   /* 무기 소회: 화자 15 × 상대 15 */
   {
     const w = Math.max(1, ...order.map(sp => ((REL_YOUX && REL_YOUX[sp]) || []).length));
     L.push(`#define SS2COMM_RELYOU_N ${w}`);
