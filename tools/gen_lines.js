@@ -240,6 +240,8 @@ function parseHeader(txt) {
   const srcText = fs.readFileSync(srcAbs, 'utf8');
   const CHAR_BY_IDX = litFrom(srcText, 'CHAR_BY_IDX');
   const CHAR_LORE = litFrom(srcText, 'CHAR_LORE');
+  const CHAR_ANEC = litFrom(srcText, 'CHAR_ANEC');   /* 썰 — 짧은 일화·행적 */
+  const CHAR_WEAP = litFrom(srcText, 'CHAR_WEAP');   /* 무기 소회 */
   const FACE_ROM = litFrom(srcText, 'FACE_ROM');
   const roster = [];
   for (let i = 0; ; i++) { if (!(i in CHAR_BY_IDX)) break; roster.push(CHAR_BY_IDX[i]); }
@@ -443,6 +445,28 @@ function parseHeader(txt) {
   }
   L.push('};');
   L.push('');
+
+  /* 썰과 무기 소회 — 캐릭터 순서. 빈칸은 0 으로 채워 자리를 맞춘다.
+     대사표(LINES)와 달리 **화자별이 아니라 캐릭터별**이다 —
+     누가 해설하든 「그 사람에 대한 이야기」는 같다. */
+  const tbl = (name, src, wide) => {
+    L.push(`static const char *${name}[${roster.length}][${wide}] = {`);
+    for (const cid of roster) {
+      const v = (src && src[cid]) || [];
+      const cells = [];
+      for (let i = 0; i < wide; i++) cells.push(v[i] ? cstr(v[i]) : '0');
+      L.push('  {' + cells.join(',') + '},   /* ' + cid + ' */');
+    }
+    L.push('};');
+    L.push('');
+  };
+  const anecW = Math.max(1, ...roster.map(c => ((CHAR_ANEC && CHAR_ANEC[c]) || []).length));
+  const weapW = Math.max(1, ...roster.map(c => ((CHAR_WEAP && CHAR_WEAP[c]) || []).length));
+  L.push(`#define SS2COMM_ANEC_N ${anecW}`);
+  L.push(`#define SS2COMM_WEAP_N ${weapW}`);
+  tbl('ANEC', CHAR_ANEC, anecW);
+  tbl('WEAP', CHAR_WEAP, weapW);
+
   L.push('#endif');
   fs.writeFileSync(path.resolve(outArg), L.join('\n') + '\n', 'utf8');
   console.log(`썼다: ${outArg}  (화자 ${order.length} × 이벤트 ${EV.length})`);
