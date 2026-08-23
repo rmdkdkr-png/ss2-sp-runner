@@ -3,10 +3,27 @@
 
      node tools/gen_font.js <소스디렉터리> [BDF디렉터리]
 
+   ── BDF 는 어디서 받나 ────────────────────────────────────────────────
+   폰트 파일 자체는 저장소에 안 넣는다(임베드는 되지만 재배포는 안 한다).
+   그래서 방이 바뀌면 다시 받아야 한다. 둘 중 아무 데서나 받으면 된다 —
+   우리가 쓰는 글자에서는 두 판의 결과가 비트 단위로 같은 것을 확인했다.
+
+     깃허브 : git clone --depth 1 https://github.com/quiple/galmuri
+              → galmuri/dist/*.bdf                          (2.404, 개발판)
+     npm    : curl -O https://registry.npmjs.org/galmuri/-/galmuri-2.40.3.tgz
+              tar xzf galmuri-2.40.3.tgz → package/dist/*.bdf  (2.40.3, 배포판)
+
+   쓰는 것은 Galmuri11-Condensed.bdf 와 Galmuri7.bdf 둘뿐이다.
+   BDF디렉터리를 안 주면 /tmp/package/dist 를 본다(npm 타르볼 푼 자리).
+
+   ※ 새 글자를 쓰고 싶으면 대사를 먼저 쓰고 이걸 돌려라. 글꼴에 없는 글자를
+     그냥 내보내면 화면에 공백으로 나온다 — 「리쿠도렛카」가 「리쿠도 카」로
+     나왔던 것이 그 사고다.
+
    Galmuri — SIL Open Font License 1.1 (https://github.com/quiple/galmuri) */
 const fs = require('fs');
 const path = require('path');
-const { parseBDF, pack } = require('/home/claude/tools/bdf.js');
+const { parseBDF, pack } = require('./bdf.js');
 
 const DIR = process.argv[2];
 const BDFDIR = process.argv[3] || '/tmp/package/dist';
