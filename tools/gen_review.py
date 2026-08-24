@@ -350,20 +350,21 @@ $("play3").onclick=()=>{
   const seq=[]; const B=(t,txt,ev)=>txt&&seq.push({t,lane:0,
     txt:(txt.includes("%s")?txt.replace("%s",who):fill(txt,ev)),gold:ev&&(D.EVHIT[ev]==1)});
   const R=(t,txt,fl)=>!boss&&txt&&seq.push({t,lane:1,txt,fl});
-  /* 심판은 **게임 연출에 맞물린다** — 진짜 게임을 코어로 돌려 프레임을 쟀다.
-     선수들이 서는 순간(0s) 풀네임 호명 → 게임의 「자아 정정당당히」(5.4s)에
-     「정정당당히 — 1회전!」 → 「승부!」(8.6s)에 반짝 「승부!」 → KO 에 반짝
-     「한 판!/승부 결정!」 → 승자 팻말(KO+6.5s)에 「풀네임 — 훌륭하오!」.
-     심판이 안 서는 판(유가·간다라)에는 전부 없다. */
+  /* 심판은 **게임 연출에 맞물리고, 해설창을 캐릭터와 같이 쓴다**(심판 우선).
+     실기 실측 박자: 선수 등장 0s 호명 → 자아(5.4s) 「자아 — 정정당당히!」 →
+     1회전(7.1s) 「1회전!」 → 승부(8.2s) 금빛 「승부!」 → KO 「한 판!」 →
+     팻말 「이름…!」 → 「훌륭하오!」 2연타. 유가·간다라전은 전부 없음. */
   const FIGHT=8.6, KO=FIGHT+18.0;
   R(0.0,(o>=0?D.CHARFULL[m]+" 대 "+D.CHARFULL[o]+"!":null));
-  B(1.0,pick(L.START),"START");
-  R(5.4,"정정당당히 — 1회전!");
-  R(FIGHT,"승부!",true); B(FIGHT+0.5,rel);
-  B(FIGHT+5.0,Math.random()<.5&&o>=0?D.WEAPV[s][o]:pick(L.FIRSTBLOOD),"FIRSTBLOOD");
-  B(FIGHT+9.5,pick(L.FLOWTRADE),"FLOWTRADE"); B(FIGHT+14.0,pick(L.HIT),"HIT");
-  R(KO,"승부 결정!",true); B(KO+0.5,pick(L.KO),"KO"); B(KO+3.0,pick(L.PERFECT),"PERFECT");
-  R(KO+6.5,D.CHARFULL[m]+" — 훌륭하오!"); B(KO+7.5,pick(L.WINSCR),"WINSCR"); B(KO+10.0,pick(L.ARCSWEEP),"ARCSWEEP");
+  B(1.5,pick(L.START),"START");
+  R(5.4,"자아 — 정정당당히!");
+  R(7.2,"1회전!");
+  R(FIGHT-0.4,"승부!",true); B(FIGHT+0.8,rel);
+  B(FIGHT+5.3,Math.random()<.5&&o>=0?D.WEAPV[s][o]:pick(L.FIRSTBLOOD),"FIRSTBLOOD");
+  B(FIGHT+9.8,pick(L.FLOWTRADE),"FLOWTRADE"); B(FIGHT+14.3,pick(L.HIT),"HIT");
+  R(KO,"한 판!",true); B(KO+1.2,pick(L.KO),"KO");
+  R(KO+6.5,(o>=0?D.CHARFULL[m]:"")+"…!"); R(KO+7.6,"훌륭하오!");
+  B(KO+9.0,pick(L.WINSCR),"WINSCR"); B(KO+11.5,pick(L.ARCSWEEP),"ARCSWEEP");
   $("log3").innerHTML=seq.map(e=>`<div>${e.t.toFixed(1)}s ${e.lane?"〔심판〕":""} ${e.txt}</div>`)
     .join("").replace(/(<div>8\.6s)/,'<div style="opacity:.6">— 8.6s 승부! (전투 시작) —</div>$1');
   if(playT)cancelAnimationFrame(playT);
@@ -374,17 +375,18 @@ $("play3").onclick=()=>{
     for(const e of seq){ if(now>=e.t){ if(e.lane===0&&now-e.t<2.5)band=e; if(e.lane===1&&now-e.t<(e.fl?1.0:3.0))ref=e; } }
     const a=band?renderStrip(band.txt,{icon:ICONS?ICONS[s]:null,color:band.gold?GOLD:WHITE})
                :renderStrip("",{icon:ICONS?ICONS[s]:null});
-    /* 실기 배치 그대로: 심판은 제 칸이 없고, 게임 화면 맨 위 32줄(해설창 바로 아래)에 오버레이로 뜬다 */
+    /* 실기 배치: 심판은 해설창을 **캐릭터와 같이 쓴다** — 심판이 말하면 그 프레임의 창은 쿠로코 것 */
     const gm={d:new Uint8ClampedArray(160*152*4),h:152};
     for(let j=0;j<152;j++)for(let i=0;i<160;i++){const k=(j*160+i)*4,v=(((j>>3)&1)^((i>>3)&1))?26:16;
       gm.d[k]=v;gm.d[k+1]=v+4;gm.d[k+2]=v+12;gm.d[k+3]=255;}
-    /* 구령의 「반짝」 = 점멸이 아니라 금빛 버스트 — 실기와 같은 문법 */
+    let top=a;
     if(ref){const ra=(now-ref.t)*60|0;
       const rs=renderStrip(ref.txt,{icon:KICON,color:ref.fl?GOLD:REF});
+      /* 구령의 「반짝」 = 점멸이 아니라 금빛 버스트 — 실기와 같은 문법 */
       if(ref.fl&&ra<5){const bg=ra<1?[255,213,0]:(ra<2?[140,80,0]:[48,16,0]);
         for(let i=0;i<rs.d.length;i+=4){ if(rs.d[i]===0&&rs.d[i+1]===0&&rs.d[i+2]===0){rs.d[i]=bg[0];rs.d[i+1]=bg[1];rs.d[i+2]=bg[2];} }}
-      for(let j=0;j<32;j++) gm.d.set(rs.d.subarray(j*160*4,(j+1)*160*4),j*160*4);}
-    blit($("c3"),[a,gm]);
+      top=rs;}
+    blit($("c3"),[top,gm]);
     if(now<KO+12) playT=requestAnimationFrame(step);
   }; step();
 };
@@ -407,8 +409,9 @@ let ALL=null;
 function buildAll(){
   if(ALL) return; ALL=[];
   const A=(spk,slot,txt,ev,tgt)=>txt&&ALL.push({spk,slot,txt,ev:ev||"",tgt:(tgt===undefined?-1:tgt)});
-  [["대진 호명","(선수 풀네임) 대 (상대 풀네임)!"],["판 구호","정정당당히 — N회전!"],
-   ["전투 개시","승부!"],["라운드 종료","한 판!"],["매치 종료","승부 결정!"]]
+  [["대진 호명","(선수 풀네임) 대 (상대 풀네임)!"],["인트로 1박","자아 — 정정당당히!"],
+   ["인트로 2박","N회전!"],["전투 개시(금빛+쿵)","승부!"],["라운드 종료","한 판!"],
+   ["매치 종료","승부 결정!"],["팻말 1","(승자 풀네임)…!"],["팻말 2","훌륭하오!"]]
     .forEach(([k,t])=>ALL.push({spk:-1,slot:k,txt:t,ev:"REF",tgt:-1}));
   D.CHARFULL.forEach((n,c)=>ALL.push({spk:-1,slot:"승자 호명",txt:n+" — 훌륭하오!",ev:"REF",tgt:c}));
   D.SPK_ID.forEach((id,sp)=>{
