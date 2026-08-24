@@ -277,14 +277,18 @@ $("play3").onclick=()=>{
   const step=()=>{
     const now=(performance.now()-t0)/1000*SPEED;
     let band=null,ref=null;
-    for(const e of seq){ if(now>=e.t){ if(e.lane===0&&now-e.t<2.5)band=e; if(e.lane===1&&now-e.t<(e.fl?1.5:3.0))ref=e; } }
+    for(const e of seq){ if(now>=e.t){ if(e.lane===0&&now-e.t<2.5)band=e; if(e.lane===1&&now-e.t<(e.fl?1.0:3.0))ref=e; } }
     const a=band?renderStrip(band.txt,{icon:ICONS?ICONS[s]:null,color:band.gold?GOLD:WHITE})
                :renderStrip("",{icon:ICONS?ICONS[s]:null});
     /* 실기 배치 그대로: 심판은 제 칸이 없고, 게임 화면 맨 위 32줄(해설창 바로 아래)에 오버레이로 뜬다 */
     const gm={d:new Uint8ClampedArray(160*152*4),h:152};
     for(let j=0;j<152;j++)for(let i=0;i<160;i++){const k=(j*160+i)*4,v=(((j>>3)&1)^((i>>3)&1))?26:16;
       gm.d[k]=v;gm.d[k+1]=v+4;gm.d[k+2]=v+12;gm.d[k+3]=255;}
-    if(ref&&!(ref.fl&&((now*60|0)&8))){const rs=renderStrip(ref.txt,{icon:KICON,color:REF});
+    /* 구령의 「반짝」 = 점멸이 아니라 금빛 버스트 — 실기와 같은 문법 */
+    if(ref){const ra=(now-ref.t)*60|0;
+      const rs=renderStrip(ref.txt,{icon:KICON,color:ref.fl?GOLD:REF});
+      if(ref.fl&&ra<5){const bg=ra<1?[255,213,0]:(ra<2?[140,80,0]:[48,16,0]);
+        for(let i=0;i<rs.d.length;i+=4){ if(rs.d[i]===0&&rs.d[i+1]===0&&rs.d[i+2]===0){rs.d[i]=bg[0];rs.d[i+1]=bg[1];rs.d[i+2]=bg[2];} }}
       for(let j=0;j<32;j++) gm.d.set(rs.d.subarray(j*160*4,(j+1)*160*4),j*160*4);}
     blit($("c3"),[a,gm]);
     if(now<KO+12) playT=requestAnimationFrame(step);
