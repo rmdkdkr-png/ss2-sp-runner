@@ -59,6 +59,7 @@ def table1(name, src):
     return [ (re.match(STR, c.strip()).group(1) if c.strip().startswith('"') else None)
              for c in re.findall(r"\n\s*(.+?),\s*/\* \w+ \*/", mm.group(1)) ]
 RELOPP = table2("RELOPP", lines_h); RELME = table2("RELME", lines_h)
+ANECV  = table2("ANECV",  lines_h)
 WEAPV  = table2("WEAPV",  lines_h); RELYOU = table2("RELYOU", lines_h)
 RELSELF = table1("RELSELF", lines_h); RELGAND = table1("RELGAND", lines_h)
 def tblN(name):
@@ -88,7 +89,7 @@ FACE = [[int(a), int(b)] for a, b in
 
 DATA = dict(F11=F11, F8=F8, EV=EV, EVHIT=EVHIT, SPK_ID=SPK_ID, SPK_KO=SPK_KO,
             LINES=LINES, CHARNAME=CHARNAME, RELOPP=RELOPP, RELME=RELME, WEAPV=WEAPV,
-            RELYOU=RELYOU, RELSELF=RELSELF, RELGAND=RELGAND, ANEC=ANEC, WEAPF=WEAPF,
+            RELYOU=RELYOU, RELSELF=RELSELF, RELGAND=RELGAND, ANEC=ANEC, ANECV=ANECV, WEAPF=WEAPF,
             HELLO=HELLO, CHARFULL=CHARFULL,
             ICON=ICON, KBG=KBG, KFG=KFG, KPF=KPF, KPB=KPB, FACE=FACE)
 
@@ -333,6 +334,7 @@ function grid2(){
     d.onclick=()=>blit($("c2"),[renderStrip(fill(t),{icon:ICONS?ICONS[s]:null})]); g.appendChild(d); };
   D.CHARNAME.forEach((nm,c)=>{
     add(nm+" · 맞은편",D.RELOPP[s][c]); add(nm+" · 내 편",D.RELME[s][c]); add(nm+" · 무기",D.WEAPV[s][c]);
+    add(nm+" · 썰(내 목소리)",D.ANECV[s][c]);
     (D.ANEC[c]||[]).forEach((t,i)=>add(nm+" · 썰"+(i+1),t)); });
   add("미러전",D.RELSELF[s]); add("간다라",D.RELGAND[s]);
   (D.RELYOU[s]||[]).forEach((t,i)=>add("당신에게 "+(i+1),t));
@@ -426,6 +428,7 @@ function buildAll(){
        잘못 달면 캐릭터별 묶기에서 엉뚱한 사람 밑에 낀다(실제로 그랬다) */
     A(sp,"미러전",D.RELSELF[sp],"미러전"); A(sp,"간다라",D.RELGAND[sp],"간다라");
     (D.RELYOU[sp]||[]).forEach((t,i)=>A(sp,"당신에게 "+(i+1),t,"당신에게"));
+    D.CHARNAME.forEach((nm,c)=>A(sp,nm+" 썰(목소리)",D.ANECV[sp][c],"썰(목소리)",c));
   });
   D.CHARNAME.forEach((nm,c)=>{
     (D.ANEC[c]||[]).forEach((t,i)=>A(-2,nm+" 썰"+(i+1),t,"썰",c));
@@ -453,7 +456,7 @@ function list5(){
     rows=[];
     for(const ev of D.EV){ if(ev==="REL"||ev==="LORE")continue;
       for(const r of ALL) if(r.ev===ev) rows.push({h:"상황 · "+ev,...r}); }
-    for(const g of ["HELLO","맞은편","내 편","무기 소회","미러전","간다라","당신에게","썰","무기(예비)","REF"])
+    for(const g of ["HELLO","맞은편","내 편","무기 소회","썰(목소리)","미러전","간다라","당신에게","썰","무기(예비)","REF"])
       for(const r of ALL) if(r.ev===g) rows.push({h:g==="REF"?"심판":g,...r});
   }else{
     rows=ALL.map(r=>({h:who5(r),...r}));
