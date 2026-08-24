@@ -353,15 +353,19 @@ $("play3").onclick=()=>{
   const R=(t,txt)=>!boss&&txt&&seq.push({t,lane:1,txt});
   /* 박자는 실기 규칙 그대로 — 전투 밖 최소 1.6초, 전투 중 4.5초, 심판끼리 2.5초.
      0초의 썰은 뺐다(제보: 「대부분 TMI」). 그 자리는 심판의 **풀네임 대진 호명**이다 —
-     심판이 안 서는 판(유가·간다라)에는 호명도 없다. */
+     심판이 안 서는 판(유가·간다라)에는 호명도 없다.
+     문구(VS) 화면이 3초 서고, 판이 서는 순간(3.0s)에 구호가 0초로 바로,
+     관계 대사가 그 3초 뒤에 붙는다 — 실기와 같은 배치다. */
+  const FIGHT=3.0;
   R(0.0,(o>=0?D.CHARFULL[m]+" 대 "+D.CHARFULL[o]+"!":null));
   B(1.0,pick(L.START),"START");
-  R(2.6,D.REF_ROUND[0]); B(3.4,rel);
-  B(6.5,Math.random()<.5&&o>=0?D.WEAPV[s][o]:pick(L.FIRSTBLOOD),"FIRSTBLOOD");
-  B(11.0,pick(L.FLOWTRADE),"FLOWTRADE"); B(15.5,pick(L.HIT),"HIT");
-  B(19.0,pick(L.KO),"KO"); B(20.6,pick(L.PERFECT),"PERFECT");
-  R(22.5,D.CHARFULL[m]+" — 훌륭하오!"); B(23.4,pick(L.WINSCR),"WINSCR"); B(25.8,pick(L.ARCSWEEP),"ARCSWEEP");
-  $("log3").innerHTML=seq.map(e=>`<div>${e.t.toFixed(1)}s ${e.lane?"〔심판〕":""} ${e.txt}</div>`).join("");
+  R(FIGHT+0.0,D.REF_ROUND[0]); B(FIGHT+3.0,rel);
+  B(FIGHT+7.5,Math.random()<.5&&o>=0?D.WEAPV[s][o]:pick(L.FIRSTBLOOD),"FIRSTBLOOD");
+  B(FIGHT+12.0,pick(L.FLOWTRADE),"FLOWTRADE"); B(FIGHT+16.5,pick(L.HIT),"HIT");
+  B(FIGHT+21.0,pick(L.KO),"KO"); B(FIGHT+23.5,pick(L.PERFECT),"PERFECT");
+  R(FIGHT+25.5,D.CHARFULL[m]+" — 훌륭하오!"); B(FIGHT+26.5,pick(L.WINSCR),"WINSCR"); B(FIGHT+29.0,pick(L.ARCSWEEP),"ARCSWEEP");
+  $("log3").innerHTML=seq.map(e=>`<div>${e.t.toFixed(1)}s ${e.lane?"〔심판〕":""} ${e.txt}</div>`)
+    .join("").replace(/(<div>3\.0s)/,'<div style="opacity:.6">— 3.0s 판 시작 —</div>$1');
   if(playT)cancelAnimationFrame(playT);
   const t0=performance.now();
   const step=()=>{
@@ -370,10 +374,14 @@ $("play3").onclick=()=>{
     for(const e of seq){ if(now>=e.t){ if(e.lane===0&&now-e.t<2.5)band=e; if(e.lane===1&&now-e.t<3.0)ref=e; } }
     const a=band?renderStrip(band.txt,{icon:ICONS?ICONS[s]:null,color:band.gold?GOLD:WHITE})
                :renderStrip("",{icon:ICONS?ICONS[s]:null});
-    const b=ref?renderStrip(ref.txt,{icon:KICON,color:REF})
-              :{d:new Uint8ClampedArray(160*32*4).map((_,i)=>i%4===3?255:0),h:32};
-    blit($("c3"),[a,b]);
-    if(now<26) playT=requestAnimationFrame(step);
+    /* 실기 배치 그대로: 심판은 제 칸이 없고, 게임 화면 맨 아래 32줄에 오버레이로 뜬다 */
+    const gm={d:new Uint8ClampedArray(160*152*4),h:152};
+    for(let j=0;j<152;j++)for(let i=0;i<160;i++){const k=(j*160+i)*4,v=(((j>>3)&1)^((i>>3)&1))?26:16;
+      gm.d[k]=v;gm.d[k+1]=v+4;gm.d[k+2]=v+12;gm.d[k+3]=255;}
+    if(ref){const rs=renderStrip(ref.txt,{icon:KICON,color:REF});
+      for(let j=0;j<32;j++) gm.d.set(rs.d.subarray(j*160*4,(j+1)*160*4),(120+j)*160*4);}
+    blit($("c3"),[a,gm]);
+    if(now<FIGHT+30) playT=requestAnimationFrame(step);
   }; step();
 };
 /* ── 초상 탭 ── */
