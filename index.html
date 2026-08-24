@@ -4995,7 +4995,9 @@ function commStep(sn){
       refRound(0,0);                                      /* 심판: 첫 판 구호 */
       commEmit("start",{who:who},"round",2500);
       setTimeout(grabStage,900);                          /* 판이 서면 스테이지를 떠서 양옆에 깐다 */
-      commOppKo=(opp&&opp.ko)||null;
+      /* 화자 자신이 상대(거울)면 제 이름을 3인칭으로 부르게 된다 — 그때는 「상대」로
+         (실기 제보: 유가 해설로 유가전 승리 → 「유가는 끝이군」). C emit_ex 와 같은 가드. */
+      commOppKo=(opp&&opp.ko&&opp.ko!==SPK_KO[cfg.commSpk])?opp.ko:null;
       setTimeout(()=>harvestFaces(opp&&opp.id),1200);
       /* 2절 — 해설자와 등장 캐릭터의 관계 대사 우선, 없으면 썰 */
       const sp=SPEAKERS[cfg.commSpk]||SPEAKERS.haohmaru;
